@@ -121,6 +121,8 @@ export type BeatmapUploadResult = {
 };
 export type Score = {
   id: number;
+  /** Recorded submission source; absent legacy values must not imply stable. */
+  client?: string | null;
   user_id: number;
   username: string;
   beatmap_id: number;
@@ -247,6 +249,7 @@ export type OfficialBeatmapDifficulty = {
   version: string;
   mode: number;
   stars: number;
+  status: string;
   length_seconds: number;
   checksum?: string;
   local_id?: number;

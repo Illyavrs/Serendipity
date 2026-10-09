@@ -1,8 +1,9 @@
 import { test, expect, type Page as BrowserPage } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Beatmap, Leader, Preferences, Score, User } from '../src/lib/types';
+import type { DiscoverySet } from '../src/features/map-discovery';
 
 // All community activity below is synthetic QA data intercepted in this browser.
 // Production HomePage obtains its content solely from the existing public API.
@@ -15,10 +16,10 @@ const fixtureMaps: Beatmap[] = [
     version: 'Insane',
     mode: 0,
     status: 'ranked',
-    source: 'official',
+    source: 'local',
     stars: 5.42,
     length_seconds: 123,
-    official_id: 6101,
+    official_id: null,
     bpm: 180,
     max_combo: 812,
     play_count: 500,
@@ -68,6 +69,50 @@ const fixtureMaps: Beatmap[] = [
     package: null,
   },
 ];
+function setFixture(map: Beatmap): DiscoverySet {
+  const nativeSetId = map.official_set_id ?? (map.official_id ? map.id : 2_000_000_000 + map.id);
+  return {
+    native_set_id: nativeSetId,
+    representative: { uploaded_by: 6401, ...map, native_set_id: nativeSetId },
+    matching_count: 1,
+    stored_count: 1,
+    matching_modes: [map.mode],
+    matching_statuses: [map.status],
+    stars_min: map.stars,
+    stars_max: map.stars,
+    length_min: map.length_seconds,
+    length_max: map.length_seconds,
+    added_at: '2026-10-09T00:00:00Z',
+    preview: [map],
+  };
+}
+const importedOfficialMap: Beatmap = {
+  ...fixtureMaps[0],
+  id: 6199,
+  title: 'QA Imported Official Beatmap',
+  source: 'official',
+  official_id: 6199,
+};
+const legacyOfficialMap: Beatmap = {
+  ...importedOfficialMap,
+  id: 6198,
+  title: 'QA Legacy Official Set With Local Label',
+  source: 'local',
+  official_set_id: 6199,
+};
+const unattributedLocalMap: Beatmap = {
+  ...fixtureMaps[1],
+  id: 6197,
+  title: 'QA Unattributed Local Record',
+  uploaded_by: null,
+};
+// Unexpected mixed-source payload exercises the homepage's defensive filter.
+const fixtureSets = [
+  ...fixtureMaps.map(setFixture),
+  setFixture(importedOfficialMap),
+  setFixture(legacyOfficialMap),
+  setFixture(unattributedLocalMap),
+];
 const fixtureLeaders: Leader[] = Array.from({ length: 5 }, (_, index) => ({
   id: 6201 + index,
   username: index === 0 ? 'QA Leading Player' : `QA Player ${index + 1}`,
@@ -81,6 +126,7 @@ const fixtureLeaders: Leader[] = Array.from({ length: 5 }, (_, index) => ({
 const fixtureScores: Score[] = [
   {
     id: 6301,
+    client: 'lazer',
     user_id: 6201,
     username: 'QA Leading Player',
     beatmap_id: 6101,
@@ -101,6 +147,7 @@ const fixtureScores: Score[] = [
   },
   {
     id: 6302,
+    client: 'stable',
     user_id: 6202,
     username: 'QA Player 2',
     beatmap_id: 6103,
@@ -185,6 +232,8 @@ type FixtureState = {
   leaderFailure?: boolean;
   scoreFailure?: boolean;
   holdMaps?: Promise<void>;
+  mapItems?: DiscoverySet[];
+  catalogueQueries: Record<string, string>[];
   requests: Record<string, number>;
 };
 
@@ -209,6 +258,7 @@ async function fixture(
     empty: false,
     statusFailure: false,
     mapFailure: false,
+    catalogueQueries: [],
     requests: {},
     ...changes,
   };
@@ -235,17 +285,29 @@ async function fixture(
               compatibility: {},
             },
           });
-    if (endpoint === '/beatmaps') {
-      expect(url.searchParams.get('page_size')).toBe('3');
+    if (endpoint === '/beatmapsets') {
+      const catalogue = url.searchParams.get('page_size') === '24';
+      if (catalogue) state.catalogueQueries.push(Object.fromEntries(url.searchParams));
+      else
+        expect(Object.fromEntries(url.searchParams)).toEqual({
+          source: 'local',
+          uploaded_only: 'true',
+          sort: 'recent',
+          page_size: '3',
+        });
       if (state.holdMaps) await state.holdMaps;
       return state.mapFailure
         ? route.fulfill({ status: 503, json: { error: { code: 'qa_maps_unavailable' } } })
         : route.fulfill({
             json: {
-              items: state.empty ? [] : fixtureMaps,
-              total: state.empty ? 0 : 3,
+              items: state.empty
+                ? []
+                : catalogue
+                  ? fixtureMaps.map(setFixture)
+                  : (state.mapItems ?? fixtureSets),
+              total: state.empty ? 0 : catalogue ? 3 : (state.mapItems ?? fixtureSets).length,
               page: 1,
-              page_size: 3,
+              page_size: catalogue ? 24 : 3,
             },
           });
     }
@@ -386,6 +448,28 @@ test('homepage character retains the exact user-supplied PNG bytes and dimension
   expect([asset.readUInt32BE(16), asset.readUInt32BE(20), asset[25]]).toEqual([700, 1251, 6]);
 });
 
+test('homepage score mods show exact lazer and stable provenance without inferring missing sources', async ({
+  page,
+  baseURL,
+}) => {
+  await fixture(page, baseURL, 'en', 'dark');
+  await page.goto('/');
+  const rows = page.locator('.home-score-list > li');
+  await expect(rows).toHaveCount(3);
+  const lazer = rows.nth(0).locator('.home-score-mods');
+  await expect(
+    lazer.getByRole('img', { name: 'Played in osu!lazer', exact: true }),
+  ).toHaveAttribute('data-client', 'lazer');
+  await expect(lazer).toContainText('HD HR');
+  const stable = rows.nth(1).locator('.home-score-mods');
+  await expect(
+    stable.getByRole('img', { name: 'Played in osu!stable', exact: true }),
+  ).toHaveAttribute('data-client', 'stable');
+  await expect(stable).toContainText('RX');
+  await expect(rows.nth(2).locator('.score-origin')).toHaveCount(0);
+  await expect(page.locator('.home-score-list .score-origin')).toHaveCount(2);
+});
+
 async function capture(page: BrowserPage, name: string, state: string, hoverLatestMap = false) {
   await stableLayout(page);
   await assertDenseHome(page);
@@ -399,6 +483,9 @@ async function capture(page: BrowserPage, name: string, state: string, hoverLate
     process.env.ILLYA_CAPTURE_WORKFLOW_REVIEW !== '1'
   )
     return;
+  const nonce = process.env.ILLYA_HOME_REVIEW_NONCE;
+  if (!nonce || !/^[a-z0-9-]{8,80}$/i.test(nonce))
+    throw new Error('Set a fresh ILLYA_HOME_REVIEW_NONCE before capturing the homepage review.');
   await page.evaluate(() => {
     document.documentElement.style.setProperty('scroll-behavior', 'auto', 'important');
     (document.activeElement as HTMLElement | null)?.blur();
@@ -416,12 +503,19 @@ async function capture(page: BrowserPage, name: string, state: string, hoverLate
   }
   const output = path.resolve(
     '../../.impeccable/review',
-    `home-wordmark-filled-community-${hoverLatestMap ? 'hover-' : ''}${name}`,
+    `home-character-${nonce}-community-${hoverLatestMap ? 'hover-' : ''}${name}`,
   );
-  await page.screenshot({ path: `${output}.png`, fullPage: true, animations: 'disabled' });
+  if (existsSync(`${output}.png`) || existsSync(`${output}.json`))
+    throw new Error('Homepage capture already exists; use a fresh review nonce.');
+  const screenshot = await page.screenshot({
+    path: `${output}.png`,
+    fullPage: true,
+    animations: 'disabled',
+  });
   const sourceFiles = [
     'src/features/home.tsx',
     'src/features/home.css',
+    'src/features/home-character.tsx',
     'src/features/beatmaps.tsx',
     'src/styles/map-discovery.css',
     'src/components/providers.tsx',
@@ -443,6 +537,7 @@ async function capture(page: BrowserPage, name: string, state: string, hoverLate
     JSON.stringify(
       {
         captured_at: new Date().toISOString(),
+        screenshot_sha256: createHash('sha256').update(screenshot).digest('hex'),
         route: '/',
         viewport: page.viewportSize(),
         visual_facts: await page.evaluate(() => ({
@@ -585,6 +680,13 @@ for (const width of [1440, 1254]) {
       '7,890',
     ]);
     await expect(page.locator('.home-catalogue .map-row')).toHaveCount(3);
+    await expect(page.locator('.home-catalogue')).not.toContainText(importedOfficialMap.title);
+    await expect(page.locator('.home-catalogue')).not.toContainText(legacyOfficialMap.title);
+    await expect(page.locator('.home-catalogue')).not.toContainText(unattributedLocalMap.title);
+    await expect(page.locator('.home-catalogue header a')).toHaveAttribute(
+      'href',
+      '/beatmaps?catalogue=server&source=local&uploaded_only=true&sort=recent',
+    );
     await expect(page.locator('.home-catalogue-panel')).toHaveCSS('backdrop-filter', 'blur(8px)');
     await expect(page.locator('.home-catalogue-panel')).toHaveCSS(
       'border-bottom-left-radius',
@@ -609,7 +711,7 @@ for (const width of [1440, 1254]) {
     await expect(page.getByText('QA PRIVATE PENDING SCORE')).toHaveCount(0);
     await expect(page.locator('.home-score-list a[href="/scores/6301"]')).toBeVisible();
     await expect(
-      page.locator('.home-score-list a[href="/players/6202?mode=1&variant=relax"]'),
+      page.locator('.home-score-list a[href="/users/6202?mode=1&variant=relax"]'),
     ).toBeVisible();
     await expect(page.locator('.home-score-list a[href="/beatmaps/6101"]')).toBeVisible();
     await expect(
@@ -632,6 +734,101 @@ for (const width of [1440, 1254]) {
     expect(errors).toEqual([]);
   });
 }
+
+test('latest community beatmaps never substitute imported official maps for an empty local catalogue', async ({
+  page,
+  baseURL,
+}) => {
+  const state = await fixture(page, baseURL, 'en', 'dark', {
+    mapItems: [
+      setFixture(importedOfficialMap),
+      setFixture(legacyOfficialMap),
+      setFixture(unattributedLocalMap),
+    ],
+  });
+  await page.goto('/');
+  const catalogue = page.locator('.home-catalogue');
+  await expect(catalogue.locator('.home-empty')).toBeVisible();
+  await expect(catalogue.locator('.map-row')).toHaveCount(0);
+  await expect(catalogue).not.toContainText(importedOfficialMap.title);
+  await expect(catalogue).not.toContainText(legacyOfficialMap.title);
+  await expect(catalogue).not.toContainText(unattributedLocalMap.title);
+  await expect(catalogue.locator('.home-empty a')).toHaveAttribute(
+    'href',
+    '/beatmaps?catalogue=server&source=local&uploaded_only=true&sort=recent',
+  );
+  expect(Object.keys(state.requests).filter((endpoint) => endpoint.includes('official'))).toEqual(
+    [],
+  );
+  await expect(page.locator('.home-score-list > li')).toHaveCount(3);
+});
+
+test('latest community catalogue scope survives filters and history, and can be cleared explicitly', async ({
+  page,
+  baseURL,
+}) => {
+  const state = await fixture(page, baseURL, 'en', 'dark');
+  await page.goto('/');
+  await page.locator('.home-catalogue header a').click();
+  await expect(page).toHaveURL(/uploaded_only=true/);
+  await expect(page.getByText('Uploaded community beatmaps only', { exact: true })).toBeVisible();
+  await expect.poll(() => state.catalogueQueries.at(-1)?.uploaded_only).toBe('true');
+  await page.evaluate(() => {
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}#maps`,
+    );
+  });
+  await page.locator('#discovery-mode').click();
+  await page.getByRole('option', { name: 'taiko', exact: true }).click();
+  await expect(page).toHaveURL(/mode=1.*#maps$/);
+  await expect.poll(() => state.catalogueQueries.at(-1)?.mode).toBe('1');
+  expect(state.catalogueQueries.at(-1)?.uploaded_only).toBe('true');
+  await page.goBack();
+  await expect(page).toHaveURL(/uploaded_only=true&sort=recent#maps$/);
+  await expect.poll(() => state.catalogueQueries.at(-1)?.mode).toBeUndefined();
+  await page.goForward();
+  await expect(page).toHaveURL(/mode=1.*#maps$/);
+  await expect.poll(() => state.catalogueQueries.at(-1)?.mode).toBe('1');
+  expect(state.catalogueQueries.at(-1)?.uploaded_only).toBe('true');
+  for (const [label, value] of [
+    ['Graveyard', 'graveyard'],
+    ['WIP', 'wip'],
+  ]) {
+    await page.locator('#discovery-status').click();
+    await page.getByRole('option', { name: label, exact: true }).click();
+    await expect.poll(() => state.catalogueQueries.at(-1)?.status).toBe(value);
+    expect(state.catalogueQueries.at(-1)?.uploaded_only).toBe('true');
+    expect(state.catalogueQueries.at(-1)?.mode).toBe('1');
+    await expect(page).toHaveURL(new RegExp(`status=${value}.*#maps$`));
+  }
+  await page.locator('#discovery-source').click();
+  await page.getByRole('option', { name: 'Official', exact: true }).click();
+  await expect(page).not.toHaveURL(/uploaded_only=/);
+  await expect.poll(() => state.catalogueQueries.at(-1)?.source).toBe('official');
+  expect(state.catalogueQueries.at(-1)?.uploaded_only).toBeUndefined();
+  await page.goBack();
+  await expect(page.getByText('Uploaded community beatmaps only', { exact: true })).toBeVisible();
+  await expect.poll(() => state.catalogueQueries.at(-1)?.uploaded_only).toBe('true');
+  await page.getByRole('button', { name: 'Reset filters', exact: true }).click();
+  await expect(page).toHaveURL(/\/beatmaps\?catalogue=server#maps$/);
+  await expect.poll(() => state.catalogueQueries.at(-1)?.uploaded_only).toBeUndefined();
+  expect(state.catalogueQueries.at(-1)?.source).toBeUndefined();
+});
+
+test('false or unknown uploaded-only URL values do not restrict the stored catalogue', async ({
+  page,
+  baseURL,
+}) => {
+  const state = await fixture(page, baseURL, 'en', 'dark');
+  for (const value of ['false', '1', 'unknown', '']) {
+    await page.goto(`/beatmaps?catalogue=server&source=local&uploaded_only=${value}`);
+    await expect(page.locator('.discovery-results .discovery-set')).toHaveCount(3);
+    await expect(page.locator('.discovery-uploader')).toHaveCount(0);
+    expect(state.catalogueQueries.at(-1)?.uploaded_only).toBeUndefined();
+  }
+});
 
 test('English light mobile keeps empty collections separate from failed services and retries only the requested data', async ({
   page,
@@ -714,7 +911,7 @@ test('Japanese compact signed-in landing shows only authorized tools and preserv
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
-  await expect(page.locator('.home-introduction a[href="/players/6401"]')).toBeVisible();
+  await expect(page.locator('.home-introduction a[href="/users/6401"]')).toBeVisible();
   await expect(page.locator('.home-tools-directory a[href="/beatmaps/upload"]')).toBeVisible();
   await expect(page.locator('.home-tools-directory a[href="/beatmaps/import"]')).toHaveCount(0);
   await expect(page.locator('.home-tools-directory a[href="/admin"]')).toHaveCount(0);
@@ -763,7 +960,7 @@ test('signed-in staff shortcuts and independent score/ranking recovery remain ac
   await expect(page.locator('.home-tools-directory a[href="/beatmaps/upload"]')).toHaveCount(0);
   await expect(page.locator('.home-ranking-preview').getByRole('alert')).toBeVisible();
   await expect(page.locator('.home-recent-scores').getByRole('alert')).toBeVisible();
-  const mapRequests = state.requests['/beatmaps'];
+  const mapRequests = state.requests['/beatmapsets'];
   state.leaderFailure = false;
   await page
     .locator('.home-ranking-preview')
@@ -777,7 +974,7 @@ test('signed-in staff shortcuts and independent score/ranking recovery remain ac
     .getByRole('button', { name: 'Try again', exact: true })
     .click();
   await expect(page.locator('.home-score-list > li')).toHaveCount(3);
-  expect(state.requests['/beatmaps']).toBe(mapRequests);
+  expect(state.requests['/beatmapsets']).toBe(mapRequests);
   await stableLayout(page);
 });
 

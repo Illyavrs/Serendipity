@@ -27,7 +27,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         body: JSON.stringify({ ...Object.fromEntries(data), ...(register ? { locale } : {}) }),
       });
       await refresh();
-      router.push(register ? '/connect' : `/players/${result.user.id}`);
+      router.push(register ? '/connect' : `/users/${result.user.id}`);
       router.refresh();
     } catch {
       setError(t('error'));

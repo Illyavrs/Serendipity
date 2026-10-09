@@ -84,11 +84,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
   if (
     user &&
     [
-      'admin.view',
       'users.moderate',
       'roles.manage',
       'users.sessions.revoke',
       'scores.moderate',
+      'beatmaps.moderate',
+      'beatmaps.rank.review',
       'chat.moderate',
       'audit.read',
       'announcements.manage',
@@ -204,7 +205,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </Sheet>
             {user ? (
               <>
-                <Link href={`/players/${user.id}`} className="user-link" aria-label={t('profile')}>
+                <Link href={`/users/${user.id}`} className="user-link" aria-label={t('profile')}>
                   <Avatar name={user.username} url={user.avatar_url} />
                   <span>{user.username}</span>
                 </Link>
@@ -237,7 +238,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   <nav className="mobile-nav">
                     {navigation()}
                     {user ? (
-                      <Link href={`/players/${user.id}`} onNavigate={() => setNavOpen(false)}>
+                      <Link href={`/users/${user.id}`} onNavigate={() => setNavOpen(false)}>
                         {t('profile')}
                       </Link>
                     ) : (

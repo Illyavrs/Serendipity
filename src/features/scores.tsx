@@ -5,6 +5,7 @@ import { ArrowUpRight, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/common';
+import { ScoreOrigin } from '@/components/score-origin';
 import type { Score, ScoreBoardOrder } from '@/lib/types';
 import { scoreMods, scoreVerificationKey } from '@/lib/score-display';
 import './score-presentation.css';
@@ -98,7 +99,7 @@ export function ScoreTable({
                   {leaderboard && (
                     <Link
                       className="player-cell score-record-player"
-                      href={`/players/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
+                      href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
                     >
                       <span aria-hidden="true" className="contents">
                         <Avatar name={score.username} />
@@ -160,7 +161,10 @@ export function ScoreTable({
                   </>
                 )}
                 <td className="score-record-mods" title={modText}>
-                  <span className="score-mod-labels">{modText}</span>
+                  <span className="score-mod-summary">
+                    <ScoreOrigin client={score.client} />
+                    <span className="score-mod-labels">{modText}</span>
+                  </span>
                 </td>
                 <td className="score-record-number">
                   {profileBest

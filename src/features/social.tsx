@@ -138,7 +138,7 @@ export function RelationshipList() {
             <ul>
               {data[kind].map((r) => (
                 <li className="relationship-row" key={r.target_id}>
-                  <Link className="player-cell" href={`/players/${r.target_id}`}>
+                  <Link className="player-cell" href={`/users/${r.target_id}`}>
                     <Avatar name={r.target.username} url={r.target.avatar_url} />
                     <span>
                       {r.target.username}

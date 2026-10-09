@@ -45,10 +45,19 @@ export type DiscoverySet = {
 };
 
 const modes = ['osu!', 'taiko', 'catch', 'mania'] as const;
-const statuses = ['ranked', 'loved', 'pending', 'unranked'] as const;
+const statuses = ['ranked', 'loved', 'pending', 'wip', 'graveyard', 'unranked'] as const;
 const sources = ['official', 'local'] as const;
 const sorts = ['recent', 'title', 'stars', 'length'] as const;
-const filterKeys = ['q', 'mode', 'status', 'source', 'sort', 'uploaded_by', 'page'] as const;
+const filterKeys = [
+  'q',
+  'mode',
+  'status',
+  'source',
+  'sort',
+  'uploaded_by',
+  'uploaded_only',
+  'page',
+] as const;
 const returnLimit = 2048;
 
 export function safeCatalogueReturn(value: string | null) {
@@ -473,7 +482,10 @@ export function MapDiscoveryPage() {
   const params = useSearchParams();
   // Existing profile/uploader links continue to open the server catalogue.
   const server =
-    params.get('catalogue') === 'server' || params.has('uploaded_by') || params.has('source');
+    params.get('catalogue') === 'server' ||
+    params.has('uploaded_by') ||
+    params.has('source') ||
+    params.get('uploaded_only') === 'true';
   return server ? <ServerMapDiscoveryPage /> : <OfficialMapDiscoveryPage />;
 }
 
@@ -497,6 +509,9 @@ function ServerMapDiscoveryPage() {
     : 'recent';
   const page = positiveInteger(params.get('page')) ?? 1;
   const uploader = positiveInteger(params.get('uploaded_by'));
+  // Only the explicit public filter enables this scope; false and unknown
+  // values do not accidentally restrict the stored catalogue.
+  const uploadedOnly = params.get('uploaded_only') === 'true';
   const view = params.get('view') === 'list' ? 'list' : 'grid';
   const returnParams = new URLSearchParams(params);
   returnParams.set('catalogue', 'server');
@@ -507,6 +522,7 @@ function ServerMapDiscoveryPage() {
   if (status !== 'all') query.set('status', status);
   if (source !== 'all') query.set('source', source);
   if (uploader) query.set('uploaded_by', String(uploader));
+  if (uploadedOnly) query.set('uploaded_only', 'true');
   const { data, error, loading, retry } = usePublicData<Page<DiscoverySet>>(
     `/beatmapsets?${query}`,
   );
@@ -516,13 +532,23 @@ function ServerMapDiscoveryPage() {
     if (resetPage) next.delete('page');
     if (value === null || value === '' || value === 'all') next.delete(key);
     else next.set(key, value);
-    window.history.pushState(null, '', `${window.location.pathname}${next.size ? `?${next}` : ''}`);
+    // Choosing a broader source explicitly leaves the community-upload scope.
+    if (key === 'source' && value !== 'local') next.delete('uploaded_only');
+    window.history.pushState(
+      null,
+      '',
+      `${window.location.pathname}${next.size ? `?${next}` : ''}${window.location.hash}`,
+    );
   }
   function reset() {
     const next = new URLSearchParams(window.location.search);
     next.set('catalogue', 'server');
     filterKeys.forEach((key) => next.delete(key));
-    window.history.pushState(null, '', `${window.location.pathname}${next.size ? `?${next}` : ''}`);
+    window.history.pushState(
+      null,
+      '',
+      `${window.location.pathname}${next.size ? `?${next}` : ''}${window.location.hash}`,
+    );
   }
   const filtered =
     !!search ||
@@ -530,6 +556,7 @@ function ServerMapDiscoveryPage() {
     status !== 'all' ||
     source !== 'all' ||
     !!uploader ||
+    uploadedOnly ||
     sort !== 'recent' ||
     page !== 1;
   const outOfRange = data && page > Math.max(1, Math.ceil(data.total / data.page_size));
@@ -605,6 +632,15 @@ function ServerMapDiscoveryPage() {
               />
             </div>
           </div>
+          {uploadedOnly && (
+            <div className="discovery-uploader">
+              <span>{t('uploadedOnlyFilter')}</span>
+              <Button variant="ghost" type="button" onClick={() => update('uploaded_only', null)}>
+                <X aria-hidden="true" />
+                {t('clearUploadedOnly')}
+              </Button>
+            </div>
+          )}
           {uploader && (
             <div className="discovery-uploader">
               <span>{t('uploaderFilter', { id: uploader })}</span>

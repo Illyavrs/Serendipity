@@ -5,6 +5,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const config: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.resolve(process.cwd(), '../..'),
+  async redirects() {
+    return [{ source: '/players/:id', destination: '/users/:id', permanent: true }];
+  },
   async rewrites() {
     const origin = process.env.API_INTERNAL_URL || 'http://127.0.0.1:8080';
     return [

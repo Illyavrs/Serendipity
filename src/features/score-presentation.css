@@ -176,6 +176,12 @@
   overflow-wrap: anywhere;
 }
 
+.score-mod-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .score-record-table .score-table .score-record-number,
 .score-record-table .score-table .score-weight,
 .score-record-table .score-table .score-weighted-pp {
@@ -667,7 +673,7 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: 38px minmax(160px, 1fr) 96px 218px 132px 44px;
+  grid-template-columns: 38px minmax(160px, 1fr) 112px 218px 132px 44px;
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -680,7 +686,7 @@
 }
 
 .profile-page .profile-best-score-list .profile-score-row {
-  grid-template-columns: 70px minmax(160px, 1fr) 96px 218px 132px 44px;
+  grid-template-columns: 70px minmax(160px, 1fr) 112px 218px 132px 44px;
 }
 
 .profile-page .profile-score-result {
@@ -876,10 +882,21 @@ html.light .profile-page .profile-score-artwork img {
 }
 
 .profile-page .profile-score-mods {
+  align-items: center;
   justify-content: flex-end;
   gap: 3px;
   max-height: 42px;
   overflow: hidden;
+}
+
+.profile-page .profile-score-mods > .score-origin {
+  padding: 0;
+  background: transparent;
+  color: var(--secondary-text);
+}
+
+.profile-page .profile-score-mods > .score-origin[data-client='lazer'] {
+  color: var(--readable-accent);
 }
 
 .profile-page .profile-score-mods > .profile-score-mod {

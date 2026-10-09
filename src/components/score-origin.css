@@ -1,0 +1,21 @@
+.score-origin {
+  display: inline-flex;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  vertical-align: -2px;
+  color: var(--secondary-text);
+}
+
+.score-origin[data-client='lazer'] {
+  color: var(--readable-accent);
+}
+
+.score-origin > svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.75;
+}

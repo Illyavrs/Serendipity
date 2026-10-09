@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { scoreMods, scoreVerificationKey } from '@/lib/score-display';
 import type { Score } from '@/lib/types';
+import { ScoreOrigin } from './score-origin';
 
 const modIcons: Record<string, LucideIcon> = {
   NF: Shield,
@@ -223,6 +224,7 @@ export function ProfileScoreList({ scores, best }: { scores: Score[]; best: bool
                 title={modText}
                 aria-label={`${c('mods')}: ${modText}`}
               >
+                <ScoreOrigin client={score.client} />
                 {(mods.labels.length
                   ? mods.labels.slice(0, 3)
                   : !mods.unknownBits

@@ -14,9 +14,9 @@ async function guest(
   locale: 'en' | 'zh-TW' | 'ja',
   mode: 'dark' | 'light' = 'dark',
 ) {
-  await page.context().addCookies([
-    { name: 'illya_locale', value: locale, url: baseURL ?? 'http://localhost:3000' },
-  ]);
+  await page
+    .context()
+    .addCookies([{ name: 'illya_locale', value: locale, url: baseURL ?? 'http://localhost:3000' }]);
   await page.addInitScript(
     ({ locale, mode }) => {
       localStorage.setItem('theme', mode);
@@ -300,7 +300,7 @@ test('disposable website registration logs out and signs back in by its full ema
   await expect(page).toHaveURL(`${origin}/connect`);
   await expect(page.getByRole('link', { name: 'My profile', exact: true })).toHaveAttribute(
     'href',
-    `/players/${playerId}`,
+    `/users/${playerId}`,
   );
 
   const logout = page.waitForResponse(
@@ -328,7 +328,7 @@ test('disposable website registration logs out and signs back in by its full ema
   expect(signedIn.request().postDataJSON().password === password).toBe(true);
   expect(signedIn.ok()).toBe(true);
   expect((await signedIn.json()).user.id).toBe(playerId);
-  await expect(page).toHaveURL(`${origin}/players/${playerId}`);
+  await expect(page).toHaveURL(`${origin}/users/${playerId}`);
   await expect(page.locator('.profile-identity h1')).toHaveText(username);
   const me = await page.request.get(`${origin}/api/v1/me`);
   expect(me.ok()).toBe(true);

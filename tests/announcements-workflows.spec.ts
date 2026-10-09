@@ -318,7 +318,7 @@ test('published public rows paginate and the homepage excludes injected private 
   await expect(page.locator('.announcement-rows > li')).toHaveCount(12);
   await expect(page.locator('.announcement-author').first()).toHaveAttribute(
     'href',
-    `/players/${author.id}`,
+    `/users/${author.id}`,
   );
   await expect(page.locator('.announcement-rows')).not.toContainText(copy['zh-TW'].draft);
   await capture(page, 'news-1440-dark-zh-TW-populated');
@@ -723,7 +723,7 @@ for (const change of ['lost grant', 'changed account', 'logout'] as const) {
     } else if (change === 'changed account') {
       state.viewer = author.id + 1;
       await refreshViewer(page, state);
-      await expect(page.locator('.user-link')).toHaveAttribute('href', `/players/${author.id + 1}`);
+      await expect(page.locator('.user-link')).toHaveAttribute('href', `/users/${author.id + 1}`);
       await page.goForward();
       await page.goForward();
     } else {

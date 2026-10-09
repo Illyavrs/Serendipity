@@ -1,5 +1,4 @@
 'use client';
-import Image from 'next/image';
 import { useFormatter, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import {
@@ -16,13 +15,17 @@ import { Button } from '@/components/ui/button';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { useSession } from '@/components/providers';
 import { Avatar, Loading, LoadError } from '@/components/common';
+import { ScoreOrigin } from '@/components/score-origin';
 import { fetcher, hasPermission } from '@/lib/api';
 import { scoreMods } from '@/lib/score-display';
-import type { Status, Beatmap, Leader, Score, Page } from '@/lib/types';
+import type { Status, Leader, Score, Page } from '@/lib/types';
 import { MapRows } from './beatmaps';
 import { AnnouncementsPreview } from './announcements';
+import type { DiscoverySet } from './map-discovery';
+import { HomeCharacter } from './home-character';
 
 const modes = ['osu!', 'taiko', 'catch', 'mania'];
+const localCatalogueHref = '/beatmaps?catalogue=server&source=local&uploaded_only=true&sort=recent';
 
 export function HomePage() {
   const t = useTranslations('home');
@@ -34,13 +37,31 @@ export function HomePage() {
   const f = useFormatter();
   const { user } = useSession();
   const status = useSWR<Status>('/status', fetcher, { refreshInterval: 30000 });
-  const maps = useSWR<Page<Beatmap>>('/beatmaps?page_size=3', fetcher);
+  const maps = useSWR<Page<DiscoverySet>>(
+    '/beatmapsets?source=local&uploaded_only=true&sort=recent&page_size=3',
+    fetcher,
+  );
+  // The API groups active local uploads by set and returns newest uploads first.
+  // Keep imported official maps out even if an unexpected response mixes sources.
+  const localMaps =
+    maps.data?.items
+      .filter(
+        (set) =>
+          set.representative.source === 'local' &&
+          set.representative.official_id === null &&
+          set.representative.official_set_id == null &&
+          Number.isSafeInteger(set.representative.uploaded_by) &&
+          set.representative.uploaded_by! > 0 &&
+          set.native_set_id >= 2_000_000_000,
+      )
+      .slice(0, 3)
+      .map((set) => set.representative) ?? [];
   const leaders = useSWR<Page<Leader>>('/leaderboard?mode=0&variant=vanilla&page_size=5', fetcher);
   // Exclude private pending/rejected submissions even for owners and moderators.
   const scores = useSWR<Page<Score>>('/scores?verification=verified&page_size=4', fetcher);
   const publicScores =
     scores.data?.items.filter((score) => score.verification === 'verified') ?? [];
-  const profileHref = user ? `/players/${user.id}` : '/register';
+  const profileHref = user ? `/users/${user.id}` : '/register';
   const capabilities = [
     { title: 'mapsTitle', href: '/beatmaps', icon: Disc3 },
     { title: 'playTitle', href: '/rankings', icon: Trophy },
@@ -80,19 +101,7 @@ export function HomePage() {
             </div>
           </div>
         </div>
-        <div className="home-hero-character" aria-hidden="true">
-          <Image
-            src="/images/home-character.png"
-            width={700}
-            height={1251}
-            alt=""
-            className="home-character-image"
-            sizes="(max-width: 360px) 270px, (max-width: 600px) 300px, (max-width: 800px) 360px, (max-width: 1000px) 400px, 480px"
-            loading="eager"
-            fetchPriority="high"
-            unoptimized
-          />
-        </div>
+        <HomeCharacter />
       </section>
       <nav className="home-capabilities" aria-label={t('features')}>
         {capabilities.map((capability) => (
@@ -155,7 +164,7 @@ export function HomePage() {
                 </h2>
                 <p>{t('exploreDescription')}</p>
               </div>
-              <Link href="/beatmaps" className="text-link">
+              <Link href={localCatalogueHref} className="text-link">
                 {c('viewAll')}
                 <ArrowRight aria-hidden="true" />
               </Link>
@@ -165,13 +174,13 @@ export function HomePage() {
                 <Loading />
               ) : maps.error ? (
                 <LoadError retry={() => maps.mutate()} />
-              ) : maps.data?.items.length ? (
-                <MapRows items={maps.data.items} compact />
+              ) : localMaps.length ? (
+                <MapRows items={localMaps} compact />
               ) : (
                 <div className="home-empty">
                   <h3>{t('new')}</h3>
                   <p>{t('emptyMapsDescription')}</p>
-                  <Link href="/beatmaps" className="text-link">
+                  <Link href={localCatalogueHref} className="text-link">
                     {t('maps')}
                     <ArrowRight aria-hidden="true" />
                   </Link>
@@ -208,7 +217,7 @@ export function HomePage() {
                           </Link>
                           <div className="home-score-meta">
                             <Link
-                              href={`/players/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
+                              href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
                             >
                               {score.username}
                             </Link>
@@ -216,9 +225,12 @@ export function HomePage() {
                               {modes[score.mode]} ·{' '}
                               {c(score.score_variant === 'relax' ? 'relax' : 'vanilla')}
                             </span>
-                            <span>
-                              {mods.labels.join(' ') || 'NM'}
-                              {mods.unknownBits ? ` + ${mods.unknownBits}` : ''}
+                            <span className="home-score-mods">
+                              <ScoreOrigin client={score.client} />
+                              <span>
+                                {mods.labels.join(' ') || 'NM'}
+                                {mods.unknownBits ? ` + ${mods.unknownBits}` : ''}
+                              </span>
                             </span>
                             {!score.passed && <span>{t('failedScore')}</span>}
                           </div>
@@ -337,7 +349,7 @@ export function HomePage() {
                       <span className="home-leader-rank">#{f.number(player.rank)}</span>
                       <Link
                         className="home-leader-player"
-                        href={`/players/${player.id}?mode=0&variant=vanilla`}
+                        href={`/users/${player.id}?mode=0&variant=vanilla`}
                       >
                         <Avatar name={player.username} url={player.avatar_url} />
                         <span>

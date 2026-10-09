@@ -166,7 +166,7 @@ export function RankingsPage() {
                     <tr key={player.id} data-rank={player.rank <= 3 ? player.rank : undefined}>
                       <td className="rank-cell">#{f.number(player.rank)}</td>
                       <td>
-                        <Link href={`/players/${player.id}?${selection}`} className="player-cell">
+                        <Link href={`/users/${player.id}?${selection}`} className="player-cell">
                           <Avatar name={player.username} url={player.avatar_url} />
                           {player.username}
                         </Link>

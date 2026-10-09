@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 // Synthetic browser fixtures only; no account or community mutation is sent.
@@ -116,6 +116,9 @@ async function fixture(page: Page, theme: 'dark' | 'light') {
 
 async function capture(page: Page, name: string, state: string, pausedMotionMs?: number) {
   if (process.env.ILLYA_WEB_SMOKE_CAPTURE !== '1') return;
+  const nonce = process.env.ILLYA_HOME_REVIEW_NONCE;
+  if (!nonce || !/^[a-z0-9-]{8,80}$/i.test(nonce))
+    throw new Error('Set a fresh ILLYA_HOME_REVIEW_NONCE before capturing the homepage review.');
   await page.evaluate(() => document.fonts.ready);
   await expect(page.locator('.navigation-progress')).toHaveAttribute('data-pending', 'false');
   await expect
@@ -135,7 +138,9 @@ async function capture(page: Page, name: string, state: string, pausedMotionMs?:
   // Resolve from this test's directory, independent of the command's working directory.
   const review = path.resolve(path.dirname(__filename), '../../../.impeccable/review');
   mkdirSync(review, { recursive: true });
-  const output = path.join(review, name);
+  const output = path.join(review, `home-character-${nonce}-${name}`);
+  if (existsSync(`${output}.png`) || existsSync(`${output}.json`))
+    throw new Error('Homepage capture already exists; use a fresh review nonce.');
   const screenshot = await page.screenshot({
     path: `${output}.png`,
     fullPage: true,
@@ -145,6 +150,7 @@ async function capture(page: Page, name: string, state: string, pausedMotionMs?:
   const sourceFiles = [
     'src/components/ui/tabs.tsx',
     'src/features/home.tsx',
+    'src/features/home-character.tsx',
     'src/features/home.css',
     'src/features/profile.css',
     'src/features/players.tsx',
@@ -190,6 +196,96 @@ async function capture(page: Page, name: string, state: string, pausedMotionMs?:
 }
 
 for (const theme of ['dark', 'light'] as const) {
+  test(`character follows a hovering pointer and returns without moving the layout in ${theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await fixture(page, theme);
+    await page.goto('/');
+    await page.evaluate(() => document.fonts.ready);
+    const portrait = page.locator('.home-hero-character');
+    const image = page.locator('.home-character-image');
+    await expect(portrait).toHaveAttribute('data-motion-ready', 'true');
+    await page.mouse.move(0, 0);
+    const resting = await image.evaluate((node) => getComputedStyle(node).transform);
+    const layout = await page.locator('.home-introduction').boundingBox();
+    const box = (await portrait.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.85, box.y + box.height * 0.35);
+    await expect(portrait).toHaveAttribute('data-following', 'true');
+    await expect
+      .poll(() => image.evaluate((node) => getComputedStyle(node).transform))
+      .not.toBe(resting);
+    const values = await portrait.evaluate((node) => ({
+      x: parseFloat((node as HTMLElement).style.getPropertyValue('--character-x')),
+      y: parseFloat((node as HTMLElement).style.getPropertyValue('--character-y')),
+      lean: parseFloat((node as HTMLElement).style.getPropertyValue('--character-lean')),
+    }));
+    expect(values.x).toBeGreaterThan(0);
+    expect(Math.abs(values.x)).toBeLessThanOrEqual(4);
+    expect(Math.abs(values.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(values.lean)).toBeLessThanOrEqual(0.9);
+    expect(await page.locator('.home-introduction').boundingBox()).toEqual(layout);
+    expect(await portrait.boundingBox()).toEqual(box);
+    expect(await portrait.locator('a, button, input, [tabindex]').count()).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await capture(
+      page,
+      `pointer-response-1280-${theme}`,
+      `Synthetic guest homepage in ${theme}; fine pointer hovering the supplied portrait; bounded face-centered response with original composition and no layout movement.`,
+    );
+    await page.mouse.move(0, 0);
+    await expect(portrait).toHaveAttribute('data-following', 'false');
+    await expect
+      .poll(() => image.evaluate((node) => getComputedStyle(node).transform))
+      .toBe(resting);
+    // A live accessibility preference change cancels the response immediately.
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.4);
+    await expect(portrait).toHaveAttribute('data-following', 'true');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(portrait).toHaveAttribute('data-motion-ready', 'false');
+    await expect(portrait).toHaveAttribute('data-following', 'false');
+    await expect(image).toHaveCSS('transition-duration', '0s');
+    await expect(image).toHaveCSS('transform', resting);
+  });
+
+  test(`character stays static for reduced motion and touch pointer events in ${theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await fixture(page, theme);
+    await page.goto('/');
+    const portrait = page.locator('.home-hero-character');
+    const image = page.locator('.home-character-image');
+    const box = (await portrait.boundingBox())!;
+    const resting = await image.evaluate((node) => getComputedStyle(node).transform);
+    await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.4);
+    await expect(portrait).toHaveAttribute('data-following', 'false');
+    await expect(image).toHaveCSS('transform', resting);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(portrait).toHaveAttribute('data-motion-ready', 'true');
+    await portrait.dispatchEvent('pointermove', {
+      pointerType: 'touch',
+      clientX: box.x + box.width * 0.1,
+      clientY: box.y + box.height * 0.2,
+    });
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    await expect(portrait).toHaveAttribute('data-following', 'false');
+    await expect(image).toHaveCSS('transform', resting);
+    await expect(page.locator('.home-primary-actions a').first()).toHaveAttribute(
+      'href',
+      '/register',
+    );
+  });
+
   for (const width of [1440, 1280, 1000, 768, 390, 320]) {
     test(`hero layering and readable wordmark at ${width}px ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 1000 });
@@ -455,7 +551,7 @@ for (const theme of ['dark', 'light'] as const) {
 
   test(`profile mode has one accent underline in ${theme}`, async ({ page }) => {
     await fixture(page, theme);
-    await page.goto(`/players/${playerId}`);
+    await page.goto(`/users/${playerId}`);
     const rail = page.locator('.profile-mode-rail');
     const active = rail.getByRole('button', { name: 'osu!', exact: true });
     await expect(active).toHaveAttribute('aria-pressed', 'true');
@@ -480,3 +576,28 @@ for (const theme of ['dark', 'light'] as const) {
     );
   });
 }
+
+test.describe('homepage touch device', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  for (const theme of ['dark', 'light'] as const) {
+    test(`coarse input keeps the portrait still and primary actions usable in ${theme}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await fixture(page, theme);
+      await page.goto('/');
+      expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+      const portrait = page.locator('.home-hero-character');
+      const image = page.locator('.home-character-image');
+      await expect(portrait).toHaveAttribute('data-motion-ready', 'false');
+      const resting = await image.evaluate((node) => getComputedStyle(node).transform);
+      const box = (await portrait.boundingBox())!;
+      await page.touchscreen.tap(box.x + box.width * 0.7, box.y + box.height * 0.4);
+      await expect(portrait).toHaveAttribute('data-following', 'false');
+      await expect(image).toHaveCSS('transform', resting);
+      await expect(image).toHaveCSS('transition-duration', '0s');
+      await page.locator('.home-primary-actions a').first().tap();
+      await expect(page).toHaveURL(/\/register$/);
+    });
+  }
+});

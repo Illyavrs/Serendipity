@@ -27,6 +27,7 @@ function result(index: number, mode = 0, variant = 'vanilla') {
     max_combo: 199,
     mods: variant === 'relax' ? 128 : 536870912,
     api_mods: null,
+    client: ['lazer', 'stable', 'api'][index - 1],
     pp,
     pp_eligible: true,
     passed: true,
@@ -79,6 +80,7 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
     bestCount: 3,
     failBest: false,
     denyRecent: false,
+    clientOverrides: {} as Record<number, string | null | undefined>,
     queries: [] as { path: string; mode: string | null; variant: string | null; page: number }[],
   };
   await page.route('**/api/v1/**', async (route) => {
@@ -136,7 +138,12 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
           : [publicRecent];
       return route.fulfill({
         json: {
-          items: items.slice((pageNumber - 1) * 24, pageNumber * 24),
+          items: items.slice((pageNumber - 1) * 24, pageNumber * 24).map((score) => ({
+            ...score,
+            ...(Object.hasOwn(state.clientOverrides, score.id)
+              ? { client: state.clientOverrides[score.id] }
+              : {}),
+          })),
           total: items.length,
           page: pageNumber,
           page_size: 24,
@@ -175,7 +182,7 @@ test('best displays supplied pp order, weights, original scores and replay links
 }) => {
   await fixture(page, 'zh-TW');
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto(`/players/${ownerId}`);
+  await page.goto(`/users/${ownerId}`);
   const list = page.locator('.profile-best-score-list');
   await expect(list.locator('li')).toHaveCount(3);
   const first = list.locator('li').first();
@@ -209,7 +216,7 @@ test('mobile light best failure names recovery and retry restores the collection
   const state = await fixture(page, 'en', 'light');
   state.failBest = true;
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`/players/${ownerId}`);
+  await page.goto(`/users/${ownerId}`);
   const panel = page.locator('#profile-scores');
   await expect(panel.getByRole('alert')).toBeVisible();
   await expect(
@@ -228,6 +235,45 @@ test('mobile light best failure names recovery and retry restores the collection
     .toBe(true);
 });
 
+test('native score sources remain distinct beside identical mods in best and recent rows', async ({
+  page,
+}) => {
+  await fixture(page, 'en');
+  await page.goto(`/users/${ownerId}`);
+  const list = page.locator('.profile-best-score-list');
+  const labels = ['Played in osu!lazer', 'Played in osu!stable', 'Submitted through API'];
+  for (const [index, client] of ['lazer', 'stable', 'api'].entries()) {
+    const mods = list.locator('li').nth(index).locator('.profile-score-mods');
+    const origin = mods.getByRole('img', { name: labels[index], exact: true });
+    await expect(origin).toHaveAttribute('data-client', client);
+    await expect(origin).toHaveAttribute('title', labels[index]);
+    await expect(mods).toContainText('SV2');
+    await expect(origin).not.toHaveAttribute('tabindex');
+    const size = await origin.boundingBox();
+    expect(size?.width).toBe(16);
+    expect(size?.height).toBe(16);
+  }
+  await page.getByRole('button', { name: 'Recent scores', exact: true }).click();
+  const recent = page.locator('.profile-score-list');
+  await expect(recent.locator('[data-client="stable"]')).toHaveCount(1);
+  await expect(recent.locator('[data-client="lazer"]')).toHaveCount(1);
+});
+
+test('missing or unknown sources do not infer lazer or stable from score scales and mods', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  state.clientOverrides[989201] = undefined;
+  state.clientOverrides[989202] = null;
+  state.clientOverrides[989203] = 'future-client';
+  await page.goto(`/users/${ownerId}`);
+  const list = page.locator('.profile-best-score-list');
+  await expect(list.locator('li')).toHaveCount(3);
+  await expect(list.locator('.score-origin')).toHaveCount(0);
+  await expect(list.locator('.profile-score-mods').first()).toContainText('SV2');
+  await expect(list.locator('.pp-value').first()).toContainText('490.00');
+});
+
 for (const locale of ['zh-TW', 'en', 'ja']) {
   for (const theme of ['dark', 'light']) {
     test(`compact score rows preserve hierarchy and keyboard actions in ${locale} ${theme}`, async ({
@@ -236,7 +282,7 @@ for (const locale of ['zh-TW', 'en', 'ja']) {
       const state = await fixture(page, locale, theme);
       state.bestCount = 12;
       await page.setViewportSize({ width: 1254, height: 714 });
-      await page.goto(`/players/${ownerId}`);
+      await page.goto(`/users/${ownerId}`);
       const list = page.locator('.profile-best-score-list');
       await expect(list.locator('li')).toHaveCount(12);
       const first = list.locator('li').first();
@@ -326,7 +372,7 @@ test('Japanese empty best differs from owner recent pending history', async ({ p
   const state = await fixture(page, 'ja');
   state.bestCount = 0;
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`/players/${ownerId}`);
+  await page.goto(`/users/${ownerId}`);
   await expect(
     page.getByText('対象のベストスコアはまだありません。', { exact: true }),
   ).toBeVisible();
@@ -342,7 +388,7 @@ test('rapid collection and mode changes preserve URL selection and browser histo
 }) => {
   const state = await fixture(page);
   state.bestCount = 26;
-  await page.goto(`/players/${ownerId}`);
+  await page.goto(`/users/${ownerId}`);
   await expect(page.locator('.profile-best-score-list li')).toHaveCount(24);
   await page.getByRole('button', { name: 'Recent scores', exact: true }).click();
   await page.getByRole('button', { name: 'taiko', exact: true }).click();
@@ -367,7 +413,7 @@ test('rapid collection and mode changes preserve URL selection and browser histo
 test('page two retains global server position and decayed contribution', async ({ page }) => {
   const state = await fixture(page);
   state.bestCount = 26;
-  await page.goto(`/players/${ownerId}?mode=0&variant=vanilla&page=2`);
+  await page.goto(`/users/${ownerId}?mode=0&variant=vanilla&page=2`);
   const first = page.locator('.profile-best-score-list li').first();
   await expect(first).toContainText('Best performance fixture 25');
   await expect(first.locator('.profile-score-position')).toHaveText('25');
@@ -380,7 +426,7 @@ test('page two retains global server position and decayed contribution', async (
 
 test('logout removes private recent rows when returning to the same profile', async ({ page }) => {
   await fixture(page);
-  const path = `/players/${ownerId}?score_view=recent`;
+  const path = `/users/${ownerId}?score_view=recent`;
   await page.goto(path);
   await expect(page.locator('.score-table')).toContainText('Private pending fixture');
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
@@ -392,7 +438,7 @@ test('logout removes private recent rows when returning to the same profile', as
 
 test('an empty out-of-range best page returns to its current last page', async ({ page }) => {
   const state = await fixture(page);
-  await page.goto(`/players/${ownerId}?mode=0&variant=vanilla&page=999999`);
+  await page.goto(`/users/${ownerId}?mode=0&variant=vanilla&page=999999`);
   await expect(page.locator('.profile-best-score-list li')).toHaveCount(3);
   await expect.poll(() => Number(new URL(page.url()).searchParams.get('page') ?? 1)).toBe(1);
   expect(state.queries.some((query) => query.page === 999999)).toBe(true);
@@ -403,7 +449,7 @@ test('private recent access failure purges cached rows and recovers only after r
   page,
 }) => {
   const state = await fixture(page);
-  await page.goto(`/players/${ownerId}?score_view=recent`);
+  await page.goto(`/users/${ownerId}?score_view=recent`);
   await expect(page.locator('.score-table')).toContainText('Private pending fixture');
   state.denyRecent = true;
   await page.getByRole('button', { name: 'Best performances', exact: true }).click();

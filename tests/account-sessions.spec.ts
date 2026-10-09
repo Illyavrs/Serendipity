@@ -119,7 +119,7 @@ async function fixture(page: Page, locale = 'zh-TW') {
 
 const sessionSection = (page: Page) =>
   page.locator('section[aria-labelledby="account-sessions-heading"]');
-const fixtureProfile = (page: Page) => page.getByRole('banner').locator('a[href="/players/98823"]');
+const fixtureProfile = (page: Page) => page.getByRole('banner').locator('a[href="/users/98823"]');
 
 async function capture(page: Page, name: string) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

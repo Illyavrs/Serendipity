@@ -529,7 +529,7 @@ function AccountChat({ user }: { user: User | null }) {
             <div className="chat-heading">
               {conversation ? (
                 <Link
-                  href={`/players/${conversation.peer.id}`}
+                  href={`/users/${conversation.peer.id}`}
                   aria-label={t('viewProfile', { name: conversation.peer.username })}
                 >
                   <Avatar name={conversation.peer.username} url={conversation.peer.avatar_url} />
@@ -538,7 +538,7 @@ function AccountChat({ user }: { user: User | null }) {
               <div>
                 <h2>
                   {conversation ? (
-                    <Link href={`/players/${conversation.peer.id}`}>
+                    <Link href={`/users/${conversation.peer.id}`}>
                       {conversation.peer.username}
                     </Link>
                   ) : (
@@ -625,14 +625,14 @@ function AccountChat({ user }: { user: User | null }) {
                     data-message-id={message.id}
                   >
                     <Link
-                      href={`/players/${message.user_id}`}
+                      href={`/users/${message.user_id}`}
                       aria-label={t('viewProfile', { name: message.username })}
                     >
                       <Avatar name={message.username} url={message.avatar_url} />
                     </Link>
                     <div>
                       <header className="message-head">
-                        <Link href={`/players/${message.user_id}`}>{message.username}</Link>
+                        <Link href={`/users/${message.user_id}`}>{message.username}</Link>
                         <time
                           dateTime={message.created_at}
                           title={f.dateTime(new Date(message.created_at), {

@@ -120,7 +120,7 @@ test('registration, persistent locale/theme/profile, chat draft and server RBAC'
   const me = await page.request.get('/api/v1/me');
   expect(me.ok()).toBeTruthy();
   const user = await me.json();
-  await page.goto(`/players/${user.id}`);
+  await page.goto(`/users/${user.id}`);
   await expect(page.locator('.profile-bio')).toHaveText(
     'E2E test profile — original local fixture',
   );
@@ -133,7 +133,7 @@ test('registration, persistent locale/theme/profile, chat draft and server RBAC'
   });
   expect(peerRegistration.ok()).toBeTruthy();
   const peer = await peerRegistration.json();
-  await page.goto(`/players/${peer.user.id}`);
+  await page.goto(`/users/${peer.user.id}`);
   await page.getByRole('button', { name: 'フレンドに追加', exact: true }).click();
   await expect(page.getByRole('button', { name: 'フレンドから削除', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'ブロック', exact: true }).click();
@@ -161,7 +161,7 @@ test('operator can inspect permissions and audit without revealing secrets', asy
   await page.getByLabel('使用者名稱或電子郵件', { exact: true }).fill(env.BOOTSTRAP_ADMIN_USERNAME);
   await page.getByLabel('密碼', { exact: true }).fill(env.BOOTSTRAP_ADMIN_PASSWORD);
   await page.getByRole('button', { name: '登入', exact: true }).click();
-  await expect(page).toHaveURL(/\/players\/\d+$/);
+  await expect(page).toHaveURL(/\/users\/\d+$/);
   await page.goto('/admin');
   await page.getByRole('button', { name: '角色與權限', exact: true }).click();
   await expect(page.locator('.role-row').filter({ hasText: 'administrator' })).toBeVisible();

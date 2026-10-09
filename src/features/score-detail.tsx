@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowUpRight, Download, LoaderCircle, Upload } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ScoreOrigin } from '@/components/score-origin';
 import { Loading, LoadError, Avatar } from '@/components/common';
 import { useSession } from '@/components/providers';
 import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
@@ -18,7 +19,6 @@ type ScoreDetail = Score & {
   user: User;
   beatmap: Beatmap;
   hit_counts: Record<string, number>;
-  client: string;
   accuracy_source: string;
   replay_url: string | null;
 };
@@ -343,7 +343,7 @@ export function ScorePage({ id }: { id: number }) {
   );
   return (
     <div className="page-container score-detail-page">
-      <Link className="back-link" href={`/players/${score.user_id}?${selection}`}>
+      <Link className="back-link" href={`/users/${score.user_id}?${selection}`}>
         <ArrowLeft aria-hidden="true" />
         {c('back')}
       </Link>
@@ -362,7 +362,7 @@ export function ScorePage({ id }: { id: number }) {
               <strong>{score.version}</strong>
             </p>
             <div className="score-detail-player-line">
-              <Link href={`/players/${score.user_id}?${selection}`} className="player-cell">
+              <Link href={`/users/${score.user_id}?${selection}`} className="player-cell">
                 <Avatar name={score.username} url={score.user.avatar_url} />
                 <span>{score.username}</span>
               </Link>
@@ -403,13 +403,19 @@ export function ScorePage({ id }: { id: number }) {
             [p('scoreRaw'), f.number(score.score)],
             [c('accuracy'), `${score.accuracy.toFixed(2)}%`],
             [c('combo'), `${score.max_combo}x`],
-            [c('mods'), modText],
           ].map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>
               <dd>{value}</dd>
             </div>
           ))}
+          <div>
+            <dt>{c('mods')}</dt>
+            <dd className="score-mod-summary">
+              <ScoreOrigin client={score.client} />
+              <span>{modText}</span>
+            </dd>
+          </div>
         </dl>
       </section>
       {user && hasPermission(user.permissions, 'scores.moderate') && (

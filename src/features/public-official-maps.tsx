@@ -25,6 +25,7 @@ import { useSession } from '@/components/providers';
 import { ApiError, hasPermission } from '@/lib/api';
 import type { OfficialBeatmapSearch, OfficialBeatmapset } from '@/lib/types';
 import { MapCardPreview } from './map-card-preview';
+import { BeatmapRankRequestAction } from './beatmap-rank-requests';
 import {
   CatalogueSource,
   MapArtwork,
@@ -355,6 +356,7 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
   const t = useTranslations('publicOfficialMaps');
   const c = useTranslations('mapDiscovery');
   const maps = useTranslations('maps');
+  const rankRequests = useTranslations('rankRequests');
   const { user } = useSession();
   const params = useSearchParams();
   const valid =
@@ -427,6 +429,13 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
                     <span>{maps('officialSetPage')}</span>
                   </a>
                 </Button>
+                {user && hasPermission(user.permissions, 'beatmaps.moderate') && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/beatmapsets/${data.official_set_id}`}>
+                      {rankRequests('adminView')}
+                    </Link>
+                  </Button>
+                )}
               </div>
               <p className="hint">
                 {data.download_disabled
@@ -435,6 +444,20 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
               </p>
             </div>
           </header>
+          {['pending', 'graveyard'].includes(data.status) && (
+            <section className="glass content-panel">
+              <BeatmapRankRequestAction
+                target={{ official_set_id: data.official_set_id }}
+                initialDifficulties={data.difficulties.map((difficulty) => ({
+                  native_id: difficulty.official_id,
+                  version: difficulty.version,
+                  mode: difficulty.mode,
+                  stars: difficulty.stars,
+                  status: difficulty.status,
+                }))}
+              />
+            </section>
+          )}
           <section
             className="public-official-difficulties glass"
             aria-labelledby="official-difficulties-title"

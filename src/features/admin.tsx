@@ -1,22 +1,13 @@
 'use client';
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from 'react';
+import { Suspense, useCallback, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import useSWR, { unstable_serialize, useSWRConfig } from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { Dialog } from 'radix-ui';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { LoaderCircle, ShieldCheck, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FieldSelect } from '@/components/ui/field-select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -33,6 +24,8 @@ import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import type { Page, AdminUser, Role, Beatmap, BeatmapAvailability, Audit } from '@/lib/types';
 import { AdminAnnouncements, type AnnouncementNavigationGuard } from './announcements';
 import { AuditDisclosure, ChatModeration, ScoreModeration } from './admin-moderation';
+import { AdminRankRequests } from './beatmap-rank-requests';
+import { LocalBeatmapAdminCatalogue } from './beatmap-admin-view';
 import moderationStyles from './admin-moderation.module.css';
 
 const grants = [
@@ -42,6 +35,8 @@ const grants = [
   'beatmaps.upload',
   'beatmaps.import',
   'beatmaps.moderate',
+  'beatmaps.rank.request',
+  'beatmaps.rank.review',
   'users.moderate',
   'users.sessions.revoke',
   'roles.manage',
@@ -51,56 +46,6 @@ const grants = [
   'announcements.manage',
 ];
 type Section = 'users' | 'roles' | 'beatmaps' | 'scores' | 'chat' | 'audit' | 'announcements';
-const mapStatuses = ['pending', 'ranked', 'loved', 'unranked'] as const;
-const mapModes = ['osu!', 'taiko', 'catch', 'mania'] as const;
-type MapStatus = (typeof mapStatuses)[number];
-type MapFilters = {
-  q: string;
-  mode: string;
-  source: string;
-  status: string;
-  availability: string;
-  page: number;
-};
-function readMapFilters(query: Pick<URLSearchParams, 'get'>): MapFilters {
-  const mode = query.get('mode') ?? '';
-  const source = query.get('source') ?? '';
-  const status = query.get('status') ?? '';
-  const rawPage = query.get('page') ?? '1';
-  const page = /^\d+$/.test(rawPage) ? Number(rawPage) : 1;
-  return {
-    q: (query.get('q') ?? '').trim(),
-    mode: /^[0-3]$/.test(mode) ? mode : 'all',
-    source: ['local', 'official'].includes(source) ? source : 'all',
-    status: mapStatuses.includes(status as MapStatus) ? status : 'all',
-    availability: ['withdrawn', 'all'].includes(query.get('availability') ?? '')
-      ? query.get('availability')!
-      : 'active',
-    page: Number.isSafeInteger(page) && page > 0 && page <= 4294967295 ? page : 1,
-  };
-}
-function mapQuery(query: string, filters: MapFilters) {
-  const next = new URLSearchParams(query);
-  next.set('tab', 'beatmaps');
-  for (const name of ['q', 'mode', 'source', 'status'] as const) {
-    const value = filters[name];
-    if (value && value !== 'all') next.set(name, value);
-    else next.delete(name);
-  }
-  if (filters.availability !== 'active') next.set('availability', filters.availability);
-  else next.delete('availability');
-  if (filters.page > 1) next.set('page', String(filters.page));
-  else next.delete('page');
-  return next;
-}
-function mapListKey(filters: MapFilters) {
-  const query = new URLSearchParams({ page: String(filters.page), page_size: '24' });
-  query.set('availability', filters.availability);
-  for (const name of ['q', 'mode', 'source', 'status'] as const) {
-    if (filters[name] && filters[name] !== 'all') query.set(name, filters[name]);
-  }
-  return `/admin/beatmaps?${query}`;
-}
 type RefreshAdmin = () => Promise<boolean>;
 const errorKeys = {
   builtin_role: 'errorBuiltinRole',
@@ -674,12 +619,15 @@ export function BeatmapAvailabilityAction({
   changed,
   onBusy,
   accepted,
+  denied,
 }: {
-  map: Beatmap;
+  map: Pick<Beatmap, 'id' | 'title' | 'artist' | 'native_set_id' | 'availability'> &
+    Partial<Pick<Beatmap, 'package'>>;
   disabled?: boolean;
   changed: RefreshAdmin;
   onBusy?: (busy: boolean) => void;
   accepted?: (availability: BeatmapAvailability) => void;
+  denied?: (error: ApiError) => Promise<unknown>;
 }) {
   const t = useTranslations('mapAvailability');
   const c = useTranslations('common');
@@ -756,6 +704,7 @@ export function BeatmapAvailabilityAction({
         setConflict(true);
         setError(t('conflict'));
       } else if (failure instanceof ApiError && [401, 403].includes(failure.status)) {
+        await denied?.(failure);
         setError(t('permissionError'));
       } else {
         setError(t('writeError'));
@@ -877,463 +826,46 @@ export function BeatmapAvailabilityAction({
   );
 }
 
-function MapModerationRow({
-  map,
-  returnTo,
-  busy,
-  disabled,
-  save,
-  canModerate,
-  changed,
-  onBusy,
-}: {
-  map: Beatmap;
-  returnTo: string;
-  busy: boolean;
-  disabled: boolean;
-  save: (map: Beatmap, status: MapStatus) => Promise<boolean>;
-  canModerate: boolean;
-  changed: RefreshAdmin;
-  onBusy: (busy: boolean) => void;
-}) {
-  const t = useTranslations('mapModeration');
-  const c = useTranslations('common');
-  const availability = useTranslations('mapAvailability');
-  const a = useTranslations('admin');
-  const describeError = useAdminError();
-  const [chosen, setChosen] = useState<MapStatus | null>(null);
-  const [error, setError] = useState('');
-  const status = chosen ?? map.status;
-  const detail = new URLSearchParams({
-    management: '1',
-    mode: String(map.mode),
-    variant: 'vanilla',
-    returnTo,
-  });
-  return (
-    <tr data-beatmap-id={map.id}>
-      <td>
-        <Link href={`/beatmaps/${map.id}?${detail}`} className="score-title">
-          {map.artist} — {map.title}
-          <span>{map.version}</span>
-        </Link>
-        <p className="hint admin-map-meta">
-          {map.creator} · #{map.id}
-        </p>
-      </td>
-      <td>{mapModes[map.mode] ?? '—'}</td>
-      <td>{c(map.source === 'local' ? 'local' : 'official')}</td>
-      <td>
-        <span className={`status-text status-${map.status}`}>{c(map.status)}</span>
-      </td>
-      <td>
-        <Badge variant="outline">
-          {availability(map.availability?.withdrawn ? 'withdrawn' : 'active')}
-        </Badge>
-      </td>
-      <td>
-        {canModerate ? (
-          <>
-            <form
-              className="admin-map-actions"
-              aria-label={t('statusFor', { title: map.title })}
-              onSubmit={async (event) => {
-                event.preventDefault();
-                if (disabled || status === map.status) return;
-                setError('');
-                try {
-                  if (await save(map, status as MapStatus)) setChosen(null);
-                } catch (error) {
-                  setError(describeError(error));
-                }
-              }}
-            >
-              <div className="actions">
-                <FieldSelect
-                  className="native-select"
-                  aria-label={t('statusFor', { title: map.title })}
-                  aria-describedby={error ? `map-status-${map.id}-error` : undefined}
-                  value={status}
-                  disabled={disabled}
-                  onValueChange={(value) => setChosen(value as MapStatus)}
-                  options={mapStatuses.map((value) => ({ value, label: c(value) }))}
-                />
-                <Button
-                  type="submit"
-                  size="sm"
-                  variant="outline"
-                  disabled={disabled || status === map.status}
-                >
-                  {busy && <LoaderCircle className="spin" aria-hidden="true" />}
-                  {t('updateStatus')}
-                </Button>
-              </div>
-              {error && (
-                <div id={`map-status-${map.id}-error`}>
-                  <Feedback error={error} />
-                </div>
-              )}
-            </form>
-            <div className="admin-map-availability-action">
-              <BeatmapAvailabilityAction
-                map={map}
-                disabled={disabled}
-                changed={changed}
-                onBusy={onBusy}
-              />
-            </div>
-          </>
-        ) : (
-          <p className="hint">{a('actionsReadOnly')}</p>
-        )}
-      </td>
-    </tr>
-  );
-}
-
-function MapModeration() {
-  const t = useTranslations('mapModeration');
-  const a = useTranslations('admin');
-  const c = useTranslations('common');
-  const availability = useTranslations('mapAvailability');
-  const { user, loading } = useSession();
-  const canModerate = !!user && hasPermission(user.permissions, 'beatmaps.moderate');
+function BeatmapAdminTools() {
+  const t = useTranslations('rankRequests');
+  const { user } = useSession();
   const query = useSearchParams();
-  const filters = readMapFilters(query);
-  const key = mapListKey(filters);
-  const { cache, mutate: mutateCache } = useSWRConfig();
-  const requestKey =
-    !loading && user && hasPermission(user.permissions, 'admin.view')
-      ? ([key, user.id] as const)
-      : null;
-  const serializedKey = requestKey ? unstable_serialize(requestKey) : '';
-  const [accessFailures, setAccessFailures] = useState<Record<string, ApiError>>({});
-  const describeError = useAdminError();
-  const [searchError, setSearchError] = useState('');
-  const [busy, setBusy] = useState<number | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [stale, setStale] = useState(false);
-  const [feedback, setFeedback] = useState('');
-  const mounted = useRef(true);
-  const saving = useRef(false);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-  function currentRequest(requestedKey: string) {
-    if (!mounted.current) return false;
-    const current = new URLSearchParams(window.location.search);
-    const tab = current.get('tab');
-    return (!tab || tab === 'beatmaps') && mapListKey(readMapFilters(current)) === requestedKey;
+  const canReview = !!user && hasPermission(user.permissions, 'beatmaps.rank.review');
+  const canModerate = !!user && hasPermission(user.permissions, 'beatmaps.moderate');
+  const requested = query.get('map_tool');
+  const tool = requested === 'local' && canModerate ? 'local' : canReview ? 'requests' : 'local';
+  function select(value: string) {
+    const next = new URLSearchParams(window.location.search);
+    next.set('tab', 'beatmaps');
+    next.set('map_tool', value);
+    window.history.pushState(null, '', `/admin?${next}`);
   }
-  function select(next: Partial<MapFilters>) {
-    const current = new URLSearchParams(window.location.search);
-    const params = mapQuery(current.toString(), { ...readMapFilters(current), page: 1, ...next });
-    window.history.pushState(null, '', `?${params}`);
-    setSearchError('');
-  }
-  const {
-    data: result,
-    error: requestError,
-    isLoading,
-    mutate,
-  } = useSWR<Page<Beatmap>>(
-    requestKey,
-    (key: readonly [string, number]) => fetcher<Page<Beatmap>>(key[0]),
-    {
-      keepPreviousData: false,
-      dedupingInterval: 0,
-      shouldRetryOnError: false,
-      onError: (failure, requestedKey) => {
-        if (!(failure instanceof ApiError) || ![401, 403, 404].includes(failure.status)) return;
-        setAccessFailures((current) => ({ ...current, [requestedKey]: failure }));
-        void mutateCache(requestedKey, undefined, { revalidate: false });
-      },
-      onSuccess: (result, requestedKey) => {
-        setAccessFailures((current) => {
-          if (!current[requestedKey]) return current;
-          const next = { ...current };
-          delete next[requestedKey];
-          return next;
-        });
-        // A response for a previous filter, page or tab cannot move the current view.
-        if (requestedKey !== serializedKey || !currentRequest(key) || result.page_size < 1) return;
-        setStale(false);
-        const lastPage = Math.max(1, Math.ceil(result.total / result.page_size));
-        if (result.page > lastPage) {
-          const current = new URLSearchParams(window.location.search);
-          const params = mapQuery(current.toString(), {
-            ...readMapFilters(current),
-            page: lastPage,
-          });
-          window.history.replaceState(null, '', `?${params}`);
-        }
-      },
-    },
-  );
-  const error = requestError ?? accessFailures[serializedKey];
-  const data =
-    loading || !requestKey || (error instanceof ApiError && [401, 403, 404].includes(error.status))
-      ? undefined
-      : result;
-  async function refreshList() {
-    setRefreshing(true);
-    try {
-      const result = await mutate();
-      // A failed SWR revalidation may resolve with previously cached records.
-      const refreshed = Boolean(result) && !cache.get(serializedKey)?.error;
-      if (currentRequest(key)) setStale(!refreshed);
-      return refreshed;
-    } catch {
-      if (currentRequest(key)) setStale(true);
-      return false;
-    } finally {
-      if (mounted.current) setRefreshing(false);
-    }
-  }
-  async function save(map: Beatmap, status: MapStatus) {
-    if (saving.current || stale) return false;
-    saving.current = true;
-    setBusy(map.id);
-    setFeedback('');
-    try {
-      await api(`/admin/beatmaps/${map.id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
-      if (mounted.current) setFeedback(t('statusSaved', { title: map.title, status: c(status) }));
-      return await refreshList();
-    } finally {
-      saving.current = false;
-      if (mounted.current) setBusy(null);
-    }
-  }
-  const filtered =
-    filters.q !== '' ||
-    filters.availability !== 'active' ||
-    [filters.mode, filters.source, filters.status].some((value) => value !== 'all');
-  const returnTo = `/admin?${mapQuery(query.toString(), filters)}`;
   return (
-    <div className="admin-map-workbench">
-      <div className="section-heading">
-        <div>
-          <h2>{t('title')}</h2>
-          <p className="hint">{t('description')}</p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={busy !== null}
-          onClick={() => select({ source: 'local', status: 'pending', availability: 'active' })}
-        >
-          {t('pendingCommunity')}
-        </Button>
-      </div>
-      <form
-        className="map-review-filters admin-map-controls"
-        aria-label={t('search')}
-        onSubmit={(event) => {
-          event.preventDefault();
-          const values = new FormData(event.currentTarget);
-          const search = String(values.get('q') ?? '').trim();
-          if (new TextEncoder().encode(search).length > 100) {
-            setSearchError(t('searchTooLong'));
-            return;
-          }
-          select({ q: search });
-        }}
-      >
-        <div className="admin-map-search">
-          <div className="field">
-            <label htmlFor="admin-map-search">{t('search')}</label>
-            <Input
-              key={filters.q}
-              id="admin-map-search"
-              name="q"
-              type="search"
-              maxLength={100}
-              defaultValue={filters.q}
-              aria-describedby="admin-map-search-hint"
-              aria-invalid={Boolean(searchError)}
-            />
-            <p className="hint" id="admin-map-search-hint">
-              {t('searchHint')}
-            </p>
-          </div>
-          <Button type="submit" variant="outline" disabled={busy !== null}>
-            <Search aria-hidden="true" />
-            {c('search')}
-          </Button>
-        </div>
-        <div className="admin-map-filters admin-map-availability-filters">
-          <div className="field">
-            <label htmlFor="admin-map-mode">{c('mode')}</label>
-            <FieldSelect
-              id="admin-map-mode"
-              name="mode"
-              className="native-select"
-              value={filters.mode}
-              disabled={busy !== null}
-              onValueChange={(value) => select({ mode: value })}
-              options={[
-                { value: 'all', label: c('all') },
-                ...mapModes.map((label, mode) => ({ value: String(mode), label })),
-              ]}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="admin-map-source">{t('source')}</label>
-            <FieldSelect
-              id="admin-map-source"
-              name="source"
-              className="native-select"
-              value={filters.source}
-              disabled={busy !== null}
-              onValueChange={(value) => select({ source: value })}
-              options={[
-                { value: 'all', label: c('all') },
-                { value: 'local', label: c('local') },
-                { value: 'official', label: c('official') },
-              ]}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="admin-map-status">{c('status')}</label>
-            <FieldSelect
-              id="admin-map-status"
-              name="status"
-              className="native-select"
-              value={filters.status}
-              disabled={busy !== null}
-              onValueChange={(value) => select({ status: value })}
-              options={[
-                { value: 'all', label: c('all') },
-                ...mapStatuses.map((value) => ({ value, label: c(value) })),
-              ]}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="admin-map-availability">{availability('label')}</label>
-            <FieldSelect
-              id="admin-map-availability"
-              name="availability"
-              className="native-select"
-              value={filters.availability}
-              disabled={busy !== null}
-              onValueChange={(value) => select({ availability: value })}
-              options={['active', 'withdrawn', 'all'].map((value) => ({
-                value,
-                label: value === 'all' ? c('all') : availability(value),
-              }))}
-            />
-          </div>
-          {filtered && (
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={busy !== null}
-              onClick={() =>
-                select({ q: '', mode: 'all', source: 'all', status: 'all', availability: 'active' })
-              }
-            >
-              {t('clearFilters')}
-            </Button>
-          )}
-        </div>
-        <Feedback error={searchError} />
-      </form>
-      <Feedback success={feedback} />
-      {stale && (
-        <div className="admin-map-summary" role="status">
-          <p className="hint">{t('refreshFailed')}</p>
+    <>
+      <div className="mode-control" role="group" aria-label={t('mapTools')}>
+        {canReview && (
           <Button
             type="button"
-            variant="outline"
-            disabled={refreshing}
-            onClick={() => refreshList()}
+            variant="ghost"
+            aria-pressed={tool === 'requests'}
+            onClick={() => select('requests')}
           >
-            {refreshing && <LoaderCircle className="spin" aria-hidden="true" />}
-            {t('refreshRetry')}
+            {t('queueTitle')}
           </Button>
-        </div>
-      )}
-      <section
-        className="glass content-panel"
-        aria-label={t('title')}
-        aria-busy={isLoading || refreshing}
-      >
-        <div className="admin-map-summary">
-          {data && <p role="status">{t('results', { count: data.total })}</p>}
-          <p className="hint">{canModerate ? availability('actionHint') : a('actionsReadOnly')}</p>
-        </div>
-        {isLoading ? (
-          <Loading />
-        ) : error && !data ? (
-          <>
-            <Feedback error={describeError(error)} />
-            <LoadError retry={() => mutate()} />
-          </>
-        ) : !data?.items.length ? (
-          <Empty title={t(filtered ? 'noResults' : 'empty')}>
-            <p>{t(filtered ? 'noResultsHint' : 'emptyHint')}</p>
-          </Empty>
-        ) : (
-          <>
-            <p className="hint admin-scroll-hint" id="admin-map-scroll-hint">
-              {t('scrollHint')}
-            </p>
-            <div
-              className="table-scroll admin-map-scroll"
-              role="region"
-              aria-label={a('beatmaps')}
-              aria-describedby="admin-map-scroll-hint"
-              tabIndex={0}
-            >
-              <table className="data-table admin-map-table">
-                <thead>
-                  <tr>
-                    {[
-                      a('beatmaps'),
-                      c('mode'),
-                      t('source'),
-                      c('status'),
-                      availability('label'),
-                      a('action'),
-                    ].map((label) => (
-                      <th scope="col" key={label}>
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((map) => (
-                    <MapModerationRow
-                      key={map.id}
-                      map={map}
-                      returnTo={returnTo}
-                      busy={busy === map.id}
-                      disabled={busy !== null || stale}
-                      save={save}
-                      canModerate={canModerate}
-                      changed={refreshList}
-                      onBusy={(writing) => setBusy(writing ? map.id : null)}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
         )}
-      </section>
-      {data && (
-        <Pagination
-          page={filters.page}
-          total={data.total}
-          pageSize={data.page_size}
-          onChange={(page) => select({ page })}
-        />
-      )}
-    </div>
+        {canModerate && (
+          <Button
+            type="button"
+            variant="ghost"
+            aria-pressed={tool === 'local'}
+            onClick={() => select('local')}
+          >
+            {t('localTitle')}
+          </Button>
+        )}
+      </div>
+      {tool === 'requests' ? <AdminRankRequests /> : <LocalBeatmapAdminCatalogue />}
+    </>
   );
 }
 
@@ -1351,7 +883,7 @@ function AdminContents() {
   if (['users.moderate', 'roles.manage', 'users.sessions.revoke'].some(allowed))
     sections.push('users');
   if (allowed('roles.manage')) sections.push('roles');
-  if (allowed('admin.view')) sections.push('beatmaps');
+  if (allowed('beatmaps.rank.review') || allowed('beatmaps.moderate')) sections.push('beatmaps');
   if (allowed('scores.moderate')) sections.push('scores');
   if (allowed('chat.moderate')) sections.push('chat');
   if (allowed('audit.read')) sections.push('audit');
@@ -1495,7 +1027,7 @@ function AdminContents() {
       {section === 'announcements' ? (
         <AdminAnnouncements registerNavigationGuard={registerAnnouncementNavigationGuard} />
       ) : section === 'beatmaps' ? (
-        <MapModeration />
+        <BeatmapAdminTools key={user?.id} />
       ) : section === 'scores' ? (
         <ScoreModeration key={user?.id} />
       ) : section === 'chat' ? (
@@ -1549,7 +1081,7 @@ function AdminContents() {
                           return (
                             <tr key={u.id} className="admin-user-row" data-user-id={u.id}>
                               <td>
-                                <Link href={`/players/${u.id}`} className="player-cell">
+                                <Link href={`/users/${u.id}`} className="player-cell">
                                   <Avatar name={u.username} url={u.avatar_url} />
                                   {u.username}
                                 </Link>

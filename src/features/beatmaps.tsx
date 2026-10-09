@@ -46,6 +46,7 @@ import {
 } from '@/lib/ranking-url-state';
 import { BeatmapAvailabilityAction } from './admin';
 import { OfficialMapSearch } from './official-map-search';
+import { BeatmapRankRequestAction } from './beatmap-rank-requests';
 import {
   MapArtwork,
   MapMetadata,
@@ -85,7 +86,9 @@ function DifficultyRows({ items, currentId }: { items: BeatmapDifficulty[]; curr
               <span className="package-mode">{['osu!', 'taiko', 'catch', 'mania'][map.mode]}</span>
               <span className={`status-text status-${map.status}`}>
                 {c(
-                  ['pending', 'ranked', 'loved', 'unranked'].includes(map.status)
+                  ['pending', 'wip', 'graveyard', 'ranked', 'loved', 'unranked'].includes(
+                    map.status,
+                  )
                     ? map.status
                     : 'pending',
                 )}
@@ -243,7 +246,9 @@ export function MapRows({ items, compact = false }: { items: Beatmap[]; compact?
               </span>
               <span className={`status-text status-${map.status}`}>
                 {c(
-                  ['pending', 'ranked', 'loved', 'unranked'].includes(map.status)
+                  ['pending', 'wip', 'graveyard', 'ranked', 'loved', 'unranked'].includes(
+                    map.status,
+                  )
                     ? map.status
                     : 'pending',
                 )}
@@ -268,24 +273,12 @@ export function MapRows({ items, compact = false }: { items: Beatmap[]; compact?
   );
 }
 
-function boundedReviewSearch(title: string) {
-  let value = '';
-  let bytes = 0;
-  const encoder = new TextEncoder();
-  for (const character of title) {
-    const length = encoder.encode(character).length;
-    if (bytes + length > 100) break;
-    value += character;
-    bytes += length;
-  }
-  return value;
-}
-
 export function BeatmapPage({ id }: { id: number }) {
   const t = useTranslations('maps');
   const c = useTranslations('common');
   const review = useTranslations('mapModeration');
   const availability = useTranslations('mapAvailability');
+  const rankRequests = useTranslations('rankRequests');
   const { user, loading: sessionLoading } = useSession();
   const search = useSearchParams();
   const pathname = usePathname();
@@ -355,6 +348,7 @@ export function BeatmapPage({ id }: { id: number }) {
     [usableMap, acceptedAvailability, serializedKey],
   );
   const withdrawn = map?.availability?.withdrawn ?? false;
+  const nativeSetId = map?.native_set_id ?? map?.package?.native_set_id;
   async function refreshAvailability() {
     try {
       const result = await mutate();
@@ -461,6 +455,41 @@ export function BeatmapPage({ id }: { id: number }) {
                 </div>
                 <div className="map-detail-actions">
                   {!withdrawn && <MapDownloads map={map} />}
+                  {!withdrawn &&
+                    nativeSetId !== undefined &&
+                    ['pending', 'graveyard', 'unranked'].includes(map.status) &&
+                    (map.source === 'official' || !user || map.uploaded_by === user.id) && (
+                      <BeatmapRankRequestAction
+                        localMapId={map.id}
+                        initialDifficulties={
+                          typeof (map as Beatmap & { native_id?: number }).native_id === 'number'
+                            ? [
+                                {
+                                  native_id: (map as Beatmap & { native_id: number }).native_id,
+                                  version: map.version,
+                                  mode: map.mode,
+                                  stars: map.stars,
+                                  status: map.status,
+                                },
+                              ]
+                            : []
+                        }
+                        target={
+                          map.source === 'official' && map.official_set_id
+                            ? { official_set_id: map.official_set_id }
+                            : { native_set_id: nativeSetId }
+                        }
+                      />
+                    )}
+                  {user &&
+                    hasPermission(user.permissions, 'beatmaps.moderate') &&
+                    nativeSetId !== undefined && (
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/admin/beatmapsets/${nativeSetId}`}>
+                          {rankRequests('adminView')}
+                        </Link>
+                      </Button>
+                    )}
                   {management && canReview && (
                     <BeatmapAvailabilityAction
                       map={map}
@@ -473,18 +502,6 @@ export function BeatmapPage({ id }: { id: number }) {
                         }))
                       }
                     />
-                  )}
-                  {canManage && (
-                    <Button asChild variant="outline">
-                      <Link
-                        href={
-                          reviewReturn ??
-                          `/admin?${new URLSearchParams({ tab: 'beatmaps', q: boundedReviewSearch(map.title), mode: String(map.mode), source: map.source, availability: withdrawn ? 'withdrawn' : 'active' })}`
-                        }
-                      >
-                        {review('manageMap')}
-                      </Link>
-                    </Button>
                   )}
                 </div>
               </section>

@@ -401,7 +401,7 @@ export function ScoreModeration() {
                   <tr key={score.id} data-score-id={score.id}>
                     <td data-label={c('username')}>
                       <Link
-                        href={`/players/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
+                        href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
                       >
                         {score.username}
                       </Link>
@@ -834,7 +834,7 @@ function ChatModerationRow({
     <>
       <tr data-chat-user-id={player.id}>
         <td>
-          <Link href={`/players/${player.id}`} className="player-cell">
+          <Link href={`/users/${player.id}`} className="player-cell">
             <Avatar name={player.username} url={player.avatar_url} />
             {player.username}
           </Link>

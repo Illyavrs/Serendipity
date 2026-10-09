@@ -142,13 +142,13 @@ test('RX ranking switches isolated values and preserves URL context into a profi
   );
   await capturePair(page, 'rankings');
   await page.getByRole('link', { name: player.username }).click();
-  await expect(page).toHaveURL(/players\/98431\?mode=0&variant=relax/);
+  await expect(page).toHaveURL(/users\/98431\?mode=0&variant=relax/);
   await expect(page.locator('.profile-stats')).toContainText('345');
 });
 
 test('profile uses mode and variant for statistics and score collection', async ({ page }) => {
   await fixtures(page);
-  await page.goto(`/players/${player.id}?mode=1&variant=relax`);
+  await page.goto(`/users/${player.id}?mode=1&variant=relax`);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(player.username);
   await expect(page.locator('.profile-stats')).toContainText('345');
   await expect(page.locator('.score-table')).toContainText('345.00');
