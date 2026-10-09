@@ -128,7 +128,7 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
           })
         : fail(route, 401, 'unauthorized');
     if (routePath === '/me/preferences') return route.fulfill({ json: appearance });
-    if (routePath === '/beatmapsets') {
+    if (routePath === '/server/beatmapsets') {
       state.setQueries.push(new URLSearchParams(query));
       if (state.holdSets)
         await new Promise<void>((resolve) => {
@@ -171,7 +171,9 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
       const pageNumber = Number(query.get('page') ?? 1);
       return route.fulfill({
         json: {
-          items: groups.slice((pageNumber - 1) * 24, pageNumber * 24),
+          items: groups
+            .slice((pageNumber - 1) * 24, pageNumber * 24)
+            .map((stored) => ({ kind: 'stored', stored })),
           total: groups.length,
           page: pageNumber,
           page_size: 24,

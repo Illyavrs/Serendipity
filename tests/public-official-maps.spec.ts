@@ -19,6 +19,7 @@ function set(id = 42, count = 30) {
       version: `Difficulty ${index + 1}`,
       mode: index % 4,
       stars: Number((1.25 + index * 0.27).toFixed(2)),
+      status: 'ranked',
       length_seconds: 90 + index,
       checksum: 'a'.repeat(32),
       bpm: 180,
@@ -60,10 +61,13 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
     details: [] as number[],
     mutations: [] as string[],
     serverRequests: 0,
+    serverQueries: [] as URLSearchParams[],
     failures: 0,
     empty: false,
     detailWithdrawn: false,
     detail: set(),
+    searchStatuses: null as string[] | null,
+    searchSummary: 'graveyard',
     hold: null as string | null,
     releases: [] as (() => void)[],
     cursor: 'opaque+/=&? page=next',
@@ -103,6 +107,14 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
         : q === 'old'
           ? [{ ...set(44), title: 'STALE metadata must not appear' }]
           : [set(next ? 43 : 42), set(next ? 45 : 46, 2)];
+      if (state.searchStatuses) {
+        for (const item of items) {
+          item.status = state.searchSummary;
+          item.difficulties.forEach((difficulty, index) => {
+            difficulty.status = state.searchStatuses![index % state.searchStatuses!.length];
+          });
+        }
+      }
       return route
         .fulfill({
           json: { items, total: state.empty ? 0 : 4, cursor_string: next ? null : state.cursor },
@@ -115,8 +127,9 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
         return route.fulfill({ status: 410, json: { error: { code: 'beatmapset_withdrawn' } } });
       return route.fulfill({ json: state.detail });
     }
-    if (routePath === '/beatmapsets') {
+    if (routePath === '/server/beatmapsets') {
       state.serverRequests++;
+      state.serverQueries.push(new URLSearchParams(url.searchParams));
       return route.fulfill({ json: { items: [], page: 1, page_size: 24, total: 0 } });
     }
     return route.fulfill({ status: 404, json: { error: { code: 'not_found' } } });
@@ -182,11 +195,13 @@ test('server catalogue is a simple separate source and retains existing uploader
   await expect(page.locator('.discovery-set')).toHaveCount(2);
   await page.locator('.catalogue-source').getByRole('link', { name: 'Server beatmaps' }).click();
   await expect(page).toHaveURL(/catalogue=server/);
-  await expect.poll(() => state.serverRequests).toBe(1);
+  await expect.poll(() => state.serverRequests).toBeGreaterThan(0);
   await expect(page.getByRole('heading', { name: 'No beatmap sets yet' })).toBeVisible();
+  const beforeUploaderNavigation = state.serverRequests;
   await page.goto('/beatmaps?uploaded_by=99');
   await expect(page.locator('.catalogue-source a').last()).toHaveAttribute('aria-current', 'page');
-  await expect.poll(() => state.serverRequests).toBe(2);
+  await expect.poll(() => state.serverRequests).toBeGreaterThan(beforeUploaderNavigation);
+  await expect.poll(() => state.serverQueries.at(-1)?.get('uploaded_by')).toBe('99');
 });
 
 test('a held stale response never replaces newer results and requests drive the top loading bar', async ({
@@ -217,14 +232,19 @@ test('a held stale response never replaces newer results and requests drive the 
 
 test('busy retries retain filters and empty results have a working reset', async ({ page }) => {
   const state = await fixture(page);
-  state.failures = 1;
+  // Remain unavailable through development-mode mount retries until the player retries.
+  state.failures = Number.POSITIVE_INFINITY;
   await page.goto('/beatmaps?q=remember&mode=2');
   await expect(page.locator('.discovery-feedback[role="alert"]')).toContainText(
     'Official search is busy',
   );
+  const beforeRetry = state.searches.length;
+  state.failures = 0;
   await page.getByRole('button', { name: 'Retry', exact: true }).click();
   await expect(page.locator('.discovery-set')).toHaveCount(2);
+  await expect.poll(() => state.searches.length).toBeGreaterThan(beforeRetry);
   expect(state.searches.at(-1)?.get('q')).toBe('remember');
+  expect(state.searches.at(-1)?.get('mode')).toBe('2');
   state.empty = true;
   await page.getByRole('searchbox').fill('empty');
   await page
@@ -288,26 +308,106 @@ test('official disabled downloads and withdrawal cannot offer package or leaderb
   );
 });
 
+test('mixed official sets expose effective difficulty statuses in passive previews', async ({
+  page,
+}) => {
+  const state = await fixture(page);
+  state.searchStatuses = ['ranked', 'graveyard', 'wip'];
+  await page.goto('/beatmaps?status=graveyard');
+  const card = page.locator('.discovery-set').first();
+  await expect(card.locator('.discovery-set-statuses')).toContainText('Graveyard');
+  await expect(card.locator('.discovery-set-statuses')).toContainText('Mixed statuses');
+  const initialSearches = state.searches.length;
+  await card.locator('.discovery-difficulty-trigger').hover();
+  const preview = page.locator('.discovery-difficulty-popover');
+  const rows = preview.locator('.difficulty-preview-row');
+  await expect(rows).toHaveCount(30);
+  await expect(rows.nth(0).locator('[data-status="ranked"]')).toHaveAttribute(
+    'aria-label',
+    'Status on Illyaverse: Ranked',
+  );
+  await expect(rows.nth(1).locator('[data-status="graveyard"]')).toHaveText('Graveyard');
+  await expect(rows.nth(2).locator('[data-status="wip"]')).toHaveText('Work in progress');
+  await expect(preview.locator('a, button')).toHaveCount(0);
+  expect(state.searches).toHaveLength(initialSearches);
+  expect(state.searches[0].get('status')).toBe('graveyard');
+  expect(state.details).toHaveLength(0);
+  expect(state.mutations).toHaveLength(0);
+});
+
+test('selected difficulty status stays independent of its mixed set summary', async ({ page }) => {
+  const state = await fixture(page);
+  state.detail.status = 'graveyard';
+  state.detail.difficulties.forEach((difficulty) => (difficulty.status = 'graveyard'));
+  state.detail.difficulties[0].status = 'ranked';
+  state.detail.difficulties[1].status = 'wip';
+  await page.goto('/beatmaps/official/42');
+  await expect(page.locator('.public-official-title .discovery-set-statuses')).toContainText(
+    'Graveyard',
+  );
+  const selected = page.locator('.public-official-selected-heading');
+  await expect(selected.locator('[data-status]')).toHaveText('Ranked');
+  const list = page.locator('.public-official-difficulty-list');
+  await expect(list.locator('button').nth(1).locator('[data-status]')).toHaveText(
+    'Work in progress',
+  );
+  const detailRequests = state.details.length;
+  await list.locator('button').nth(1).click();
+  await expect(selected.locator('[data-status]')).toHaveText('Work in progress');
+  await expect(selected.getByRole('heading')).toHaveText('Difficulty 2');
+  expect(state.details).toHaveLength(detailRequests);
+  expect(state.mutations).toHaveLength(0);
+});
+
+test('uniform statuses do not imply a mixed set and unknown statuses remain factual', async ({
+  page,
+}) => {
+  const state = await fixture(page);
+  await page.goto('/beatmaps');
+  await expect(page.locator('.discovery-set')).toHaveCount(2);
+  await expect(page.getByText('Mixed statuses', { exact: true })).toHaveCount(0);
+  state.detail.difficulties[0].status = 'unranked';
+  state.detail.difficulties[1].status = 'future-status';
+  await page.goto('/beatmaps/official/42');
+  await expect(page.locator('.public-official-selected-heading [data-status]')).toHaveText(
+    'Unranked',
+  );
+  await page.locator('.public-official-difficulty-list button').nth(1).click();
+  const status = page.locator('.public-official-selected-heading [data-status]');
+  await expect(status).toHaveText('future-status');
+  await expect(status).toHaveAttribute('aria-label', 'Status on Illyaverse: future-status');
+  await expect(status).not.toHaveClass(/status-ranked|status-graveyard/);
+});
+
 for (const variant of [
   { width: 1280, height: 720, locale: 'zh-TW', theme: 'dark' },
   { width: 1440, height: 900, locale: 'en', theme: 'light' },
   { width: 390, height: 844, locale: 'en', theme: 'light' },
+  { width: 320, height: 740, locale: 'en', theme: 'dark' },
   { width: 320, height: 740, locale: 'ja', theme: 'dark' },
 ]) {
   test(`public official layout ${variant.width}-${variant.theme}-${variant.locale}`, async ({
     page,
   }) => {
-    await fixture(page, variant.locale, variant.theme);
+    const state = await fixture(page, variant.locale, variant.theme);
+    state.searchStatuses = ['ranked', 'wip', 'graveyard'];
+    state.searchSummary = 'wip';
+    state.detail.status = 'wip';
+    state.detail.difficulties.forEach((difficulty, index) => {
+      difficulty.status = state.searchStatuses![index % state.searchStatuses!.length];
+    });
     await page.setViewportSize({ width: variant.width, height: variant.height });
     const captureRoot = process.env.ILLYA_PUBLIC_MAP_CAPTURE_ROOT;
     async function capture(name: string) {
       if (!captureRoot) return;
+      await expect(page.locator('html')).toHaveClass(new RegExp(`(^|\\s)${variant.theme}(\\s|$)`));
       await page.evaluate(async () => {
         await document.fonts.ready;
       });
       await mkdir(captureRoot, { recursive: true });
       const nameBase = `public-official-${variant.width}-${variant.theme}-${variant.locale}-${name}`;
       const metrics = await page.evaluate(() => ({
+        actualTheme: document.documentElement.className,
         scrollY,
         width: innerWidth,
         height: innerHeight,
@@ -334,6 +434,7 @@ for (const variant of [
       );
     }
     await page.goto('/beatmaps');
+    await expect(page.locator('html')).toHaveClass(new RegExp(`(^|\\s)${variant.theme}(\\s|$)`));
     await expect(page.locator('.discovery-set')).toHaveCount(2);
     await page.evaluate(async () => {
       await document.fonts.ready;
@@ -345,6 +446,27 @@ for (const variant of [
       .locator('.discovery-set')
       .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
     expect(heights[0]).toBe(heights[1]);
+    const statusBounds = await page
+      .locator('.discovery-set-statuses-mixed > span')
+      .evaluateAll((statuses) =>
+        statuses.map((status) => {
+          const bounds = status.getBoundingClientRect();
+          const parent = status.parentElement!.getBoundingClientRect();
+          return {
+            left: bounds.left - parent.left,
+            right: parent.right - bounds.right,
+            top: bounds.top - parent.top,
+            bottom: parent.bottom - bounds.bottom,
+          };
+        }),
+      );
+    expect(statusBounds).toHaveLength(4);
+    for (const bounds of statusBounds) {
+      expect(bounds.left).toBeGreaterThanOrEqual(-1);
+      expect(bounds.right).toBeGreaterThanOrEqual(-1);
+      expect(bounds.top).toBeGreaterThanOrEqual(-1);
+      expect(bounds.bottom).toBeGreaterThanOrEqual(-1);
+    }
     await capture('catalogue');
     await page.locator('.discovery-difficulty-trigger').first().click();
     await expect(page.locator('.discovery-difficulty-popover .difficulty-preview-row')).toHaveCount(

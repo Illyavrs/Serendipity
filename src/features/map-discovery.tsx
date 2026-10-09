@@ -5,6 +5,7 @@ import { NavigationLink as Link, useNavigationProgress } from '@/components/navi
 import Image from 'next/image';
 import { MapCardPreview } from './map-card-preview';
 import { OfficialMapDiscoveryPage } from './public-official-maps';
+import { ServerOfficialSetCard } from './server-effective-catalogue';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -27,6 +28,7 @@ import { PageHeading } from '@/components/common';
 import { useSession } from '@/components/providers';
 import { api, ApiError, hasPermission } from '@/lib/api';
 import type { Beatmap, BeatmapDifficulty, Page, ScoreVariant } from '@/lib/types';
+import { serverCatalogueSetKey, type ServerCataloguePage } from '@/lib/effective-map-catalogue';
 
 // This mirrors the public set response; server filters select matching difficulties first.
 export type DiscoverySet = {
@@ -523,8 +525,8 @@ function ServerMapDiscoveryPage() {
   if (source !== 'all') query.set('source', source);
   if (uploader) query.set('uploaded_by', String(uploader));
   if (uploadedOnly) query.set('uploaded_only', 'true');
-  const { data, error, loading, retry } = usePublicData<Page<DiscoverySet>>(
-    `/beatmapsets?${query}`,
+  const { data, error, loading, retry } = usePublicData<ServerCataloguePage>(
+    `/server/beatmapsets?${query}`,
   );
   function update(key: string, value: string | null, resetPage = true) {
     const next = new URLSearchParams(window.location.search);
@@ -564,7 +566,7 @@ function ServerMapDiscoveryPage() {
     <div className="page-container map-discovery">
       <div className="discovery-reading-ground" data-material="section">
         <CatalogueSource value="server" />
-        <PageHeading title={maps('title')} description={t('description')}>
+        <PageHeading title={maps('title')} description={t('serverDescription')}>
           {user && hasPermission(user.permissions, 'beatmaps.upload') && (
             <Button asChild>
               <Link href="/beatmaps/upload">
@@ -718,9 +720,18 @@ function ServerMapDiscoveryPage() {
             )}
           </div>
         ) : (
-          data.items.map((set) => (
-            <MapSetCard set={set} key={set.native_set_id} returnTo={returnTo} />
-          ))
+          data.items.map((set) =>
+            set.kind === 'stored' ? (
+              <MapSetCard set={set.stored} key={serverCatalogueSetKey(set)} returnTo={returnTo} />
+            ) : (
+              <ServerOfficialSetCard
+                set={set.official}
+                key={serverCatalogueSetKey(set)}
+                returnTo={returnTo}
+                matchingStatus={status === 'all' ? undefined : status}
+              />
+            ),
+          )
         )}
       </section>
       {data && !error && !outOfRange && (

@@ -901,7 +901,10 @@
     "busyHint": "公式検索が混み合っています。少し待ってから再試行してください。",
     "metadataOnly": "この難易度はまだサーバーに保存されていません。",
     "serverScores": "サーバーのランキング",
-    "maxCombo": "最大コンボ"
+    "maxCombo": "最大コンボ",
+    "mixedStatuses": "難易度ごとに異なる",
+    "mixedStatusesHint": "Illyaverse のステータスは難易度ごとに異なります。各難易度を確認してください。",
+    "officialStatusFilter": "osu! のステータス"
   },
   "mapDiscovery": {
     "description": "ビートマップセットを探して難易度を選びます。",
@@ -982,7 +985,12 @@
     "previewUnavailable": "全リストを取得できません。保存済みのプレビューのみ表示しています。しばらくして再試行してください。",
     "previewWithdrawn": "この譜面セットは利用できません。",
     "uploadedOnlyFilter": "プレイヤーが投稿したコミュニティ譜面のみ",
-    "clearUploadedOnly": "保存済みの譜面をすべて表示"
+    "clearUploadedOnly": "保存済みの譜面をすべて表示",
+    "difficultyStatusFact": "Illyaverse のステータス: {status}",
+    "setStatusFact": "セットのステータス: {status}",
+    "serverDescription": "アップロードされたビートマップと、サーバーで難易度のステータスを変更した公式ビートマップを検索。",
+    "serverMetadataOnly": "情報のみ",
+    "serverMetadataOnlyHint": "このセットにはサーバーで設定した難易度のステータスがありますが、プレイ可能なパッケージは保存されていません。"
   },
   "adminModeration": {
     "scoreTitle": "スコア審査",

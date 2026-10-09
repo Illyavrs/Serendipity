@@ -25,6 +25,7 @@ import { useSession } from '@/components/providers';
 import { ApiError, hasPermission } from '@/lib/api';
 import type { OfficialBeatmapSearch, OfficialBeatmapset } from '@/lib/types';
 import { MapCardPreview } from './map-card-preview';
+import { MapStatus } from './map-status';
 import { BeatmapRankRequestAction } from './beatmap-rank-requests';
 import {
   CatalogueSource,
@@ -83,9 +84,19 @@ function OfficialSearchField({ value }: { value: string }) {
   );
 }
 
-function OfficialStatus({ value }: { value: OfficialBeatmapset['status'] }) {
-  const t = useTranslations('maps.officialSearch');
-  return <span className={`discovery-status status-${value}`}>{t(`statuses.${value}`)}</span>;
+function SetStatuses({ set }: { set: OfficialBeatmapset }) {
+  const t = useTranslations('publicOfficialMaps');
+  const mixed = new Set(set.difficulties.map((map) => map.status).filter(Boolean)).size > 1;
+  return (
+    <div className={`discovery-set-statuses${mixed ? ' discovery-set-statuses-mixed' : ''}`}>
+      <MapStatus value={set.status} context="set" />
+      {mixed && (
+        <span className="discovery-source" title={t('mixedStatusesHint')}>
+          {t('mixedStatuses')}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function OfficialSetCard({ set, returnTo }: { set: OfficialBeatmapset; returnTo: string }) {
@@ -131,9 +142,7 @@ function OfficialSetCard({ set, returnTo }: { set: OfficialBeatmapset; returnTo:
         <ArrowRight className="discovery-open" aria-hidden="true" />
       </Link>
       <div className="discovery-difficulties">
-        <div className="discovery-set-statuses">
-          <OfficialStatus value={set.status} />
-        </div>
+        <SetStatuses set={set} />
         <MapCardPreview official={set} />
       </div>
     </article>
@@ -239,7 +248,7 @@ export function OfficialMapDiscoveryPage() {
               />
             </div>
             <div className="field">
-              <label htmlFor="official-status">{c('statusLabel')}</label>
+              <label htmlFor="official-status">{t('officialStatusFilter')}</label>
               <FieldSelect
                 id="official-status"
                 className="native-select"
@@ -405,7 +414,7 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
           <header className="public-official-header glass">
             <MapArtwork source="official" nativeSetId={data.official_set_id} priority />
             <div className="public-official-title">
-              <OfficialStatus value={data.status} />
+              <SetStatuses set={data} />
               <h1>{data.title}</h1>
               <p>{data.artist}</p>
               <span>{c('mappedBy', { creator: data.creator })}</span>
@@ -487,7 +496,10 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
                   >
                     <span className="difficulty-marker" aria-hidden="true" />
                     <span className="difficulty-chip-copy">
-                      <span className="difficulty-mode">{modes[map.mode]}</span>
+                      <span className="difficulty-chip-caption">
+                        <span className="difficulty-mode">{modes[map.mode]}</span>
+                        <MapStatus value={map.status} />
+                      </span>
                       <span className="difficulty-version">{map.version}</span>
                     </span>
                     <span className="difficulty-rating">
@@ -498,7 +510,10 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
                 ))}
               </div>
               <div className="public-official-selected">
-                <h3>{selected.version}</h3>
+                <div className="public-official-selected-heading">
+                  <h3>{selected.version}</h3>
+                  <MapStatus value={selected.status} />
+                </div>
                 <dl>
                   {[
                     [maps('stars'), selected.stars.toFixed(2)],

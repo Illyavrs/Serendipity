@@ -901,7 +901,10 @@
     "busyHint": "Official search is busy. Wait a moment before retrying.",
     "metadataOnly": "This difficulty is not stored on this server yet.",
     "serverScores": "Server leaderboard",
-    "maxCombo": "Max combo"
+    "maxCombo": "Max combo",
+    "mixedStatuses": "Mixed statuses",
+    "mixedStatusesHint": "Difficulty statuses vary on Illyaverse. Check each difficulty.",
+    "officialStatusFilter": "osu! status"
   },
   "mapDiscovery": {
     "description": "Find beatmap sets and choose a difficulty.",
@@ -982,7 +985,12 @@
     "previewUnavailable": "The complete list is unavailable. Only stored previews are shown; try again shortly.",
     "previewWithdrawn": "This beatmap set is no longer available.",
     "uploadedOnlyFilter": "Uploaded community beatmaps only",
-    "clearUploadedOnly": "Show all stored beatmaps"
+    "clearUploadedOnly": "Show all stored beatmaps",
+    "difficultyStatusFact": "Status on Illyaverse: {status}",
+    "setStatusFact": "Set status: {status}",
+    "serverDescription": "Search uploaded beatmaps and official beatmaps with server difficulty decisions.",
+    "serverMetadataOnly": "Metadata only",
+    "serverMetadataOnlyHint": "This set has server difficulty decisions; no playable package is stored here."
   },
   "adminModeration": {
     "scoreTitle": "Score moderation",

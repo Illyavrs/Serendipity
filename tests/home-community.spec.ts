@@ -285,8 +285,8 @@ async function fixture(
               compatibility: {},
             },
           });
-    if (endpoint === '/beatmapsets') {
-      const catalogue = url.searchParams.get('page_size') === '24';
+    if (endpoint === '/beatmapsets' || endpoint === '/server/beatmapsets') {
+      const catalogue = endpoint === '/server/beatmapsets';
       if (catalogue) state.catalogueQueries.push(Object.fromEntries(url.searchParams));
       else
         expect(Object.fromEntries(url.searchParams)).toEqual({
@@ -303,7 +303,7 @@ async function fixture(
               items: state.empty
                 ? []
                 : catalogue
-                  ? fixtureMaps.map(setFixture)
+                  ? fixtureMaps.map(setFixture).map((stored) => ({ kind: 'stored', stored }))
                   : (state.mapItems ?? fixtureSets),
               total: state.empty ? 0 : catalogue ? 3 : (state.mapItems ?? fixtureSets).length,
               page: 1,
@@ -794,7 +794,7 @@ test('latest community catalogue scope survives filters and history, and can be 
   expect(state.catalogueQueries.at(-1)?.uploaded_only).toBe('true');
   for (const [label, value] of [
     ['Graveyard', 'graveyard'],
-    ['WIP', 'wip'],
+    ['Work in progress', 'wip'],
   ]) {
     await page.locator('#discovery-status').click();
     await page.getByRole('option', { name: label, exact: true }).click();

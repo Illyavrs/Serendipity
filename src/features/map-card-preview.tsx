@@ -9,6 +9,7 @@ import { useNavigationProgress } from '@/components/navigation-motion';
 import { Button } from '@/components/ui/button';
 import { difficultyLevel, type DiscoverySet } from './map-discovery';
 import type { OfficialBeatmapset } from '@/lib/types';
+import { MapStatus } from './map-status';
 
 type PreviewDifficulty = {
   id: number | null;
@@ -16,12 +17,15 @@ type PreviewDifficulty = {
   version: string;
   mode: number;
   stars: number;
+  status?: string;
 };
 type Preview = { items: PreviewDifficulty[]; total: number; stored_count: number };
 const modes = ['osu!', 'taiko', 'catch', 'mania'];
 
 /** A card preview is read-only. Opening it never imports missing difficulties. */
-export function MapCardPreview(props: { set: DiscoverySet } | { official: OfficialBeatmapset }) {
+export function MapCardPreview(
+  props: { set: DiscoverySet } | { official: Pick<OfficialBeatmapset, 'title' | 'difficulties'> },
+) {
   const set = 'set' in props ? props.set : null;
   const official = 'official' in props ? props.official : null;
   const t = useTranslations('mapDiscovery');
@@ -184,7 +188,10 @@ export function MapCardPreview(props: { set: DiscoverySet } | { official: Offici
               >
                 <span className="difficulty-marker" aria-hidden="true" />
                 <span className="difficulty-chip-copy">
-                  <span className="difficulty-mode">{modes[map.mode] ?? t('unknownMode')}</span>
+                  <span className="difficulty-chip-caption">
+                    <span className="difficulty-mode">{modes[map.mode] ?? t('unknownMode')}</span>
+                    <MapStatus value={map.status} />
+                  </span>
                   <span className="difficulty-version" title={map.version}>
                     {map.version}
                   </span>

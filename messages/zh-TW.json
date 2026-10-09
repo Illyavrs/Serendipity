@@ -901,7 +901,10 @@
     "busyHint": "官方搜尋目前忙碌，請稍候再試。",
     "metadataOnly": "伺服器尚未保存此難度。",
     "serverScores": "伺服器排行榜",
-    "maxCombo": "最大連擊"
+    "maxCombo": "最大連擊",
+    "mixedStatuses": "難度狀態不同",
+    "mixedStatusesHint": "各難度在 Illyaverse 的狀態不同，請查看個別難度。",
+    "officialStatusFilter": "osu! 官方狀態"
   },
   "mapDiscovery": {
     "description": "搜尋圖譜組，選擇想玩的難度。",
@@ -982,7 +985,12 @@
     "previewUnavailable": "暫時無法取得完整清單，目前只顯示已保存的預覽。請稍後重試。",
     "previewWithdrawn": "這個圖譜組已無法使用。",
     "uploadedOnlyFilter": "僅顯示玩家上傳的社群圖譜",
-    "clearUploadedOnly": "顯示所有已儲存圖譜"
+    "clearUploadedOnly": "顯示所有已儲存圖譜",
+    "difficultyStatusFact": "Illyaverse 狀態：{status}",
+    "setStatusFact": "圖譜組狀態：{status}",
+    "serverDescription": "搜尋玩家上傳的圖譜，以及由本伺服器調整難度狀態的官方圖譜。",
+    "serverMetadataOnly": "僅圖譜資訊",
+    "serverMetadataOnlyHint": "這組圖譜已有本伺服器的難度狀態設定，但尚未保存可遊玩的圖譜包。"
   },
   "adminModeration": {
     "scoreTitle": "成績審核",
