@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import useSWR, { unstable_serialize, useSWRConfig } from 'swr';
 import {
@@ -38,7 +38,12 @@ import type {
   ScoreVariant,
 } from '@/lib/types';
 import { ScoreTable } from './scores';
-import { ScoreVariantControl, useScoreSelection } from '@/components/score-selection';
+import { ScoreVariantControl } from '@/components/score-selection';
+import {
+  correctRankingLocation,
+  readRankingSelection,
+  updateRankingSelection,
+} from '@/lib/ranking-url-state';
 import { BeatmapAvailabilityAction } from './admin';
 import { OfficialMapSearch } from './official-map-search';
 import {
@@ -283,6 +288,7 @@ export function BeatmapPage({ id }: { id: number }) {
   const availability = useTranslations('mapAvailability');
   const { user, loading: sessionLoading } = useSession();
   const search = useSearchParams();
+  const pathname = usePathname();
   const management = search.get('management') === '1';
   const canManage = !sessionLoading && !!user && hasPermission(user.permissions, 'admin.view');
   const canReview = canManage && hasPermission(user.permissions, 'beatmaps.moderate');
@@ -360,10 +366,14 @@ export function BeatmapPage({ id }: { id: number }) {
       return false;
     }
   }
-  const { mode: requestedMode, select } = useScoreSelection(map?.mode ?? 0);
-  const mode = map && map.mode !== 0 ? String(map.mode) : requestedMode;
-  const variant: ScoreVariant =
-    mode !== '3' && search.get('variant') === 'relax' ? 'relax' : 'vanilla';
+  const rankingOptions = {
+    defaultMode: map?.mode ?? 0,
+    lockedMode: map && map.mode !== 0 ? map.mode : undefined,
+  };
+  const { mode, variant, page } = readRankingSelection(search, rankingOptions);
+  const select = (nextMode: string, nextVariant: ScoreVariant) =>
+    updateRankingSelection({ mode: nextMode, variant: nextVariant }, rankingOptions);
+  const setPage = (nextPage: number) => updateRankingSelection({ page: nextPage }, rankingOptions);
   const selection = new URLSearchParams({ mode, variant });
   const requestedReturn = search.get('returnTo');
   const catalogueReturn = safeCatalogueReturn(requestedReturn);
@@ -381,18 +391,6 @@ export function BeatmapPage({ id }: { id: number }) {
       /* Keep the normal catalogue link for malformed return targets. */
     }
   }
-  useEffect(() => {
-    if (!map) return;
-    const invalidMode = search.has('mode') && search.get('mode') !== mode;
-    const invalidVariant = search.has('variant') && search.get('variant') !== variant;
-    if (!invalidMode && !invalidVariant) return;
-    const query = new URLSearchParams(search.toString());
-    query.set('mode', mode);
-    query.set('variant', variant);
-    query.delete('page');
-    window.history.replaceState(null, '', `?${query}`);
-  }, [map, mode, variant, search]);
-  const [page, setPage] = useState(1);
   const {
     data: scores,
     error: scoreError,
@@ -400,7 +398,17 @@ export function BeatmapPage({ id }: { id: number }) {
   } = useSWR<ScoreBoard>(
     map && !withdrawn ? `/beatmaps/${id}/scores?${selection}&page=${page}&page_size=24` : null,
     fetcher,
+    { keepPreviousData: false, dedupingInterval: 0 },
   );
+  useEffect(() => {
+    if (!map || withdrawn) return;
+    correctRankingLocation(
+      pathname,
+      search.toString(),
+      { defaultMode: map.mode, lockedMode: map.mode !== 0 ? map.mode : undefined },
+      !scoreError ? scores : undefined,
+    );
+  }, [pathname, search, map, withdrawn, scores, scoreError]);
   return (
     <div className="page-container beatmap-detail">
       <Link href={reviewReturn ?? catalogueReturn ?? '/beatmaps'} className="back-link">
@@ -567,7 +575,6 @@ export function BeatmapPage({ id }: { id: number }) {
                     allowedModes={map.mode === 0 ? undefined : [String(map.mode)]}
                     onChange={(v) => {
                       select(v, variant);
-                      setPage(1);
                     }}
                   />
                   <ScoreVariantControl
@@ -575,7 +582,6 @@ export function BeatmapPage({ id }: { id: number }) {
                     value={variant}
                     onChange={(v) => {
                       select(mode, v);
-                      setPage(1);
                     }}
                   />
                 </div>
@@ -589,12 +595,22 @@ export function BeatmapPage({ id }: { id: number }) {
                 ) : !scores ? (
                   <Loading />
                 ) : scores.items.length ? (
-                  <>
-                    <ScoreTable scores={scores.items} leaderboard orderedBy={scores.ordered_by} />
-                    <Pagination page={page} total={scores.total} onChange={setPage} />
-                  </>
+                  <ScoreTable scores={scores.items} leaderboard orderedBy={scores.ordered_by} />
                 ) : (
                   <Empty title={c('empty')} />
+                )}
+                {scores && !scoreError && (
+                  <Pagination page={page} total={scores.total} onChange={setPage} />
+                )}
+                {page > 1 && (!scores || !!scoreError || scores.total <= 24) && (
+                  <div className="pagination">
+                    <Button type="button" variant="outline" onClick={() => setPage(1)}>
+                      {c('firstPage')}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setPage(page - 1)}>
+                      {c('previous')}
+                    </Button>
+                  </div>
                 )}
               </section>
             )}

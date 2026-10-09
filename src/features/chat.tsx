@@ -13,6 +13,7 @@ import { useSession } from '@/components/providers';
 import { ApiError, hasPermission } from '@/lib/api';
 import type { Message, User } from '@/lib/types';
 import { messagesPath, targetKey, useChatData, type ChatTarget } from './chat-data';
+import { ChatSendNotice } from './chat-send-notice';
 
 type ScrollPosition = { top: number; height: number; atBottom: boolean };
 type SendAttempt = { content: string; uuid: string; is_action: boolean };
@@ -34,6 +35,8 @@ function errorKey(error: unknown, operation: 'create' | 'send') {
         return 'errorRecipientNotFound';
       case 'message_uuid_conflict':
         return 'errorUuidConflict';
+      case 'chat_silenced':
+        return 'errorSilenced';
     }
     if (error.status === 401) return 'errorUnauthorized';
     if (error.status === 403) return 'errorNoPermission';
@@ -97,12 +100,30 @@ function AccountChat({ user }: { user: User | null }) {
   const draft = key ? (drafts[key] ?? '') : '';
   const sendError = key ? sendErrors[key] : null;
   const busy = !!key && !!sending[key];
+  const noSendPermission =
+    !user ||
+    !hasPermission(user.permissions, 'chat.send') ||
+    chat.policy.status?.send_restriction === 'no_permission' ||
+    conversation?.send_restriction === 'no_permission';
+  const showComposer = !!user && available && !denied;
+  const sendNoticeId =
+    noSendPermission ||
+    chat.policy.checking ||
+    chat.policy.error ||
+    chat.policy.status?.send_restriction === 'silenced'
+      ? 'chat-send-notice'
+      : conversation?.send_restriction === 'friend_only'
+        ? 'chat-friend-only-notice'
+        : undefined;
   const canSend =
     !!user &&
-    hasPermission(user.permissions, 'chat.send') &&
+    !noSendPermission &&
+    chat.policy.canSend &&
     available &&
     !denied &&
-    (current?.kind !== 'conversation' || conversation?.can_send === true);
+    (current?.kind !== 'conversation' ||
+      conversation?.can_send === true ||
+      conversation?.send_restriction === 'silenced');
   const messageList = useRef<HTMLDivElement>(null);
   const sidebarContent = useRef<HTMLDivElement>(null);
   const sidebarToggle = useRef<HTMLButtonElement>(null);
@@ -665,7 +686,18 @@ function AccountChat({ user }: { user: User | null }) {
               {t(sendError)}
             </p>
           ) : null}
-          {canSend ? (
+          {showComposer ? (
+            <ChatSendNotice policy={chat.policy} noPermission={noSendPermission} />
+          ) : null}
+          {showComposer &&
+          !noSendPermission &&
+          chat.policy.canSend &&
+          conversation?.send_restriction === 'friend_only' ? (
+            <p id="chat-friend-only-notice" className="chat-error py-2 text-sm" role="status">
+              {t('sendFriendOnly')}
+            </p>
+          ) : null}
+          {showComposer ? (
             <form onSubmit={send} className="chat-compose" aria-busy={busy}>
               <Textarea
                 aria-label={t('placeholder')}
@@ -674,6 +706,7 @@ function AccountChat({ user }: { user: User | null }) {
                 onChange={(event) => changeDraft(event.target.value)}
                 maxLength={1000}
                 rows={1}
+                aria-describedby={!canSend ? sendNoticeId : undefined}
                 onKeyDown={(event) => {
                   if (
                     event.key === 'Enter' &&
@@ -686,7 +719,7 @@ function AccountChat({ user }: { user: User | null }) {
                   }
                 }}
               />
-              <Button type="submit" disabled={busy || !draft.trim()}>
+              <Button type="submit" disabled={!canSend || busy || !draft.trim()}>
                 {busy ? <LoaderCircle className="spin" /> : <Send />}
                 {sendError ? t('retrySend') : t('send')}
               </Button>

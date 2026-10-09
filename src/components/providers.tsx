@@ -368,11 +368,7 @@ function SessionProviders({ children }: { children: ReactNode }) {
       <SWRConfig key={user?.id ?? 'guest'} value={{ provider: () => new Map() }}>
         <AnnouncementDraftProvider
           userId={user?.id ?? null}
-          authorized={Boolean(
-            user &&
-            hasPermission(user.permissions, 'admin.view') &&
-            hasPermission(user.permissions, 'announcements.manage'),
-          )}
+          authorized={Boolean(user && hasPermission(user.permissions, 'announcements.manage'))}
         >
           <AppearanceProvider>{children}</AppearanceProvider>
         </AnnouncementDraftProvider>

@@ -22,9 +22,14 @@ import type { Beatmap, BestScorePage, Leader, Page, User, Score, ScoreVariant } 
 import { ProfileScoreList } from '@/components/profile-score-list';
 import { MapRows } from './beatmaps';
 import { RelationshipActions } from './social';
-import { ScoreVariantControl, useScoreSelection } from '@/components/score-selection';
+import { ScoreVariantControl } from '@/components/score-selection';
 import { RankHistoryPanel } from './rank-history';
 import { CountryFlag } from '@/components/country-flag';
+import {
+  correctRankingLocation,
+  readRankingSelection,
+  updateRankingSelection,
+} from '@/lib/ranking-url-state';
 
 function profilePresentation(player: User): CSSProperties {
   const accent =
@@ -74,12 +79,32 @@ export function RankingsPage() {
   const t = useTranslations('rankings');
   const c = useTranslations('common');
   const f = useFormatter();
-  const { mode, variant, select, href } = useScoreSelection();
-  const [country, setCountry] = useState('');
-  const [page, setPage] = useState(1);
+  const pathname = usePathname();
+  const search = useSearchParams();
+  const { mode, variant, country, page } = readRankingSelection(search, { country: true });
+  const [countryDraft, setCountryDraft] = useState({ country, value: country });
+  if (countryDraft.country !== country) setCountryDraft({ country, value: country });
+  const selection = new URLSearchParams({ mode, variant });
   const query = new URLSearchParams({ mode, variant, page: String(page), page_size: '24' });
-  if (country.length === 2) query.set('country', country);
-  const { data, error, isLoading, mutate } = useSWR<Page<Leader>>(`/leaderboard?${query}`, fetcher);
+  if (country) query.set('country', country);
+  const { data, error, isLoading, mutate } = useSWR<Page<Leader>>(
+    `/leaderboard?${query}`,
+    fetcher,
+    {
+      keepPreviousData: false,
+      dedupingInterval: 0,
+    },
+  );
+  useEffect(() => {
+    correctRankingLocation(
+      pathname,
+      search.toString(),
+      { country: true },
+      !error ? data : undefined,
+    );
+  }, [pathname, search, data, error]);
+  const setPage = (nextPage: number) =>
+    updateRankingSelection({ page: nextPage }, { country: true });
   return (
     <div className="page-container rankings-page">
       <PageHeading title={t('title')} description={t('subtitle')} />
@@ -87,28 +112,30 @@ export function RankingsPage() {
         <div className="filter-bar rankings-toolbar">
           <GameMode
             value={mode}
-            onChange={(v) => {
-              select(v, variant);
-              setPage(1);
-            }}
+            onChange={(nextMode) => updateRankingSelection({ mode: nextMode }, { country: true })}
           />
           <ScoreVariantControl
             mode={mode}
             value={variant}
-            onChange={(v) => {
-              select(mode, v);
-              setPage(1);
-            }}
+            onChange={(nextVariant) =>
+              updateRankingSelection({ variant: nextVariant }, { country: true })
+            }
           />
           <input
             className="native-select country-input"
             placeholder="TW"
             maxLength={2}
             aria-label={t('country')}
-            value={country}
+            value={countryDraft.value}
             onChange={(e) => {
-              setCountry(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''));
-              setPage(1);
+              const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+              setCountryDraft({ country, value });
+              // Keep an incomplete two-letter draft without sending an invalid country filter.
+              if (value.length !== 1) updateRankingSelection({ country: value }, { country: true });
+            }}
+            onBlur={() => setCountryDraft({ country, value: country })}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
             }}
           />
           <p className="hint">{t('modeNotice')}</p>
@@ -139,7 +166,7 @@ export function RankingsPage() {
                     <tr key={player.id} data-rank={player.rank <= 3 ? player.rank : undefined}>
                       <td className="rank-cell">#{f.number(player.rank)}</td>
                       <td>
-                        <Link href={href(`/players/${player.id}`)} className="player-cell">
+                        <Link href={`/players/${player.id}?${selection}`} className="player-cell">
                           <Avatar name={player.username} url={player.avatar_url} />
                           {player.username}
                         </Link>
@@ -160,7 +187,17 @@ export function RankingsPage() {
           )}
         </div>
       </section>
-      {data && <Pagination page={page} total={data.total} onChange={setPage} />}
+      {data && !error && <Pagination page={page} total={data.total} onChange={setPage} />}
+      {page > 1 && (!data || !!error || data.total <= 24) && (
+        <div className="pagination">
+          <Button type="button" variant="outline" onClick={() => setPage(1)}>
+            {c('firstPage')}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setPage(page - 1)}>
+            {c('previous')}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

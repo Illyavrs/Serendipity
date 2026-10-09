@@ -1,0 +1,221 @@
+.workbench {
+  display: grid;
+  gap: 16px;
+}
+.filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.filters :global(.field),
+.search :global(.field),
+.silenceFields :global(.field) {
+  min-width: 0;
+  margin: 0;
+}
+.search {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.search :global(.field) {
+  flex: 1;
+}
+.search > button {
+  margin-top: 27px;
+}
+.table {
+  min-width: 730px;
+}
+.table td {
+  vertical-align: top;
+}
+.table :global(.hint) {
+  margin: 5px 0 0;
+  font-size: 12px;
+}
+.decision {
+  display: grid;
+  gap: 7px;
+  min-width: 275px;
+  max-width: 360px;
+}
+.decision p {
+  margin: 0;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.actions :global(.field-select) {
+  flex: 1;
+  min-width: 135px;
+}
+.decision > button {
+  justify-self: start;
+}
+.silenceEditor {
+  display: grid;
+  gap: 12px;
+  padding: 4px 0;
+  max-width: 820px;
+}
+.silenceEditor p {
+  margin: 0;
+}
+.silenceFields {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(240px, 2fr);
+  gap: 14px;
+}
+.silenceFields textarea {
+  min-height: 68px;
+}
+.customLabel {
+  display: block;
+  margin-top: 10px;
+}
+.silenceEditor > button {
+  justify-self: start;
+}
+.audit {
+  min-width: 180px;
+  max-width: 400px;
+}
+.audit summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--readable-accent);
+  font-weight: 700;
+  font-size: 12px;
+}
+.audit summary::-webkit-details-marker {
+  display: none;
+}
+.audit summary svg {
+  width: 14px;
+  height: 14px;
+}
+.audit[open] summary svg {
+  transform: rotate(180deg);
+}
+.audit summary:focus-visible {
+  outline: 2px solid var(--user-accent);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.audit dl {
+  display: grid;
+  gap: 7px;
+  padding-top: 12px;
+}
+.audit dl > div {
+  display: grid;
+  grid-template-columns: minmax(85px, 1fr) minmax(100px, 1.6fr);
+  gap: 10px;
+  font-size: 12px;
+}
+.audit dt {
+  color: var(--secondary-text);
+}
+.audit dd {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+@media (max-width: 600px) {
+  .scoreTable,
+  .chatTable,
+  .auditTable {
+    min-width: 0;
+    display: block;
+  }
+  .scoreTable thead,
+  .chatTable thead,
+  .auditTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .scoreTable tbody,
+  .chatTable tbody,
+  .auditTable tbody {
+    display: block;
+  }
+  .scoreTable tr,
+  .chatTable tr,
+  .auditTable tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .scoreTable tr:last-child,
+  .chatTable tr:last-child,
+  .auditTable tr:last-child {
+    border-bottom: 0;
+  }
+  .scoreTable td,
+  .chatTable td,
+  .auditTable td {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  .scoreTable td:nth-child(1),
+  .scoreTable td:nth-child(2),
+  .scoreTable td:nth-child(5),
+  .chatTable td:first-child,
+  .auditTable td:nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
+  .scoreTable td:nth-child(3)::before,
+  .scoreTable td:nth-child(4)::before,
+  .auditTable td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--secondary-text);
+  }
+  .scoreTable .decision {
+    min-width: 0;
+    max-width: none;
+    padding-top: 6px;
+  }
+  .chatTable .editorRow {
+    padding-top: 0;
+  }
+  .chatTable .editorRow td {
+    grid-column: 1 / -1;
+  }
+  .silenceFields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .audit {
+    min-width: 0;
+    max-width: none;
+  }
+  .filters {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .search {
+    flex-wrap: wrap;
+  }
+  .search :global(.field) {
+    flex-basis: 100%;
+  }
+  .search > button {
+    margin-top: 0;
+  }
+}

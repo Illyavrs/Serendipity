@@ -109,6 +109,7 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
     unread_count: state.reads.length ? 0 : 3,
     can_send: state.canSend,
     send_restriction: state.canSend ? null : 'friend_only',
+    silenced_until: null,
   });
   const collection = <T>(items: T[], total = items.length) => ({
     items,
@@ -142,6 +143,17 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
       }
       return route.fulfill({ json: preferences });
     }
+    if (pathname === '/chat/status')
+      return guest || state.sessionExpired
+        ? route.fulfill({ status: 401, json: { error: { code: 'unauthorized' } } })
+        : route.fulfill({
+            json: {
+              can_send: user.permissions.includes('chat.send'),
+              send_restriction: user.permissions.includes('chat.send') ? null : 'no_permission',
+              silenced_until: null,
+              server_time: new Date().toISOString(),
+            },
+          });
     if (pathname === '/channels')
       return route.fulfill({
         json: collection([
@@ -382,7 +394,10 @@ test('Japanese friend-only state and independent account preference failure/retr
   await page.goto('/chat');
   await selectPrivate(page);
   await expect(page.locator('.messages')).toContainText('測試訊息 205');
-  await expect(page.locator('.chat-compose button[type="submit"]')).toHaveCount(0);
+  await expect(page.locator('.chat-compose button[type="submit"]')).toBeDisabled();
+  await page.locator('.chat-compose textarea').fill('Friend-only draft fixture');
+  await expect(page.locator('.chat-compose textarea')).toHaveValue('Friend-only draft fixture');
+  expect(state.sends).toHaveLength(0);
   await capture(page, 'mobile-dark-ja-friend-only');
   await expandNavigation(page);
   state.failPreference = true;
@@ -645,8 +660,11 @@ test('live permission refresh updates public controls and revoked sessions clear
   await page.locator('.chat-compose textarea').fill('Permission draft fixture');
   state.user.permissions = [];
   state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
-  await expect(page.locator('.chat-compose')).toHaveCount(0);
-  await expect(page.locator('.chat-login')).toContainText('cannot send chat messages');
+  await expect(page.locator('.chat-compose button[type="submit"]')).toBeDisabled();
+  await expect(page.locator('.chat-compose textarea')).toHaveValue('Permission draft fixture');
+  await expect(page.locator('[data-chat-send-notice]')).toContainText('cannot send chat messages');
+  await expect(page.locator('.messages')).toContainText('Public channel fixture');
+  expect(state.sends).toHaveLength(0);
   state.user.permissions = ['chat.send'];
   state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
   await expect(page.locator('.chat-compose textarea')).toHaveValue('Permission draft fixture');

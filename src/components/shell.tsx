@@ -81,7 +81,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
     ['/connect', 'connect'],
     ['/settings', 'settings'],
   ];
-  if (user && hasPermission(user.permissions, 'admin.view')) links.push(['/admin', 'admin']);
+  if (
+    user &&
+    [
+      'admin.view',
+      'users.moderate',
+      'roles.manage',
+      'users.sessions.revoke',
+      'scores.moderate',
+      'chat.moderate',
+      'audit.read',
+      'announcements.manage',
+    ].some((permission) => hasPermission(user.permissions, permission))
+  )
+    links.push(['/admin', 'admin']);
   const navigation = () =>
     links.map(([href, key]) => (
       <Link

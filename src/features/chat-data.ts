@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import type { Channel, Conversation, Message, Page, Preferences } from '@/lib/types';
+import { useChatStatus } from './chat-status';
 
 export const CHAT_PAGE_SIZE = 100;
 const MAX_RECONCILIATION_PAGES = 20;
@@ -61,6 +62,8 @@ export function useChatData(
   target: ChatTarget | null,
   refreshSession: () => Promise<unknown>,
 ) {
+  const policy = useChatStatus(userId);
+  const { refresh: refreshStatus } = policy;
   const [channels, setChannels] = useState<Resource<Channel>>({
     items: [],
     total: 0,
@@ -283,8 +286,9 @@ export function useChatData(
   );
 
   const synchronize = useCallback(
-    async function synchronizeData() {
+    async function synchronizeData(revalidatePolicy = true) {
       if (!alive.current) return;
+      if (revalidatePolicy) void refreshStatus(true);
       if (synchronization.current) {
         synchronizationQueued.current = true;
         return;
@@ -491,7 +495,7 @@ export function useChatData(
         synchronization.current = false;
         if (synchronizationQueued.current && alive.current) {
           synchronizationQueued.current = false;
-          queueMicrotask(() => void synchronizeData());
+          queueMicrotask(() => void synchronizeData(false));
         }
       }
     },
@@ -504,6 +508,7 @@ export function useChatData(
       updateConversations,
       updateHistories,
       userId,
+      refreshStatus,
     ],
   );
 
@@ -822,7 +827,8 @@ export function useChatData(
                 : null;
             if (kind) append({ kind, id: message.channel_id }, message);
           }
-          void synchronize();
+          // Message traffic reconciles history; dedicated refresh frames carry policy changes.
+          void synchronize(false);
         }
       };
       connectionSocket.onclose = () => {
@@ -884,6 +890,7 @@ export function useChatData(
 
   return {
     channels,
+    policy,
     conversations,
     histories,
     connection,

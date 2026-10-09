@@ -148,6 +148,7 @@ export type Score = {
   pp: number;
   passed: boolean;
   verification: string;
+  moderation_revision: number;
   created_at: string;
   has_replay: boolean;
   replay_complete?: boolean | null;
@@ -179,7 +180,8 @@ export type Conversation = {
   last_read_id: number | null;
   unread_count: number;
   can_send: boolean;
-  send_restriction: 'friend_only' | 'no_permission' | null;
+  send_restriction: 'friend_only' | 'no_permission' | 'silenced' | null;
+  silenced_until: string | null;
 };
 export type Role = {
   id: number;
@@ -201,6 +203,16 @@ export type AdminUser = {
   can_manage_roles: boolean;
   can_moderate: boolean;
   can_revoke_sessions: boolean;
+};
+export type AdminChatUser = {
+  id: number;
+  username: string;
+  country: string;
+  avatar_url: string | null;
+  chat_silenced_until: string | null;
+  chat_silence_revision: number;
+  can_silence: boolean;
+  is_protected: boolean;
 };
 export type Leader = {
   id: number;

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { useFormatter, useTranslations } from 'next-intl';
 import { ArrowLeft, ArrowUpRight, Download, LoaderCircle, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Loading, LoadError, Avatar } from '@/components/common';
 import { useSession } from '@/components/providers';
-import { api, ApiError, fetcher } from '@/lib/api';
+import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import { scoreMods, scoreVerificationKey } from '@/lib/score-display';
 import type { Beatmap, User, Score } from '@/lib/types';
 import './score-presentation.css';
+import { ScoreModerationControls, useDeniedResponseGuard } from './admin-moderation';
 type ScoreDetail = Score & {
   user: User;
   beatmap: Beatmap;
@@ -226,10 +227,14 @@ export function ScorePage({ id }: { id: number }) {
   const c = useTranslations('common');
   const p = useTranslations('profile');
   const t = useTranslations('scores');
+  const moderation = useTranslations('adminModeration');
   const { user, loading: sessionLoading } = useSession();
   const f = useFormatter();
   const account = user?.id ?? 'guest';
   const scope = `${id}:${account}`;
+  const requestKey = [`/scores/${id}`, account] as const;
+  const { mutate: mutateCache } = useSWRConfig();
+  const guard = useDeniedResponseGuard();
   const [accessFailure, setAccessFailure] = useState<{ scope: string; error: ApiError } | null>(
     null,
   );
@@ -239,8 +244,18 @@ export function ScorePage({ id }: { id: number }) {
     isLoading,
     mutate,
   } = useSWR<ScoreDetail>(
-    sessionLoading ? null : [`/scores/${id}`, account],
-    ([path]: [string, number | string]) => fetcher<ScoreDetail>(path),
+    sessionLoading ? null : requestKey,
+    async ([path]: readonly [string, number | string]) => {
+      const ticket = guard.begin(scope);
+      try {
+        const latest = await fetcher<ScoreDetail>(path);
+        guard.check(ticket);
+        return latest;
+      } catch (failure) {
+        if (isScoreAccessError(failure)) guard.deny(scope);
+        throw failure;
+      }
+    },
     {
       keepPreviousData: false,
       shouldRetryOnError: (requestError) => !isScoreAccessError(requestError),
@@ -251,7 +266,7 @@ export function ScorePage({ id }: { id: number }) {
         if (!isScoreAccessError(requestError)) return;
         setAccessFailure({ scope, error: requestError });
         // A policy denial invalidates this account's cached snapshot too.
-        void mutate(undefined, { revalidate: false });
+        void mutateCache(requestKey, undefined, { revalidate: false });
       },
     },
   );
@@ -259,21 +274,26 @@ export function ScorePage({ id }: { id: number }) {
     accessFailure?.scope === scope ? accessFailure.error : isScoreAccessError(error) ? error : null;
 
   async function refreshScore() {
+    const ticket = guard.begin(scope);
     try {
       const updated = await fetcher<ScoreDetail>(`/scores/${id}`);
-      await mutate(updated, { revalidate: false });
+      guard.check(ticket);
+      await mutateCache(requestKey, updated, { revalidate: false });
+      guard.check(ticket);
       setAccessFailure((current) => (current?.scope === scope ? null : current));
       return updated;
     } catch (refreshError) {
       if (isScoreAccessError(refreshError)) {
+        guard.deny(scope);
         setAccessFailure({ scope, error: refreshError });
-        await mutate(undefined, { revalidate: false });
+        await mutateCache(requestKey, undefined, { revalidate: false });
       }
       throw refreshError;
     }
   }
   async function attached(result: ReplayAttachmentResult) {
-    await mutate(
+    await mutateCache<ScoreDetail>(
+      requestKey,
       (current) =>
         current && {
           ...current,
@@ -392,6 +412,12 @@ export function ScorePage({ id }: { id: number }) {
           ))}
         </dl>
       </section>
+      {user && hasPermission(user.permissions, 'scores.moderate') && (
+        <section className="glass content-panel" aria-labelledby="score-moderation-title">
+          <h2 id="score-moderation-title">{moderation('scoreTitle')}</h2>
+          <ScoreModerationControls key={`${id}:${user.id}`} score={score} refresh={refreshScore} />
+        </section>
+      )}
       {user?.id === score.user_id && (
         <ReplayAttachment
           key={`${id}:${user.id}`}

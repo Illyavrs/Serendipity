@@ -30,19 +30,14 @@ import {
 } from '@/components/common';
 import { useSession } from '@/components/providers';
 import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
-import type {
-  Page,
-  AdminUser,
-  Role,
-  Beatmap,
-  BeatmapAvailability,
-  Score,
-  Audit,
-} from '@/lib/types';
+import type { Page, AdminUser, Role, Beatmap, BeatmapAvailability, Audit } from '@/lib/types';
 import { AdminAnnouncements, type AnnouncementNavigationGuard } from './announcements';
+import { AuditDisclosure, ChatModeration, ScoreModeration } from './admin-moderation';
+import moderationStyles from './admin-moderation.module.css';
 
 const grants = [
   'chat.send',
+  'chat.moderate',
   'social.manage',
   'beatmaps.upload',
   'beatmaps.import',
@@ -55,7 +50,7 @@ const grants = [
   'admin.view',
   'announcements.manage',
 ];
-type Section = 'users' | 'roles' | 'beatmaps' | 'scores' | 'audit' | 'announcements';
+type Section = 'users' | 'roles' | 'beatmaps' | 'scores' | 'chat' | 'audit' | 'announcements';
 const mapStatuses = ['pending', 'ranked', 'loved', 'unranked'] as const;
 const mapModes = ['osu!', 'taiko', 'catch', 'mania'] as const;
 type MapStatus = (typeof mapStatuses)[number];
@@ -797,7 +792,11 @@ export function BeatmapAvailabilityAction({
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="map-availability-overlay" />
-        <Dialog.Content className="map-availability-dialog glass" data-material="floating" aria-busy={busy}>
+        <Dialog.Content
+          className="map-availability-dialog glass"
+          data-material="floating"
+          aria-busy={busy}
+        >
           <Dialog.Title asChild>
             <h2>{t(target ? 'withdrawTitle' : 'restoreTitle')}</h2>
           </Dialog.Title>
@@ -1222,7 +1221,8 @@ function MapModeration() {
               disabled={busy !== null}
               onValueChange={(value) => select({ availability: value })}
               options={['active', 'withdrawn', 'all'].map((value) => ({
-                value, label: value === 'all' ? c('all') : availability(value),
+                value,
+                label: value === 'all' ? c('all') : availability(value),
               }))}
             />
           </div>
@@ -1353,6 +1353,7 @@ function AdminContents() {
   if (allowed('roles.manage')) sections.push('roles');
   if (allowed('admin.view')) sections.push('beatmaps');
   if (allowed('scores.moderate')) sections.push('scores');
+  if (allowed('chat.moderate')) sections.push('chat');
   if (allowed('audit.read')) sections.push('audit');
   if (allowed('announcements.manage')) sections.push('announcements');
   const requestedSection = query.get('tab') as Section | null;
@@ -1368,36 +1369,46 @@ function AdminContents() {
     },
     [],
   );
-  const key =
-    section === 'scores'
-      ? `/scores?verification=pending&page=${page}&page_size=24`
-      : section
-        ? `/admin/${section}?page=${page}&page_size=24${section === 'users' && search ? `&search=${encodeURIComponent(search)}` : ''}`
-        : null;
-  const { data, error, isLoading, mutate } = useSWR<Page<AdminUser | Score | Audit>>(
-    section === 'roles' || section === 'beatmaps' || section === 'announcements' ? null : key,
-    fetcher,
+  const key = section
+    ? `/admin/${section}?page=${page}&page_size=24${section === 'users' && search ? `&search=${encodeURIComponent(search)}` : ''}`
+    : null;
+  const {
+    data: result,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR<Page<AdminUser | Audit>>(
+    ['roles', 'beatmaps', 'announcements', 'scores', 'chat'].includes(section) || !key || !user
+      ? null
+      : section === 'audit'
+        ? [key, user.id]
+        : key,
+    (request: string | [string, number]) =>
+      fetcher(typeof request === 'string' ? request : request[0]),
     {
       keepPreviousData: false,
       // A decision can return to a page whose cached response predates the write.
       dedupingInterval: 0,
       onSuccess: (result, requestedKey) => {
         // Only a response for this collection and page can shrink its pagination.
-        if (requestedKey !== key || result.page !== page || result.page_size < 1) return;
+        if (
+          (typeof requestedKey === 'string' ? requestedKey : requestedKey[0]) !== key ||
+          result.page !== page ||
+          result.page_size < 1
+        )
+          return;
         const lastPage = Math.max(1, Math.ceil(result.total / result.page_size));
         setPage((current) => (current === result.page && current > lastPage ? lastPage : current));
       },
     },
   );
+  const data =
+    error instanceof ApiError && [401, 403, 404].includes(error.status) ? undefined : result;
   const {
     data: roles,
     error: rolesError,
     mutate: refreshRoles,
   } = useSWR<Page<Role>>(allowed('roles.manage') ? '/admin/roles' : null, fetcher);
-  const [busy, setBusy] = useState<number | null>(null);
-  const [failed, setFailed] = useState('');
-  const [feedback, setFeedback] = useState(false);
-  const [stale, setStale] = useState(false);
   async function refreshAdministration() {
     const adminKey = (key: unknown): key is string =>
       typeof key === 'string' &&
@@ -1411,22 +1422,6 @@ function AdminContents() {
       results.every((result) => result.status === 'fulfilled') &&
       keys.every((key) => !cache.get(key)?.error)
     );
-  }
-  async function change(path: string, id: number, value: unknown) {
-    if (busy !== null || stale) return;
-    setBusy(id);
-    setFailed('');
-    setFeedback(false);
-    try {
-      await api(path, { method: 'PATCH', body: JSON.stringify(value) });
-      setFeedback(true);
-      const results = await Promise.allSettled([mutate(), refreshAdministration()]);
-      setStale(results.some((result) => result.status === 'rejected' || result.value === false));
-    } catch (error) {
-      setFailed(describeError(error));
-    } finally {
-      setBusy(null);
-    }
   }
   return (
     <>
@@ -1443,8 +1438,6 @@ function AdminContents() {
                 next.delete('page');
                 window.history.pushState(null, '', `?${next}`);
                 setPage(1);
-                setFailed('');
-                setFeedback(false);
               };
               if (section === 'announcements' && announcementNavigationGuard.current)
                 announcementNavigationGuard.current(navigate);
@@ -1455,9 +1448,6 @@ function AdminContents() {
           </button>
         ))}
       </div>
-      {section !== 'beatmaps' && section !== 'announcements' && (
-        <Feedback error={failed} success={feedback ? t('saved') : ''} stale={stale} />
-      )}
       {section === 'users' && (
         <form
           className="admin-search"
@@ -1465,7 +1455,6 @@ function AdminContents() {
             event.preventDefault();
             setSearch(searchInput.trim());
             setPage(1);
-            setFailed('');
           }}
         >
           <div className="field">
@@ -1507,6 +1496,10 @@ function AdminContents() {
         <AdminAnnouncements registerNavigationGuard={registerAnnouncementNavigationGuard} />
       ) : section === 'beatmaps' ? (
         <MapModeration />
+      ) : section === 'scores' ? (
+        <ScoreModeration key={user?.id} />
+      ) : section === 'chat' ? (
+        <ChatModeration key={user?.id} />
       ) : (
         <section className="glass content-panel">
           {section === 'users' && (
@@ -1535,14 +1528,14 @@ function AdminContents() {
               aria-describedby={section === 'users' ? 'admin-scroll-hint' : undefined}
               tabIndex={0}
             >
-              <table className={`data-table${section === 'users' ? ' admin-users-table' : ''}`}>
+              <table
+                className={`data-table${section === 'users' ? ' admin-users-table' : ` ${moderationStyles.auditTable}`}`}
+              >
                 <thead>
                   <tr>
                     {(section === 'users'
                       ? [c('username'), c('status'), t('roles'), t('action')]
-                      : section === 'scores'
-                        ? [c('username'), c('score'), c('replay'), t('action')]
-                        : [c('date'), t('actor'), t('action'), t('target')]
+                      : [c('date'), t('actor'), t('action'), t('target'), t('auditDetails')]
                     ).map((label) => (
                       <th key={label}>{label}</th>
                     ))}
@@ -1618,78 +1611,31 @@ function AdminContents() {
                             </tr>
                           );
                         })()
-                      : section === 'scores'
-                        ? (() => {
-                            const s = item as Score;
-                            return (
-                              <tr key={s.id}>
-                                <td>
-                                  <Link href={`/players/${s.user_id}`}>{s.username}</Link>
-                                </td>
-                                <td>
-                                  {s.title}
-                                  <div className="hint">
-                                    {f.number(s.score)} · {s.accuracy.toFixed(2)}% ·{' '}
-                                    {s.pp.toFixed(2)} pp
-                                  </div>
-                                </td>
-                                <td>
-                                  {s.has_replay ? (
-                                    <a href={`/api/v1/scores/${s.id}/replay`} className="text-link">
-                                      {c('download')}
-                                    </a>
-                                  ) : (
-                                    '—'
-                                  )}
-                                </td>
-                                <td>
-                                  <div className="actions">
-                                    <Button
-                                      size="sm"
-                                      disabled={busy === s.id}
-                                      onClick={() =>
-                                        change(`/admin/scores/${s.id}`, s.id, {
-                                          verification: 'verified',
-                                        })
-                                      }
-                                    >
-                                      {t('approve')}
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      disabled={busy === s.id}
-                                      onClick={() =>
-                                        change(`/admin/scores/${s.id}`, s.id, {
-                                          verification: 'rejected',
-                                        })
-                                      }
-                                    >
-                                      {t('reject')}
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })()
-                        : (() => {
-                            const a = item as Audit;
-                            return (
-                              <tr key={a.id}>
-                                <td>
-                                  {f.dateTime(new Date(a.created_at), {
-                                    dateStyle: 'short',
-                                    timeStyle: 'short',
-                                  })}
-                                </td>
-                                <td>{a.actor_id ?? '—'}</td>
-                                <td>{a.action}</td>
-                                <td>
-                                  {a.target_type} #{a.target_id}
-                                </td>
-                              </tr>
-                            );
-                          })(),
+                      : (() => {
+                          const a = item as Audit;
+                          return (
+                            <tr key={a.id}>
+                              <td data-label={c('date')}>
+                                {f.dateTime(new Date(a.created_at), {
+                                  dateStyle: 'short',
+                                  timeStyle: 'short',
+                                })}
+                              </td>
+                              <td data-label={t('actor')}>
+                                {(a as Audit & { actor_username?: string | null }).actor_username ??
+                                  '—'}
+                                {a.actor_id !== null && <p className="hint">#{a.actor_id}</p>}
+                              </td>
+                              <td data-label={t('action')}>{a.action}</td>
+                              <td data-label={t('target')}>
+                                {a.target_type} #{a.target_id}
+                              </td>
+                              <td data-label={t('auditDetails')}>
+                                <AuditDisclosure audit={a} />
+                              </td>
+                            </tr>
+                          );
+                        })(),
                   )}
                 </tbody>
               </table>
@@ -1697,9 +1643,14 @@ function AdminContents() {
           )}
         </section>
       )}
-      {section !== 'roles' && section !== 'beatmaps' && section !== 'announcements' && data && (
-        <Pagination page={page} total={data.total} pageSize={data.page_size} onChange={setPage} />
-      )}
+      {section !== 'roles' &&
+        section !== 'beatmaps' &&
+        section !== 'announcements' &&
+        section !== 'scores' &&
+        section !== 'chat' &&
+        data && (
+          <Pagination page={page} total={data.total} pageSize={data.page_size} onChange={setPage} />
+        )}
     </>
   );
 }
@@ -1708,7 +1659,7 @@ export function AdminPage() {
   return (
     <div className="page-container">
       <PageHeading title={t('title')} description={t('subtitle')} />
-      <Protected permission="admin.view">
+      <Protected>
         <Suspense fallback={<Loading />}>
           <AdminContents />
         </Suspense>
