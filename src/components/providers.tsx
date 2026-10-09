@@ -64,6 +64,7 @@ type Appearance = {
   upload: (file: File) => Promise<void>;
   retry: () => Promise<void>;
   reset: () => void;
+  localePending: boolean;
   locale: (value: Locale) => Promise<void>;
 };
 const AppearanceContext = createContext<Appearance>({
@@ -79,6 +80,7 @@ const AppearanceContext = createContext<Appearance>({
   upload: async () => {},
   retry: async () => {},
   reset: () => {},
+  localePending: false,
   locale: async () => {},
 });
 export const useSession = () => useContext(SessionContext);
@@ -119,6 +121,8 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
   }));
   const preferencesRef = useRef(preferences);
   const operationRef = useRef<AppearanceOperation | null>(null);
+  const localePendingRef = useRef(false);
+  const [localePending, setLocalePending] = useState(false);
   const [operation, setOperation] = useState<AppearanceOperation | null>(null);
   const [feedback, setFeedback] = useState<Appearance['feedback']>(null);
   const [failure, setFailure] = useState<AppearanceFailure | null>(null);
@@ -284,13 +288,23 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
     setFeedback('reset');
   }
   async function locale(value: Locale) {
-    if (user)
-      await api('/me/preferences', { method: 'PATCH', body: JSON.stringify({ locale: value }) });
-    document.cookie = `illya_locale=${value}; Path=/; Max-Age=31536000; SameSite=Lax`;
-    const next = { ...preferencesRef.current, locale: value };
-    preferencesRef.current = next;
-    setPreferences(next);
-    refreshRoute();
+    // Header and account controls share this lock, including calls made before
+    // React renders their disabled state. A rejected write must not look saved.
+    if (localePendingRef.current) throw new Error('locale_change_pending');
+    localePendingRef.current = true;
+    setLocalePending(true);
+    try {
+      if (user)
+        await api('/me/preferences', { method: 'PATCH', body: JSON.stringify({ locale: value }) });
+      document.cookie = `illya_locale=${value}; Path=/; Max-Age=31536000; SameSite=Lax`;
+      const next = { ...preferencesRef.current, locale: value };
+      preferencesRef.current = next;
+      setPreferences(next);
+      refreshRoute();
+    } finally {
+      localePendingRef.current = false;
+      setLocalePending(false);
+    }
   }
   return (
     <AppearanceContext.Provider
@@ -310,6 +324,7 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
         upload,
         retry,
         reset,
+        localePending,
         locale,
       }}
     >

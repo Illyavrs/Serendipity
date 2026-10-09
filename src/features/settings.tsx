@@ -1,5 +1,5 @@
 'use client';
-import { Suspense, useState, type CSSProperties, type FormEvent } from 'react';
+import { Suspense, useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { ImagePlus, RotateCcw, Check, LoaderCircle } from 'lucide-react';
@@ -216,11 +216,7 @@ export function AppearanceControls({ compact = false }: { compact?: boolean }) {
           {operation === 'save' ? <LoaderCircle className="spin" /> : <Check />}
           {operation === 'save' ? t('appearanceSaving') : c('save')}
         </Button>
-        <Button
-          variant="ghost"
-          disabled={busy}
-          onClick={reset}
-        >
+        <Button variant="ghost" disabled={busy} onClick={reset}>
           <RotateCcw />
           {t('reset')}
         </Button>
@@ -623,7 +619,7 @@ function SettingsContent() {
   const social = useTranslations('social');
   const c = useTranslations('common');
   const current = useLocale();
-  const { locale } = useAppearance();
+  const { locale, localePending } = useAppearance();
   const { user } = useSession();
   const search = useSearchParams();
   const requestedTab = search.get('tab');
@@ -631,6 +627,10 @@ function SettingsContent() {
     ? requestedTab!
     : 'appearance';
   const [localeError, setLocaleError] = useState(false);
+  useEffect(() => {
+    // The header can also save a locale while this account panel stays mounted.
+    queueMicrotask(() => setLocaleError(false));
+  }, [current]);
   return (
     <div className="page-container">
       <PageHeading title={t('title')} description={t('subtitle')} />
@@ -676,9 +676,17 @@ function SettingsContent() {
               <FieldSelect
                 id="account-locale"
                 value={current}
-                onValueChange={(value) => {
-                  if (isLocale(value))
-                    locale(value).catch(() => setLocaleError(true));
+                disabled={localePending}
+                aria-busy={localePending}
+                onValueChange={async (value) => {
+                  if (!isLocale(value) || value === current || localePending) return;
+                  setLocaleError(false);
+                  try {
+                    await locale(value);
+                    setLocaleError(false);
+                  } catch {
+                    setLocaleError(true);
+                  }
                 }}
                 className="native-select"
                 options={[

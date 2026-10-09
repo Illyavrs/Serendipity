@@ -33,6 +33,8 @@ async function fixture(
   const user = {
     id: playerId,
     username: 'Country and language fixture',
+    email: 'locale-fixture@example.test',
+    email_verified: true,
     country: options.country ?? 'TW',
     bio: '',
     avatar_url: null,
@@ -90,6 +92,8 @@ async function fixture(
     if (pathname === `/users/${playerId}`) return route.fulfill({ json: user });
     if (pathname === '/me/relationships')
       return route.fulfill({ json: { friends: [], blocks: [] } });
+    if (pathname === '/me/sessions')
+      return route.fulfill({ json: { sessions: [], has_more: false } });
     if (
       pathname === '/beatmaps' ||
       pathname === '/scores' ||
@@ -398,6 +402,162 @@ test('language saving blocks duplicates and failure retains the old locale with 
   await expect(trigger).toHaveAttribute('data-value', 'ja');
   await expect(trigger).toBeFocused();
   await expect(page.locator('.shell-error')).toHaveCount(0);
+  assertClean(state);
+});
+
+async function chooseWithoutWaiting(page: Page, source: 'account' | 'header', value: Locale) {
+  await page.locator(source === 'account' ? '#account-locale' : '.language-select').click();
+  await page
+    .getByRole(source === 'account' ? 'option' : 'menuitemradio')
+    .and(page.locator(`[data-option-value=${JSON.stringify(value)}]`))
+    .click();
+}
+
+async function assertLocale(page: Page, state: Awaited<ReturnType<typeof fixture>>, value: Locale) {
+  await expect(page.locator('html')).toHaveAttribute('lang', value);
+  await expect(page.locator('#account-locale')).toHaveAttribute('data-value', value);
+  await expect(page.locator('.language-select')).toHaveAttribute('data-value', value);
+  expect(
+    (await page.context().cookies()).find((cookie) => cookie.name === 'illya_locale')?.value,
+  ).toBe(value);
+  expect(state.preferences.locale).toBe(value);
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('illya_appearance')!).locale))
+    .toBe(value);
+}
+
+async function captureLocalePending(page: Page, source: string, width: number) {
+  const directory = process.env.ILLYA_LOCALE_SHARED_EVIDENCE;
+  if (!directory) return;
+  await page.evaluate(() => document.fonts.ready);
+  const metrics = await page.evaluate(() => {
+    const account = document.querySelector<HTMLButtonElement>('#account-locale')!;
+    const header = document.querySelector<HTMLButtonElement>('.language-select')!;
+    return {
+      viewport: { width: innerWidth, height: innerHeight },
+      document_width: document.documentElement.scrollWidth,
+      locale: document.documentElement.lang,
+      account: {
+        disabled: account.disabled,
+        busy: account.getAttribute('aria-busy'),
+        bounds: account.getBoundingClientRect().toJSON(),
+      },
+      header: {
+        disabled: header.disabled,
+        busy: header.getAttribute('aria-busy'),
+        bounds: header.getBoundingClientRect().toJSON(),
+      },
+    };
+  });
+  expect(metrics.document_width).toBeLessThanOrEqual(width);
+  const filename = `locale-pending-${source}-${width}.png`;
+  const bytes = await page.screenshot({
+    path: path.join(directory, filename),
+    fullPage: true,
+    animations: 'disabled',
+  });
+  writeFileSync(
+    path.join(directory, `${filename}.json`),
+    JSON.stringify(
+      {
+        provenance:
+          'Synthetic intercepted account and delayed preferences API on isolated local Next dev server. No live account writes.',
+        screenshot_sha256: createHash('sha256').update(bytes).digest('hex'),
+        ...metrics,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
+for (const [source, width] of [
+  ['account', 1440],
+  ['header', 390],
+] as const) {
+  test(`${source} locale save shares its pending lock with both controls at ${width}px`, async ({
+    page,
+  }) => {
+    const state = await fixture(page);
+    let release!: () => void;
+    state.hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.goto('/settings?tab=account');
+    const account = page.locator('#account-locale');
+    const header = page.locator('.language-select');
+    await expect(account).toHaveAttribute('data-value', 'en');
+    await chooseWithoutWaiting(page, source, 'ja');
+    await expect.poll(() => state.patches.length).toBe(1);
+    for (const trigger of [account, header]) {
+      await expect(trigger).toBeDisabled();
+      await expect(trigger).toHaveAttribute('aria-busy', 'true');
+      // Repeated native clicks cannot start another account or header write.
+      await trigger.evaluate((element: HTMLButtonElement) => {
+        element.click();
+        element.click();
+      });
+    }
+    expect(state.patches).toEqual([{ locale: 'ja' }]);
+    await assertLocale(page, state, 'en');
+    await captureLocalePending(page, source, width);
+    release();
+    await assertLocale(page, state, 'ja');
+    await expect(account).toBeEnabled();
+    await expect(header).toBeEnabled();
+    await expect(account).toHaveAttribute('aria-busy', 'false');
+    await expect(header).toHaveAttribute('aria-busy', 'false');
+    expect(state.patches).toEqual([{ locale: 'ja' }]);
+    assertClean(state);
+  });
+}
+
+test('failed account locale write keeps its prior preference and a successful retry clears its error', async ({
+  page,
+}) => {
+  const state = await fixture(page);
+  state.fail = true;
+  await page.goto('/settings?tab=account');
+  await chooseWithoutWaiting(page, 'account', 'ja');
+  const error = page.locator('#account-locale').locator('..').getByRole('alert');
+  await expect(error).toHaveText(state.copy.common.serviceError);
+  await assertLocale(page, state, 'en');
+  await expect(page.locator('#account-locale')).toBeEnabled();
+  state.fail = false;
+  let release!: () => void;
+  state.hold = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await chooseWithoutWaiting(page, 'account', 'ja');
+  await expect.poll(() => state.patches.length).toBe(2);
+  await expect(error).toHaveCount(0);
+  await expect(page.locator('#account-locale')).toBeDisabled();
+  await assertLocale(page, state, 'en');
+  release();
+  await assertLocale(page, state, 'ja');
+  await expect(error).toHaveCount(0);
+  await expect(page.locator('#account-locale')).toBeEnabled();
+  expect(state.patches).toEqual([{ locale: 'ja' }, { locale: 'ja' }]);
+  assertClean(state);
+});
+
+test('a successful header locale save clears a previous account locale failure', async ({
+  page,
+}) => {
+  const state = await fixture(page);
+  state.fail = true;
+  await page.goto('/settings?tab=account');
+  await chooseWithoutWaiting(page, 'account', 'ja');
+  const error = page.locator('#account-locale').locator('..').getByRole('alert');
+  await expect(error).toHaveText(state.copy.common.serviceError);
+  await assertLocale(page, state, 'en');
+  state.fail = false;
+  await selectField(page.locator('.language-select'), 'ja');
+  await assertLocale(page, state, 'ja');
+  await expect(error).toHaveCount(0);
+  expect(state.patches).toEqual([{ locale: 'ja' }, { locale: 'ja' }]);
   assertClean(state);
 });
 

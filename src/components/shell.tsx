@@ -42,17 +42,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const settings = useTranslations('settings');
   const pathname = usePathname();
   const locale = useLocale();
-  const { locale: setLocale } = useAppearance();
+  const { locale: setLocale, localePending } = useAppearance();
   const { user, logout } = useSession();
   const [navOpen, setNavOpen] = useState(false);
   const [error, setError] = useState('');
-  const [localeBusy, setLocaleBusy] = useState(false);
-  const localeInFlight = useRef(false);
   const languageMenuRef = useRef<HTMLDivElement>(null);
   const languageTriggerRef = useRef<HTMLButtonElement>(null);
   const restoreLanguageFocus = useRef(false);
   useEffect(() => {
-    if (localeBusy || !restoreLanguageFocus.current) return;
+    if (localePending || !restoreLanguageFocus.current) return;
     const frame = requestAnimationFrame(() => {
       restoreLanguageFocus.current = false;
       const active = document.activeElement;
@@ -60,23 +58,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
         languageTriggerRef.current?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
-  }, [localeBusy, locale]);
+  }, [localePending, locale]);
   async function chooseLocale(value: string) {
-    if (!isLocale(value) || value === locale || localeInFlight.current) return;
+    if (!isLocale(value) || value === locale || localePending) return;
     // The menu closes while its trigger is disabled for saving. Restore focus
     // after enabling the current trigger, unless the player focused elsewhere.
     restoreLanguageFocus.current =
       languageMenuRef.current?.contains(document.activeElement) ?? false;
-    localeInFlight.current = true;
-    setLocaleBusy(true);
     setError('');
     try {
       await setLocale(value);
     } catch {
       setError(common('serviceError'));
-    } finally {
-      localeInFlight.current = false;
-      setLocaleBusy(false);
     }
   }
   const links = [
@@ -145,8 +138,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   className="language-select language-menu-trigger"
                   aria-label={t('language')}
                   data-value={locale}
-                  disabled={localeBusy}
-                  aria-busy={localeBusy}
+                  disabled={localePending}
+                  aria-busy={localePending}
                 >
                   <Globe2 aria-hidden="true" />
                   <span>{locale === 'zh-TW' ? '繁中' : locale === 'ja' ? 'JA' : 'EN'}</span>
@@ -170,7 +163,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                     aria-checked={locale === value}
                     data-option-value={value}
                     onSelect={() => void chooseLocale(value)}
-                    disabled={localeBusy}
+                    disabled={localePending}
                   >
                     <span lang={value}>{label}</span>
                     {locale === value ? (
