@@ -330,7 +330,7 @@ export function AccountSessionControls() {
       {feedback && (
         <p className={`${styles.feedback} ${styles.success}`} role="status">
           <Check aria-hidden="true" />
-          {t(feedback)}
+          <span>{t(feedback)}</span>
         </p>
       )}
       <AlertDialog

@@ -136,6 +136,9 @@
 }
 
 .success {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
   color: var(--status-success);
 }
 
