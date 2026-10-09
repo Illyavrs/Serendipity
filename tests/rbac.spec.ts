@@ -407,6 +407,128 @@ test('stronger and wildcard roles and targets cannot be delegated by a limited m
   expect(state.writes).toEqual([]);
 });
 
+test('a full-permission operator can replace custom wildcard permissions and retain a rejected draft', async ({
+  page,
+}) => {
+  const state = await fixture(page, ['*']);
+  let rejectUpdate = true;
+  state.onWrite = (write) => {
+    if (write.method === 'PATCH' && write.pathname === '/admin/roles/43' && rejectUpdate) {
+      rejectUpdate = false;
+      return failure('stronger_role', 'The backend message must be localized', 403);
+    }
+  };
+  await openRoles(page);
+  const row = roleRow(page, 43);
+  await expect(exactButton(row, 'Edit role')).toBeEnabled();
+  await expect(exactButton(row, 'Delete role')).toBeEnabled();
+  await exactButton(row, 'Edit role').click();
+  const form = page.locator('.admin-role-form');
+  const name = form.getByLabel('Role name', { exact: true });
+  const description = form.getByLabel('Description', { exact: true });
+  await expect(name).toBeEnabled();
+  await expect(name).not.toHaveAttribute('readonly', '');
+  await expect(description).toBeEnabled();
+  await expect(form.getByLabel('*', { exact: true })).toBeEnabled();
+  await expect(form.getByLabel('*', { exact: true })).toBeChecked();
+  await description.fill('Scoped helper access');
+  // Removing this extra permission also removes its checkbox from the choices.
+  await form.getByLabel('*', { exact: true }).click();
+  await expect(form.getByLabel('*', { exact: true })).toHaveCount(0);
+  await form.getByLabel('chat.send', { exact: true }).check();
+  await expect(exactButton(form, 'Save changes')).toBeEnabled();
+  await exactButton(form, 'Save changes').click();
+  await expect(form.getByRole('alert')).toHaveText(
+    'This player or role has permissions you cannot delegate. Refresh your access or ask an administrator.',
+  );
+  await expect(name).toHaveValue('custom_wildcard');
+  await expect(description).toHaveValue('Scoped helper access');
+  await expect(form.getByLabel('chat.send', { exact: true })).toBeChecked();
+  await expect(exactButton(form, 'Save changes')).toBeEnabled();
+
+  await exactButton(form, 'Save changes').click();
+  await expect.poll(() => state.writes.length).toBe(2);
+  for (const write of state.writes)
+    expect(write).toEqual({
+      method: 'PATCH',
+      pathname: '/admin/roles/43',
+      body: {
+        name: 'custom_wildcard',
+        description: 'Scoped helper access',
+        permissions: ['chat.send'],
+      },
+    });
+  await expect(row.getByText('chat.send', { exact: true })).toBeVisible();
+  await expect(row.getByText('*', { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Administrative change saved' }),
+  ).toBeVisible();
+});
+
+test('a full-permission operator can delete an unassigned custom wildcard with focus recovery and error retry', async ({
+  page,
+}) => {
+  const state = await fixture(page, ['*']);
+  state.roles.find((item) => item.id === 43)!.membership_count = 1;
+  state.players[0].roles.push({ id: 43, name: 'custom_wildcard' });
+  let rejectDeletion = true;
+  state.onWrite = (write, current) => {
+    if (write.method === 'PATCH' && write.pathname === `/admin/users/${targetId}`)
+      current.roles.find((item) => item.id === 43)!.membership_count = 0;
+    if (write.method === 'DELETE' && write.pathname === '/admin/roles/43' && rejectDeletion) {
+      rejectDeletion = false;
+      return failure('role_assigned', 'The backend message must be localized', 409);
+    }
+  };
+  await openRoles(page);
+  const row = roleRow(page, 43);
+  const deleteRole = exactButton(row, 'Delete role');
+  await expect(exactButton(row, 'Edit role')).toBeEnabled();
+  await expect(deleteRole).toBeDisabled();
+  expect(state.writes).toEqual([]);
+
+  await exactButton(page.locator('.admin-toolbar'), 'Players').click();
+  await userRow(page).getByLabel('custom_wildcard', { exact: true }).uncheck();
+  await exactButton(userRow(page), 'Save roles').click();
+  await expect.poll(() => state.writes.length).toBe(1);
+  expect(state.writes[0]).toEqual({
+    method: 'PATCH',
+    pathname: `/admin/users/${targetId}`,
+    body: { roles: [1, hiddenRoleId] },
+  });
+  await expect(userRow(page).getByLabel('custom_wildcard', { exact: true })).not.toBeChecked();
+  await exactButton(page.locator('.admin-toolbar'), 'Roles & permissions').click();
+  await expect(row.getByText('*', { exact: true })).toBeVisible();
+  await expect(deleteRole).toBeEnabled();
+  await deleteRole.click();
+  const confirmation = row.getByRole('group', { name: 'Delete the role “custom_wildcard”?' });
+  const confirmDeletion = exactButton(confirmation, 'Confirm deletion');
+  await expect(confirmDeletion).toBeFocused();
+  expect(state.writes).toHaveLength(1);
+  await page.keyboard.press('Escape');
+  await expect(confirmation).toHaveCount(0);
+  await expect(deleteRole).toBeFocused();
+  expect(state.writes).toHaveLength(1);
+
+  await deleteRole.click();
+  await expect(confirmDeletion).toBeFocused();
+  await confirmDeletion.click();
+  await expect(row.getByRole('alert')).toHaveText(
+    'This role is assigned to players. Remove its memberships before deleting it.',
+  );
+  await expect(confirmation).toBeVisible();
+  await expect(confirmDeletion).toBeEnabled();
+  await expect(row.getByText('*', { exact: true })).toBeVisible();
+  await confirmDeletion.click();
+  await expect.poll(() => state.writes.length).toBe(3);
+  expect(state.writes.slice(1)).toEqual([
+    { method: 'DELETE', pathname: '/admin/roles/43', body: null },
+    { method: 'DELETE', pathname: '/admin/roles/43', body: null },
+  ]);
+  await expect(row).toHaveCount(0);
+  await expect(page.getByRole('status').filter({ hasText: 'Role deleted' })).toBeVisible();
+});
+
 test('builtin names are read only and assigned custom roles cannot be deleted', async ({
   page,
 }) => {

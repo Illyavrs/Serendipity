@@ -430,7 +430,7 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
   const formRef = useRef<HTMLFormElement>(null);
   const deleteButton = useRef<HTMLButtonElement | null>(null);
   const permissionChoices = Array.from(new Set([...grants, ...chosen]));
-  const editable = !edit || (canDelegate(edit, permissions) && !edit.permissions.includes('*'));
+  const editable = !edit || (canDelegate(edit, permissions) && edit.name !== 'administrator');
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || stale || !editable) return;
@@ -494,10 +494,10 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
         <div className="role-list">
           {data?.items.map((role) => {
             const delegable = canDelegate(role, permissions);
-            const wildcard = role.permissions.includes('*');
-            const editAllowed = delegable && !wildcard;
-            const deleteAllowed = editAllowed && !role.is_builtin && role.membership_count === 0;
-            const lockReason = wildcard
+            const administrator = role.name === 'administrator';
+            const editAllowed = delegable && !administrator;
+            const deleteAllowed = delegable && !role.is_builtin && role.membership_count === 0;
+            const lockReason = administrator
               ? t('operatorRoleReadOnly')
               : !delegable
                 ? t('roleLocked')
