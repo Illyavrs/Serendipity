@@ -127,6 +127,7 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
   const [feedback, setFeedback] = useState<Appearance['feedback']>(null);
   const [failure, setFailure] = useState<AppearanceFailure | null>(null);
   const [loadedUserId, setLoadedUserId] = useState<number | null>(null);
+  const [cacheInitialized, setCacheInitialized] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [revision, setRevision] = useState(0);
   const userId = user?.id;
@@ -141,17 +142,22 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
     }
   });
   useEffect(() => {
+    let active = true;
+    let cached: Preferences | null = null;
     try {
       const raw = localStorage.getItem('illya_appearance');
-      if (raw) {
-        const cached = validate(JSON.parse(raw));
-        queueMicrotask(() =>
-          applyPreferences({ ...cached, locale: preferencesRef.current.locale }),
-        );
-      }
+      if (raw) cached = validate(JSON.parse(raw));
     } catch {
       localStorage.removeItem('illya_appearance');
     }
+    queueMicrotask(() => {
+      if (!active) return;
+      if (cached) applyPreferences({ ...cached, locale: preferencesRef.current.locale });
+      setCacheInitialized(true);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
   useEffect(() => {
     if (isLocale(currentLocale)) {
@@ -216,8 +222,9 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
             ? 'identity'
             : 'navigation';
     root.dataset.glassLevel = String(preferences.glass_level);
-    localStorage.setItem('illya_appearance', JSON.stringify(preferences));
-  }, [preferences]);
+    // Mount replay must restore the cache before any transient defaults can replace it.
+    if (cacheInitialized) localStorage.setItem('illya_appearance', JSON.stringify(preferences));
+  }, [preferences, cacheInitialized]);
   const update = useCallback(
     (values: Partial<Preferences>) => {
       if (operationRef.current) return;
@@ -310,7 +317,7 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
     <AppearanceContext.Provider
       value={{
         preferences,
-        ready: !loading && (!user || loadedUserId === user.id),
+        ready: cacheInitialized && !loading && (!user || loadedUserId === user.id),
         loadError,
         operation,
         feedback,
