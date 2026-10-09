@@ -125,9 +125,20 @@ async function capture(page: Page, name: string) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   if (process.env.ILLYA_CAPTURE_ACCOUNT_SESSIONS === '1') {
     await page.evaluate(() => document.fonts.ready);
+    const dialogOpen = await page.getByRole('alertdialog').isVisible();
+    if (!dialogOpen) {
+      await page.evaluate(async () => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+      });
+    }
     await page.screenshot({
       path: `../../.impeccable/review/account-sessions-${name}.png`,
-      fullPage: true,
+      // Fixed scrims cover the active viewport; full-page dialog captures
+      // would place the scrim and fixed header partway down a scrolled page.
+      fullPage: !dialogOpen,
       animations: 'disabled',
     });
   }
