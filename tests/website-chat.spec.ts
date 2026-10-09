@@ -80,6 +80,13 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
     preferenceWrites: [] as Record<string, unknown>[],
     reads: [] as number[],
     creates: [] as string[],
+    conversationOrder: [101, 102],
+    metadataReads: [] as number[],
+    metadataStatus: {} as Record<number, number>,
+    metadataGates: {} as Partial<Record<number, Promise<void>>>,
+    readStatus: {} as Record<number, number>,
+    historyReads: [] as { channel: number; before: number | null }[],
+    historyGates: {} as Partial<Record<string, Promise<void>>>,
     hidden: new Set<number>(),
     denied: new Set<number>(),
     canSend: true,
@@ -142,10 +149,17 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
           { id: 2, name: '#help', description: 'Connection help fixture' },
         ]),
       });
-    if (pathname === '/conversations' && method === 'GET')
+    if (pathname === '/conversations' && method === 'GET') {
+      const ids = state.conversationOrder.filter((id) => !state.denied.has(id));
+      const pageSize = Number(url.searchParams.get('page_size') ?? 50);
+      const currentPage = Number(url.searchParams.get('page') ?? 1);
       return route.fulfill({
-        json: collection([101, 102].filter((id) => !state.denied.has(id)).map(conversation)),
+        json: collection(
+          ids.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(conversation),
+          ids.length,
+        ),
       });
+    }
     if (pathname === '/conversations' && method === 'POST') {
       state.creates.push(request.postDataJSON().target_username);
       if (state.failCreate)
@@ -158,12 +172,21 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
       return route.fulfill({ json: { message_ids: ids.filter((id) => !state.hidden.has(id)) } });
     }
     const metadata = /^\/conversations\/(\d+)$/.exec(pathname);
-    if (metadata)
-      return state.denied.has(Number(metadata[1]))
-        ? route.fulfill({ status: 404, json: { error: { code: 'not_found' } } })
-        : route.fulfill({ json: conversation(Number(metadata[1])) });
+    if (metadata) {
+      const id = Number(metadata[1]);
+      state.metadataReads.push(id);
+      const status = state.metadataStatus[id] ?? (state.denied.has(id) ? 404 : 200);
+      const snapshot = conversation(id);
+      if (state.metadataGates[id]) await state.metadataGates[id];
+      return status === 200
+        ? route.fulfill({ json: snapshot })
+        : route.fulfill({ status, json: { error: { code: 'fixture_metadata_unavailable' } } });
+    }
     const read = /^\/conversations\/(\d+)\/read$/.exec(pathname);
     if (read) {
+      const status = state.readStatus[Number(read[1])] ?? 204;
+      if (status !== 204)
+        return route.fulfill({ status, json: { error: { code: 'fixture_read_denied' } } });
       state.reads.push(request.postDataJSON().message_id);
       return route.fulfill({ status: 204 });
     }
@@ -196,11 +219,15 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
       const visible = (transcripts[channel] ?? []).filter((item) => !state.hidden.has(item.id));
       const before = Number(url.searchParams.get('before_id') ?? Infinity);
       const after = Number(url.searchParams.get('after_id') ?? 0);
+      state.historyReads.push({ channel, before: Number.isFinite(before) ? before : null });
+      const response = collection(
+        visible.filter((item) => item.id < before && item.id > after).slice(-100),
+        visible.length,
+      );
+      if (state.historyGates[`${channel}:${before}`])
+        await state.historyGates[`${channel}:${before}`];
       return route.fulfill({
-        json: collection(
-          visible.filter((item) => item.id < before && item.id > after).slice(-100),
-          visible.length,
-        ),
+        json: response,
       });
     }
     return route.fulfill({ status: 404, json: { error: { code: 'fixture_route_missing' } } });
@@ -415,6 +442,183 @@ test('reconnect refetches history, keeps draft, and guest access exposes only pu
   await expect(page.locator('.chat-new-conversation')).toHaveCount(0);
   await expect(page.locator('.messages')).not.toContainText('Reconnect recovered fixture');
 });
+
+for (const kind of ['public', 'private'] as const) {
+  test(`${kind} reconnect recovers more than one missed history page above cached older messages`, async ({
+    page,
+  }) => {
+    const state = await fixture(page, 'en');
+    const channel = kind === 'public' ? 1 : 101;
+    const base = kind === 'public' ? 2000 : 0;
+    state.transcripts[channel] = Array.from({ length: 100 }, (_, i) =>
+      message(base + i + 1, channel),
+    );
+    await page.goto('/chat');
+    if (kind === 'private') await selectPrivate(page);
+    const list = page.locator('.messages');
+    await expect(list.locator('.message')).toHaveCount(100);
+    await page.locator('.chat-compose textarea').fill(`${kind} reconnect draft`);
+    state.transcripts[channel].push(
+      ...Array.from({ length: 150 }, (_, i) => message(base + i + 101, channel)),
+    );
+    await state.sockets.at(-1)!.close({ code: 1012, reason: 'Synthetic multi-page interruption' });
+    await expect(list.locator('.message')).toHaveCount(250);
+    expect(
+      await list
+        .locator('.message')
+        .evaluateAll((items) =>
+          items.map((item) => Number((item as HTMLElement).dataset.messageId)),
+        ),
+    ).toEqual(Array.from({ length: 250 }, (_, i) => base + i + 1));
+    expect(state.historyReads).toContainEqual({ channel, before: base + 151 });
+    await expect(page.locator('.chat-compose textarea')).toHaveValue(`${kind} reconnect draft`);
+  });
+}
+
+test('a live head message does not hide the missed pages below it', async ({ page }) => {
+  const state = await fixture(page, 'en');
+  state.transcripts[101] = Array.from({ length: 100 }, (_, i) => message(i + 1));
+  await page.goto('/chat');
+  await selectPrivate(page);
+  await expect(page.locator('.messages .message')).toHaveCount(100);
+  state.transcripts[101].push(...Array.from({ length: 150 }, (_, i) => message(i + 101)));
+  state.sockets
+    .at(-1)!
+    .send(JSON.stringify({ type: 'messages', items: [state.transcripts[101].at(-1)] }));
+  await expect(page.locator('.messages .message')).toHaveCount(250);
+  await expect(page.locator('.message[data-message-id="101"]')).toBeAttached();
+});
+
+test('bounded recovery replaces a disconnected window and cancels a stale older page', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  await page.goto('/chat');
+  await selectPrivate(page);
+  await expect(page.locator('.messages .message')).toHaveCount(100);
+  let release!: () => void;
+  state.historyGates['101:106'] = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page
+    .locator('.messages')
+    .getByRole('button', { name: 'Load older messages', exact: true })
+    .click();
+  await expect
+    .poll(() => state.historyReads.some((read) => read.channel === 101 && read.before === 106))
+    .toBe(true);
+  state.transcripts[101].push(...Array.from({ length: 2200 }, (_, i) => message(i + 206)));
+  const recoveryStart = state.historyReads.length;
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+  await expect(page.locator('.messages .message')).toHaveCount(2000);
+  const recoveryPages = state.historyReads
+    .slice(recoveryStart)
+    .filter((read) => read.channel === 101);
+  expect(recoveryPages).toHaveLength(20);
+  await expect(page.locator('.message[data-message-id="406"]')).toBeAttached();
+  release();
+  await expect(page.locator('.message[data-message-id="6"]')).toHaveCount(0);
+  await page
+    .locator('.messages')
+    .getByRole('button', { name: 'Load older messages', exact: true })
+    .click();
+  await expect(page.locator('.messages .message')).toHaveCount(2100);
+  await expect(page.locator('.message[data-message-id="306"]')).toBeAttached();
+});
+
+test('reordered conversation pages keep omitted selected and cached authorized threads', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  const remaining = Array.from({ length: 53 }, (_, i) => 103 + i);
+  state.conversationOrder = [101, 102, ...remaining];
+  await page.goto('/chat');
+  await selectPrivate(page, 102);
+  await expect(page.locator('.messages')).toContainText('Second conversation fixture');
+  await selectPrivate(page);
+  await expect(page.locator('.messages')).toContainText('測試訊息 205');
+  await page.locator('.chat-compose textarea').fill('Omitted thread draft');
+  state.conversationOrder = [...remaining, 101, 102];
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+  await expect
+    .poll(() => state.metadataReads.includes(101) && state.metadataReads.includes(102))
+    .toBe(true);
+  await expect(page.locator('.messages')).toContainText('測試訊息 205');
+  await expect(page.locator('.chat-compose textarea')).toHaveValue('Omitted thread draft');
+  await selectPrivate(page, 102);
+  await expect(page.locator('.messages')).toContainText('Second conversation fixture');
+  await selectPrivate(page);
+  await expect(page.locator('.chat-compose textarea')).toHaveValue('Omitted thread draft');
+});
+
+test('a pending detail snapshot cannot restore a thread after a concurrent read denial', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  const remaining = Array.from({ length: 53 }, (_, i) => 103 + i);
+  state.conversationOrder = [101, 102, ...remaining];
+  await page.goto('/chat');
+  await selectPrivate(page);
+  await expect.poll(() => state.reads.includes(205)).toBe(true);
+  let release!: () => void;
+  state.metadataGates[101] = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  state.conversationOrder = [...remaining, 101, 102];
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+  await expect.poll(() => state.metadataReads.includes(101)).toBe(true);
+  state.readStatus[101] = 403;
+  const latest = message(206);
+  state.transcripts[101].push(latest);
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [latest] }));
+  await expect(page.locator('.conversation-list button[data-conversation-id="101"]')).toHaveCount(
+    0,
+  );
+  await page.evaluate(() => {
+    const state = window as unknown as { deniedThreadRestored: boolean };
+    state.deniedThreadRestored = false;
+    new MutationObserver((records) => {
+      for (const record of records)
+        for (const added of record.addedNodes)
+          if (
+            added instanceof Element &&
+            (added.matches('[data-conversation-id="101"]') ||
+              added.querySelector('[data-conversation-id="101"]'))
+          )
+            state.deniedThreadRestored = true;
+    }).observe(document.querySelector('.conversation-list')!, { childList: true, subtree: true });
+  });
+  state.metadataStatus[101] = 403;
+  delete state.metadataGates[101];
+  release();
+  await expect.poll(() => state.metadataReads.filter((id) => id === 101).length).toBeGreaterThan(1);
+  await expect(page.locator('.messages')).not.toContainText('測試訊息 205');
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { deniedThreadRestored: boolean }).deniedThreadRestored,
+    ),
+  ).toBe(false);
+});
+
+for (const status of [401, 403, 404]) {
+  test(`omitted conversation detail ${status} removes cached private history`, async ({ page }) => {
+    const state = await fixture(page, 'en');
+    const remaining = Array.from({ length: 53 }, (_, i) => 103 + i);
+    state.conversationOrder = [101, 102, ...remaining];
+    await page.goto('/chat');
+    await selectPrivate(page);
+    await expect(page.locator('.messages')).toContainText('測試訊息 205');
+    state.conversationOrder = [...remaining, 101, 102];
+    state.metadataStatus[101] = status;
+    state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+    await expect.poll(() => state.metadataReads.includes(101)).toBe(true);
+    await expect(page.locator('.conversation-list button[data-conversation-id="101"]')).toHaveCount(
+      0,
+    );
+    await expect(page.locator('.messages')).not.toContainText('測試訊息 205');
+    await expect(page.locator('.chat-compose')).toHaveCount(0);
+  });
+}
 
 test('profile recipient link fills the form without creating or sending until requested', async ({
   page,

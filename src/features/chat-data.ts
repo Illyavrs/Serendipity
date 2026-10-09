@@ -5,6 +5,7 @@ import { api, ApiError } from '@/lib/api';
 import type { Channel, Conversation, Message, Page, Preferences } from '@/lib/types';
 
 export const CHAT_PAGE_SIZE = 100;
+const MAX_RECONCILIATION_PAGES = 20;
 const CONVERSATION_PAGE_SIZE = 50;
 export type ChatTarget = { kind: 'channel' | 'conversation'; id: number };
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'polling' | 'offline';
@@ -92,6 +93,10 @@ export function useChatData(
   const requests = useRef(new Set<AbortController>());
   const latestRequests = useRef(new Map<string, AbortController>());
   const olderRequests = useRef(new Map<string, AbortController>());
+  // Live appends do not establish that the intervening REST history was recovered.
+  const latestCoverage = useRef(new Map<string, number>());
+  const accessRevisions = useRef(new Map<string, number>());
+  const privateRevision = useRef(0);
   const conversationPages = useRef(1);
   const conversationsLoadingMore = useRef(false);
   const synchronization = useRef(false);
@@ -136,6 +141,12 @@ export function useChatData(
   }, []);
   const denyHistory = useCallback(
     (key: string, error: Error) => {
+      accessRevisions.current.set(key, (accessRevisions.current.get(key) ?? 0) + 1);
+      latestRequests.current.get(key)?.abort();
+      latestRequests.current.delete(key);
+      olderRequests.current.get(key)?.abort();
+      olderRequests.current.delete(key);
+      latestCoverage.current.delete(key);
       updateHistories((previous) => ({
         ...previous,
         [key]: { ...blankHistory(), loaded: true, denied: true, error },
@@ -152,6 +163,22 @@ export function useChatData(
   );
   const denyPrivate = useCallback(
     (error: Error) => {
+      privateRevision.current += 1;
+      for (const [key, controller] of latestRequests.current) {
+        if (key.startsWith('conversation:')) {
+          controller.abort();
+          latestRequests.current.delete(key);
+          latestCoverage.current.delete(key);
+        }
+      }
+      for (const [key, controller] of olderRequests.current) {
+        if (key.startsWith('conversation:')) {
+          controller.abort();
+          olderRequests.current.delete(key);
+        }
+      }
+      for (const key of latestCoverage.current.keys())
+        if (key.startsWith('conversation:')) latestCoverage.current.delete(key);
       updateConversations({ items: [], total: 0, loading: false, error });
       updateHistories((previous) =>
         Object.fromEntries(
@@ -173,6 +200,8 @@ export function useChatData(
       if (latestRequests.current.has(key)) return;
       const controller = new AbortController();
       latestRequests.current.set(key, controller);
+      const cached = historiesRef.current[key]?.items ?? [];
+      const anchor = latestCoverage.current.get(key) ?? cached.at(-1)?.id;
       updateHistories((previous) => ({
         ...previous,
         [key]: { ...(previous[key] ?? blankHistory()), loading: true },
@@ -181,20 +210,58 @@ export function useChatData(
         const page = await api<Page<Message>>(`${messagesPath(view)}?page_size=${CHAT_PAGE_SIZE}`, {
           signal: controller.signal,
         });
+        let fresh = page.items;
+        let batch = page.items;
+        let oldest = Math.min(...batch.map((message) => message.id));
+        let reachedBeginning = batch.length < CHAT_PAGE_SIZE;
+        for (
+          let count = 1;
+          anchor !== undefined &&
+          oldest > anchor &&
+          !reachedBeginning &&
+          count < MAX_RECONCILIATION_PAGES;
+          count += 1
+        ) {
+          if (!alive.current || controller.signal.aborted) return;
+          const preceding = await api<Page<Message>>(
+            `${messagesPath(view)}?page_size=${CHAT_PAGE_SIZE}&before_id=${oldest}`,
+            { signal: controller.signal },
+          );
+          batch = preceding.items;
+          const nextOldest = Math.min(...batch.map((message) => message.id));
+          if (batch.length && nextOldest >= oldest)
+            throw new Error('History pagination did not advance');
+          fresh = mergeChatMessages(batch, fresh);
+          reachedBeginning = batch.length < CHAT_PAGE_SIZE;
+          if (batch.length) oldest = nextOldest;
+        }
         if (!alive.current || controller.signal.aborted) return;
+        const connected = anchor === undefined || oldest <= anchor || reachedBeginning;
+        if (!connected) {
+          olderRequests.current.get(key)?.abort();
+          olderRequests.current.delete(key);
+        }
+        const newest = fresh.at(-1)?.id;
+        if (newest !== undefined) latestCoverage.current.set(key, newest);
         updateHistories((previous) => {
           const old = previous[key] ?? blankHistory();
           return {
             ...previous,
             [key]: {
               ...old,
-              items: mergeChatMessages(old.items, page.items),
+              // A bounded recovery must not leave an invisible gap above cached older pages.
+              // If the limit is reached, older pagination can continue from this fresh window.
+              items: mergeChatMessages(
+                connected ? old.items : old.items.filter((message) => message.id >= oldest),
+                fresh,
+              ),
               total: page.total,
               loaded: true,
               loading: false,
+              olderLoading: connected && old.olderLoading,
               error: null,
               denied: false,
-              exhausted: old.exhausted || page.items.length < CHAT_PAGE_SIZE,
+              exhausted: (connected && old.exhausted) || reachedBeginning,
             },
           };
         });
@@ -224,6 +291,10 @@ export function useChatData(
       }
       synchronization.current = true;
       try {
+        const revisions = new Map(accessRevisions.current);
+        const privateAtStart = privateRevision.current;
+        const revisionCurrent = (key: string) =>
+          (revisions.get(key) ?? 0) === (accessRevisions.current.get(key) ?? 0);
         const cachedIds = new Set(
           Object.values(historiesRef.current).flatMap((history) =>
             history.items.map((message) => message.id),
@@ -265,16 +336,9 @@ export function useChatData(
           const accessible = new Set(
             page.items.map((channel) => targetKey({ kind: 'channel', id: channel.id })),
           );
-          updateHistories((previous) =>
-            Object.fromEntries(
-              Object.entries(previous).map(([key, history]) => [
-                key,
-                key.startsWith('channel:') && !accessible.has(key)
-                  ? { ...blankHistory(), loaded: true, denied: true }
-                  : history,
-              ]),
-            ),
-          );
+          for (const key of Object.keys(historiesRef.current))
+            if (key.startsWith('channel:') && !accessible.has(key))
+              denyHistory(key, new ApiError(404, 'not_found', 'HTTP 404'));
         } else {
           const error = failure(channelResult.reason);
           updateChannels({
@@ -284,38 +348,72 @@ export function useChatData(
             error,
           });
           if (isAccessDenied(error))
-            updateHistories((previous) =>
-              Object.fromEntries(
-                Object.keys(previous).map((key) => [
-                  key,
-                  { ...blankHistory(), loaded: true, denied: true, error },
-                ]),
-              ),
-            );
+            for (const key of Object.keys(historiesRef.current)) denyHistory(key, error);
         }
         if (conversationResult.status === 'fulfilled' && conversationResult.value) {
           const pages = conversationResult.value;
-          const items = [
-            ...new Map(
-              pages
-                .flatMap((page) => page.items)
-                .map((conversation) => [conversation.id, conversation]),
-            ).values(),
-          ];
-          updateConversations({ items, total: pages[0]?.total ?? 0, loading: false, error: null });
-          const accessible = new Set(
-            items.map((conversation) => targetKey({ kind: 'conversation', id: conversation.id })),
+          const fresh = new Map(
+            pages
+              .flatMap((page) => page.items)
+              .filter((conversation) =>
+                revisionCurrent(targetKey({ kind: 'conversation', id: conversation.id })),
+              )
+              .map((conversation) => [conversation.id, conversation]),
           );
-          updateHistories((previous) =>
-            Object.fromEntries(
-              Object.entries(previous).map(([key, history]) => [
-                key,
-                key.startsWith('conversation:') && !accessible.has(key)
-                  ? { ...blankHistory(), loaded: true, denied: true }
-                  : history,
-              ]),
-            ),
+          const cached = new Map(
+            conversationsRef.current.items.map((conversation) => [conversation.id, conversation]),
           );
+          const relevant = new Set(cached.keys());
+          for (const key of Object.keys(historiesRef.current))
+            if (key.startsWith('conversation:')) relevant.add(Number(key.split(':')[1]));
+          if (currentTarget.current?.kind === 'conversation')
+            relevant.add(currentTarget.current.id);
+          const omitted = [...relevant].filter(
+            (id) => !fresh.has(id) && revisionCurrent(targetKey({ kind: 'conversation', id })),
+          );
+          let metadataError: Error | null = null;
+          let sessionDenied: Error | null = null;
+          // Page boundaries can move as conversations receive messages. Omission is not denial.
+          // Resolve cached/selected threads through the participant-authorized detail endpoint.
+          for (let offset = 0; offset < omitted.length; offset += 6) {
+            const batch = omitted.slice(offset, offset + 6);
+            const results = await Promise.allSettled(
+              batch.map((id) => request<Conversation>(`/conversations/${id}`)),
+            );
+            if (!alive.current) return;
+            results.forEach((result, index) => {
+              const id = batch[index];
+              if (!revisionCurrent(targetKey({ kind: 'conversation', id }))) return;
+              if (result.status === 'fulfilled') fresh.set(id, result.value);
+              else {
+                const error = failure(result.reason);
+                if (isAccessDenied(error)) {
+                  denyHistory(targetKey({ kind: 'conversation', id }), error);
+                  if (error instanceof ApiError && error.status === 401) sessionDenied = error;
+                } else {
+                  metadataError = error;
+                  const previous = cached.get(id);
+                  if (previous) fresh.set(id, previous);
+                }
+              }
+            });
+            if (sessionDenied) break;
+          }
+          if (sessionDenied) denyPrivate(sessionDenied);
+          else if (privateAtStart === privateRevision.current) {
+            for (const id of fresh.keys())
+              if (!revisionCurrent(targetKey({ kind: 'conversation', id }))) fresh.delete(id);
+            // Keep conversations created while these detail requests were pending.
+            for (const conversation of conversationsRef.current.items)
+              if (!relevant.has(conversation.id) && !fresh.has(conversation.id))
+                fresh.set(conversation.id, conversation);
+            updateConversations({
+              items: [...fresh.values()],
+              total: pages[0]?.total ?? 0,
+              loading: false,
+              error: metadataError,
+            });
+          }
         } else if (conversationResult.status === 'rejected') {
           const error = failure(conversationResult.reason);
           if (isAccessDenied(error)) denyPrivate(error);
@@ -398,6 +496,7 @@ export function useChatData(
       }
     },
     [
+      denyHistory,
       denyPrivate,
       loadLatest,
       request,
