@@ -189,7 +189,7 @@ test('ranking profile links preserve selected mode and RX partition at the canon
   await page.goto('/rankings?mode=1&variant=relax');
   const profile = page
     .locator('.rankings-table')
-    .getByRole('link', { name: user.username, exact: true });
+    .getByRole('link', { name: user.username });
   await expect(profile).toHaveAttribute('href', `/users/${userId}?mode=1&variant=relax`);
   await profile.click();
   await expect(page).toHaveURL(new RegExp(`/users/${userId}\\?mode=1&variant=relax$`));
@@ -203,7 +203,7 @@ test('legacy bookmarks still show the profile access error instead of protected 
   const state = await fixture(page, baseURL);
   state.profileStatus = 403;
   await page.goto(`/players/${userId}`);
-  await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
   await expect(page.locator('.profile-identity')).toHaveCount(0);
   expect(new URL(page.url()).pathname).toBe(`/users/${userId}`);
   expect(state.scoreQueries).toHaveLength(0);

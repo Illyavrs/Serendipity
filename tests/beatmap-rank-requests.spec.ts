@@ -951,7 +951,7 @@ test('review-only staff can navigate to the default queue without unrelated admi
   await expect(
     page.getByRole('option').and(page.locator('[data-option-value="approved"]')),
   ).toHaveAttribute('aria-disabled', 'true');
-  await form.getByRole('combobox', { name: copy.decision }).press('Escape');
+  await page.keyboard.press('Escape');
   expect(state.writes).toHaveLength(0);
 });
 

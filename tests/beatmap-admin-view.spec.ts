@@ -400,7 +400,7 @@ test('six difficulty status options submit one exact dual-revision patch while i
     await expect(
       page.getByRole('option').and(page.locator(`[data-option-value="${value}"]`)),
     ).toBeVisible();
-  await status.press('Escape');
+  await page.keyboard.press('Escape');
   await selectField(status, 'graveyard');
   await form.getByRole('textbox', { name: copy.reason }).fill('  Synthetic difficulty change  ');
   await form.getByRole('button', { name: copy.saveStatus, exact: true }).click();

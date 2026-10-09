@@ -99,5 +99,5 @@ test('catalogue preserves profile uploader identity through filters and can clea
   expect(queries.at(-1)?.get('q')).toBe('星降り');
   await expect
     .poll(() => Object.fromEntries(new URL(page.url()).searchParams))
-    .toEqual({ source: 'local', q: '星降り' });
+    .toEqual({ catalogue: 'server', source: 'local', q: '星降り' });
 });
