@@ -270,6 +270,9 @@ export type OfficialBeatmapset = {
   cover_url: string;
   official_url: string;
   download_disabled: boolean;
+  /** Server availability for a retained archive or configured full-package acquisition. */
+  archive_download_available?: boolean;
+  archive_download_url?: string | null;
   difficulties: OfficialBeatmapDifficulty[];
   local: { stored_count: number; archive_available: boolean; withdrawn: boolean };
 };

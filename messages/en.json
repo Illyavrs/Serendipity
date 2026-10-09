@@ -332,7 +332,6 @@
     "downloadPackage": "Download .osz",
     "officialSetPage": "Official beatmapset page",
     "archiveDownloadHint": "Includes the stored set’s difficulties and supplied music, images and other assets.",
-    "mirrorDownloadHint": "Complete beatmapset from osu.direct, an external mirror. If it is unavailable, use the official beatmapset page.",
     "archiveUnavailableHint": "A complete .osz is not available for this set. Only a difficulty file is stored; the uploader can provide the original package with music and images.",
     "downloadDifficulty": "Download this difficulty .osu",
     "singleFileHint": "An .osu file contains only this difficulty. Music, images and other difficulties are not included.",
@@ -430,7 +429,19 @@
       "errorQuery": "These search filters are invalid. Shorten the query or reset the filters, then search again.",
       "errorSignIn": "Your session has ended. Sign in again to search official beatmaps.",
       "errorPermission": "Official search requires import permission. Ask a server administrator for access."
-    }
+    },
+    "configuredArchiveDownloadHint": "Downloads the complete .osz through this server. This download does not add it to the server’s stored beatmaps.",
+    "officialArchiveUnavailableHint": "This server has no complete .osz available for this official set. Try the official beatmapset page.",
+    "checkingArchiveDownload": "Checking .osz availability…",
+    "preparingArchiveDownload": "Preparing .osz…",
+    "archiveAvailabilityError": "Could not check .osz availability. Retry or use the official beatmapset page.",
+    "archiveDownloadError": "The complete .osz could not be downloaded. Retry or use the official beatmapset page.",
+    "archiveDownloadUnauthorized": "You do not have access to this download. Sign in or use the official beatmapset page.",
+    "archiveDownloadWithdrawn": "This beatmap set is no longer available. Use the official beatmapset page.",
+    "archiveDownloadLimited": "Downloads are busy. Wait a moment, then retry.",
+    "archiveDownloadTooLarge": "This package exceeds the 64 MiB download limit. Use the official beatmapset page.",
+    "archiveDownloadTimeout": "The download timed out. Retry or use the official beatmapset page.",
+    "archiveDownloadInvalid": "The provider returned an invalid or incomplete .osz. Retry or use the official beatmapset page."
   },
   "rankings": {
     "title": "Rankings",

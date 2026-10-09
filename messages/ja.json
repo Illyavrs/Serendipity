@@ -332,7 +332,6 @@
     "downloadPackage": ".osz をダウンロード",
     "officialSetPage": "公式ビートマップセットのページ",
     "archiveDownloadHint": "保存されたセットの譜面と、提供された音楽・画像などの素材が含まれます。",
-    "mirrorDownloadHint": "外部ミラー osu.direct からビートマップセット全体をダウンロードします。利用できない場合は公式セットのページをご利用ください。",
     "archiveUnavailableHint": "このセットの完全な .osz はありません。保存されているのは譜面ファイルのみです。投稿者は音楽や画像を含む元のパッケージを提供できます。",
     "downloadDifficulty": "この譜面をダウンロード .osu",
     "singleFileHint": ".osu にはこの譜面のみが含まれます。音楽、画像、他の譜面は含まれません。",
@@ -430,7 +429,19 @@
       "errorQuery": "検索条件が無効です。検索語を短くするか、フィルターをリセットして再検索してください。",
       "errorSignIn": "セッションが終了しました。再ログインして公式譜面を検索してください。",
       "errorPermission": "公式検索にはインポート権限が必要です。サーバー管理者にアクセスを申請してください。"
-    }
+    },
+    "configuredArchiveDownloadHint": "このサーバー経由で完全な .osz をダウンロードします。ダウンロードしてもサーバーの保存済み譜面には追加されません。",
+    "officialArchiveUnavailableHint": "この公式セットの完全な .osz は現在このサーバーで提供できません。公式セットのページをご利用ください。",
+    "checkingArchiveDownload": ".osz のダウンロード可否を確認中…",
+    "preparingArchiveDownload": ".osz を準備中…",
+    "archiveAvailabilityError": ".osz のダウンロード可否を確認できませんでした。再試行するか、公式セットのページをご利用ください。",
+    "archiveDownloadError": "完全な .osz をダウンロードできませんでした。再試行するか、公式セットのページをご利用ください。",
+    "archiveDownloadUnauthorized": "このダウンロードにはアクセスできません。ログインするか、公式セットのページをご利用ください。",
+    "archiveDownloadWithdrawn": "このセットはダウンロードできなくなりました。公式セットのページをご利用ください。",
+    "archiveDownloadLimited": "ダウンロードが混み合っています。少し待ってから再試行してください。",
+    "archiveDownloadTooLarge": "このパッケージは 64 MiB の上限を超えています。公式セットのページをご利用ください。",
+    "archiveDownloadTimeout": "ダウンロードがタイムアウトしました。再試行するか、公式セットのページをご利用ください。",
+    "archiveDownloadInvalid": "取得先が無効または不完全な .osz を返しました。再試行するか、公式セットのページをご利用ください。"
   },
   "rankings": {
     "title": "ランキング",

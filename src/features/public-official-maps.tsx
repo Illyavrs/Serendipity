@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Clock,
-  Download,
   ExternalLink,
   Grid2X2,
   List,
@@ -27,6 +26,7 @@ import type { OfficialBeatmapSearch, OfficialBeatmapset } from '@/lib/types';
 import { MapCardPreview } from './map-card-preview';
 import { MapStatus } from './map-status';
 import { BeatmapRankRequestAction } from './beatmap-rank-requests';
+import { OfficialArchiveDownload } from './official-archive-download';
 import {
   CatalogueSource,
   MapArtwork,
@@ -380,16 +380,6 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
   const selected =
     data?.difficulties.find((map) => String(map.official_id) === params.get('difficulty')) ??
     data?.difficulties[0];
-  const stored = data?.difficulties.find(
-    (map) => map.local_id !== undefined && map.archive_available,
-  );
-  const archive = data?.local.archive_available && stored?.local_id !== undefined;
-  const download =
-    data && !data.download_disabled
-      ? archive
-        ? `/api/v1/beatmaps/${stored!.local_id}/archive`
-        : `https://osu.direct/api/d/${data.official_set_id}`
-      : null;
   function choose(id: number) {
     const next = new URLSearchParams(window.location.search);
     next.set('difficulty', String(id));
@@ -418,20 +408,7 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
               <h1>{data.title}</h1>
               <p>{data.artist}</p>
               <span>{c('mappedBy', { creator: data.creator })}</span>
-              <div className="actions">
-                {download ? (
-                  <Button asChild>
-                    <a href={download} rel={archive ? undefined : 'noopener noreferrer'}>
-                      <Download aria-hidden="true" />
-                      <span>{maps('downloadPackage')}</span>
-                    </a>
-                  </Button>
-                ) : (
-                  <Button disabled>
-                    <Download aria-hidden="true" />
-                    <span>{maps('downloadPackage')}</span>
-                  </Button>
-                )}
+              <OfficialArchiveDownload key={data.official_set_id} set={data}>
                 <Button asChild variant="outline">
                   <a href={data.official_url} target="_blank" rel="noopener noreferrer">
                     <ExternalLink aria-hidden="true" />
@@ -445,12 +422,7 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
                     </Link>
                   </Button>
                 )}
-              </div>
-              <p className="hint">
-                {data.download_disabled
-                  ? maps('officialSearch.downloadDisabled')
-                  : maps(archive ? 'archiveDownloadHint' : 'mirrorDownloadHint')}
-              </p>
+              </OfficialArchiveDownload>
             </div>
           </header>
           {['pending', 'graveyard'].includes(data.status) && (

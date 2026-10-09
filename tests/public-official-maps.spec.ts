@@ -14,6 +14,8 @@ function set(id = 42, count = 30) {
     cover_url: `https://assets.ppy.sh/beatmaps/${id}/covers/card.jpg`,
     official_url: `https://osu.ppy.sh/beatmapsets/${id}`,
     download_disabled: false,
+    archive_download_available: true,
+    archive_download_url: `/api/v1/official/beatmapsets/${id}/archive`,
     difficulties: Array.from({ length: count }, (_, index) => ({
       official_id: id * 100 + index,
       version: `Difficulty ${index + 1}`,
@@ -278,7 +280,7 @@ test('official detail presents every difficulty and only exact retained IDs link
   await expect(page.locator('.public-official-selected')).toContainText('501x');
   await expect(page.getByRole('link', { name: 'Download .osz' })).toHaveAttribute(
     'href',
-    'https://osu.direct/api/d/42',
+    '/api/v1/official/beatmapsets/42/archive',
   );
   await expect(page.locator('.back-link')).toHaveAttribute('href', '/beatmaps?q=remember');
   expect([...new Set(state.details)]).toEqual([42]);

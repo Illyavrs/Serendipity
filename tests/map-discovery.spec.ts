@@ -128,6 +128,20 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
           })
         : fail(route, 401, 'unauthorized');
     if (routePath === '/me/preferences') return route.fulfill({ json: appearance });
+    const officialSet = /^\/official\/beatmapsets\/(\d+)$/.exec(routePath);
+    if (officialSet) {
+      const id = Number(officialSet[1]);
+      return route.fulfill({
+        json: {
+          official_set_id: id,
+          download_disabled: false,
+          archive_download_available: true,
+          archive_download_url: `/api/v1/official/beatmapsets/${id}/archive`,
+          difficulties: [],
+          local: { stored_count: 1, archive_available: false, withdrawn: false },
+        },
+      });
+    }
     if (routePath === '/server/beatmapsets') {
       state.setQueries.push(new URLSearchParams(query));
       if (state.holdSets)
@@ -990,7 +1004,7 @@ test('known siblings work without an archive, page fully and preserve score vari
   await expect(page.getByRole('link', { name: /Download.*\.osu/ })).toHaveCount(0);
   await expect(page.getByRole('link', { name: /Download.*\.osz/ })).toHaveAttribute(
     'href',
-    'https://osu.direct/api/d/2588526',
+    '/api/v1/official/beatmapsets/2588526/archive',
   );
   await expect.poll(() => state.scoreQueries.at(-1)?.get('variant')).toBe('relax');
   await expect(page.getByRole('link', { name: 'RX fixture player', exact: true })).toBeVisible();

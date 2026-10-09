@@ -186,6 +186,24 @@ async function fixtures(
       );
     if (method === 'GET' && pathname === '/me/preferences')
       return route.fulfill({ json: preferences });
+    const officialSet = /^\/official\/beatmapsets\/(\d+)$/.exec(pathname);
+    if (method === 'GET' && officialSet) {
+      const id = Number(officialSet[1]);
+      return route.fulfill({
+        json: {
+          official_set_id: id,
+          title: primary.title,
+          artist: primary.artist,
+          creator: primary.creator,
+          status: 'ranked',
+          download_disabled: false,
+          archive_download_available: true,
+          archive_download_url: `/api/v1/official/beatmapsets/${id}/archive`,
+          difficulties: [],
+          local: { stored_count: 1, archive_available: false, withdrawn: false },
+        },
+      });
+    }
     if (method === 'GET' && pathname === '/beatmapsets') {
       return route.fulfill({
         json: listing(
@@ -847,11 +865,13 @@ for (const kind of ['osu', 'osz'] as const) {
       }),
     ).toHaveAttribute(
       'href',
-      kind === 'osz' ? `/api/v1/beatmaps/${map.id}/archive` : 'https://osu.direct/api/d/456789',
+      kind === 'osz'
+        ? `/api/v1/beatmaps/${map.id}/archive`
+        : '/api/v1/official/beatmapsets/456789/archive',
     );
     await expect(
       page.getByText(
-        state.copy.maps[kind === 'osz' ? 'archiveDownloadHint' : 'mirrorDownloadHint'],
+        state.copy.maps[kind === 'osz' ? 'archiveDownloadHint' : 'configuredArchiveDownloadHint'],
         { exact: true },
       ),
     ).toBeVisible();

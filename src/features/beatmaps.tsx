@@ -34,6 +34,7 @@ import type {
   BeatmapAvailability,
   BeatmapDifficulty,
   BeatmapUploadResult,
+  OfficialBeatmapset,
   ScoreBoard,
   ScoreVariant,
 } from '@/lib/types';
@@ -53,7 +54,9 @@ import {
   SetDifficultySelector,
   difficultyLevel,
   safeCatalogueReturn,
+  usePublicData,
 } from './map-discovery';
+import { OfficialArchiveDownload } from './official-archive-download';
 export { MapDiscoveryPage as BeatmapsPage } from './map-discovery';
 
 function duration(seconds: number) {
@@ -127,18 +130,15 @@ function MapDownloads({ map }: { map: Beatmap }) {
     (map.native_set_id === undefined || map.native_set_id === setId)
       ? setId
       : null;
-  // osu.direct's browser extension uses /api/d/ for complete beatmapsets.
-  const downloadUrl = archive
-    ? `/api/v1/beatmaps/${map.id}/archive`
-    : officialSetId
-      ? `https://osu.direct/api/d/${officialSetId}`
-      : null;
+  if (!archive && officialSetId)
+    return <OfficialMapDownloads key={officialSetId} setId={officialSetId} />;
+  const downloadUrl = archive ? `/api/v1/beatmaps/${map.id}/archive` : null;
   return (
     <div className="map-downloads">
       <div className="actions">
         {downloadUrl ? (
           <Button asChild>
-            <a href={downloadUrl} rel={archive ? undefined : 'noopener noreferrer'}>
+            <a href={downloadUrl} download>
               <Download aria-hidden="true" />
               {t('downloadPackage')}
             </a>
@@ -157,15 +157,47 @@ function MapDownloads({ map }: { map: Beatmap }) {
           </Button>
         )}
       </div>
-      <p className="hint">
-        {t(
-          archive
-            ? 'archiveDownloadHint'
-            : officialSetId
-              ? 'mirrorDownloadHint'
-              : 'archiveUnavailableHint',
-        )}
+      <p className="hint">{t(archive ? 'archiveDownloadHint' : 'archiveUnavailableHint')}</p>
+    </div>
+  );
+}
+
+function OfficialMapDownloads({ setId }: { setId: number }) {
+  const t = useTranslations('maps');
+  const c = useTranslations('mapDiscovery');
+  const { data, loading, error, retry } = usePublicData<OfficialBeatmapset>(
+    `/official/beatmapsets/${setId}`,
+  );
+  const officialPage = (
+    <Button asChild variant="outline">
+      <a href={`https://osu.ppy.sh/beatmapsets/${setId}`} rel="noopener noreferrer">
+        {t('officialSetPage')}
+      </a>
+    </Button>
+  );
+  if (data && data.official_set_id === setId)
+    return (
+      <OfficialArchiveDownload set={data} className="map-downloads">
+        {officialPage}
+      </OfficialArchiveDownload>
+    );
+  return (
+    <div className="map-downloads official-archive-download">
+      <div className="actions">
+        <Button disabled>
+          <Download aria-hidden="true" />
+          {t('downloadPackage')}
+        </Button>
+        {officialPage}
+      </div>
+      <p className="hint" role={loading ? 'status' : 'alert'}>
+        {t(loading ? 'checkingArchiveDownload' : 'archiveAvailabilityError')}
       </p>
+      {!loading && (error || !data || data.official_set_id !== setId) && (
+        <Button type="button" size="sm" variant="outline" onClick={retry}>
+          {c('retry')}
+        </Button>
+      )}
     </div>
   );
 }

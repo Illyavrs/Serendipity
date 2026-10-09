@@ -332,7 +332,6 @@
     "downloadPackage": "下載 .osz",
     "officialSetPage": "官方圖組頁面",
     "archiveDownloadHint": "包含已儲存圖組的難度，以及上傳者提供的音樂、圖片和其他素材。",
-    "mirrorDownloadHint": "從外部鏡像站 osu.direct 下載完整圖組。若無法下載，請使用官方圖組頁面。",
     "archiveUnavailableHint": "此圖組尚無完整 .osz，目前僅儲存單一難度檔。上傳者可提供包含音樂與圖片的原始圖包。",
     "downloadDifficulty": "下載此難度 .osu",
     "singleFileHint": ".osu 僅包含此難度，不含音樂、圖片或其他難度。",
@@ -430,7 +429,19 @@
       "errorQuery": "搜尋條件無效。請縮短關鍵字或重設篩選後再搜尋。",
       "errorSignIn": "登入已失效。請重新登入後搜尋官方圖譜。",
       "errorPermission": "官方搜尋需要匯入權限。請向伺服器管理員申請。"
-    }
+    },
+    "configuredArchiveDownloadHint": "透過此伺服器下載完整 .osz。下載不會將圖譜加入本站已儲存的圖譜庫。",
+    "officialArchiveUnavailableHint": "本站目前無法提供此官方圖譜集的完整 .osz。請使用官方圖譜集頁面。",
+    "checkingArchiveDownload": "正在確認 .osz 是否可下載…",
+    "preparingArchiveDownload": "正在準備 .osz…",
+    "archiveAvailabilityError": "無法確認 .osz 是否可下載。請重試或使用官方圖譜集頁面。",
+    "archiveDownloadError": "無法下載完整 .osz。請重試或使用官方圖譜集頁面。",
+    "archiveDownloadUnauthorized": "你無法存取此下載。請登入或使用官方圖譜集頁面。",
+    "archiveDownloadWithdrawn": "此圖譜集已無法下載。請使用官方圖譜集頁面。",
+    "archiveDownloadLimited": "下載服務忙碌中。請稍候再試。",
+    "archiveDownloadTooLarge": "此圖包超過 64 MiB 下載限制。請使用官方圖譜集頁面。",
+    "archiveDownloadTimeout": "下載逾時。請重試或使用官方圖譜集頁面。",
+    "archiveDownloadInvalid": "下載來源回傳了無效或不完整的 .osz。請重試或使用官方圖譜集頁面。"
   },
   "rankings": {
     "title": "排行榜",
