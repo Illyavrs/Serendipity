@@ -12,6 +12,7 @@ export type ChatTarget = { kind: 'channel' | 'conversation'; id: number };
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'polling' | 'offline';
 export type ChatHistory = {
   items: Message[];
+  readGeneration: number;
   total: number;
   loaded: boolean;
   loading: boolean;
@@ -22,11 +23,20 @@ export type ChatHistory = {
   denied: boolean;
 };
 type Resource<T> = { items: T[]; total: number; loading: boolean; error: Error | null };
+type ReadAttempt = {
+  messageId: number;
+  generation: number;
+  accessRevision: number;
+  privateRevision: number;
+  isVisible: () => boolean;
+};
+type ReadOptions = { generation: number; isVisible: () => boolean; retry?: boolean };
 export const targetKey = (target: ChatTarget) => `${target.kind}:${target.id}`;
 export const messagesPath = (target: ChatTarget) =>
   `/${target.kind === 'channel' ? 'channels' : 'conversations'}/${target.id}/messages`;
 const blankHistory = (): ChatHistory => ({
   items: [],
+  readGeneration: 0,
   total: 0,
   loaded: false,
   loading: false,
@@ -55,6 +65,24 @@ export function mergeChatMessages(...pages: Message[][]) {
     ids.set(message.id, message);
   }
   return [...ids.values()].sort((a, b) => a.id - b.id);
+}
+
+// IDs order history, but do not order commits. A newly visible incoming identity
+// creates read work even when its ID is below a previously acknowledged marker.
+function incomingIdentity(message: Message) {
+  return message.client_uuid ? `${message.user_id}:${message.client_uuid}` : `id:${message.id}`;
+}
+
+function hasIncomingArrival(identities: Set<string>, fresh: Message[], userId: number | undefined) {
+  if (userId === undefined) return false;
+  let arrived = false;
+  for (const message of fresh) {
+    if (message.user_id === userId) continue;
+    const identity = incomingIdentity(message);
+    if (!identities.has(identity)) arrived = true;
+    identities.add(identity);
+  }
+  return arrived;
 }
 
 export function useChatData(
@@ -104,9 +132,13 @@ export function useChatData(
   const conversationsLoadingMore = useRef(false);
   const synchronization = useRef(false);
   const synchronizationQueued = useRef(false);
-  const readInFlight = useRef(new Set<number>());
+  const readInFlight = useRef(new Map<number, ReadAttempt>());
+  // Attempted generations suppress automatic retry loops; errors require explicit retry.
   const readThrough = useRef(new Map<number, number>());
-  const queuedRead = useRef(new Map<number, number>());
+  const queuedRead = useRef(new Map<number, ReadAttempt>());
+  // Revalidation may temporarily purge displayed history. Remember identities
+  // without retaining content so recovery is not another arrival or a PUT loop.
+  const incomingIdentities = useRef(new Map<number, Set<string>>());
   const preferenceBusy = useRef(false);
   const sessionRefresh = useRef(refreshSession);
 
@@ -133,6 +165,14 @@ export function useChatData(
     conversationsRef.current = next;
     setConversations(next);
   }, []);
+  const observeIncoming = useCallback(
+    (conversationId: number, fresh: Message[]) => {
+      const identities = incomingIdentities.current.get(conversationId) ?? new Set<string>();
+      incomingIdentities.current.set(conversationId, identities);
+      return hasIncomingArrival(identities, fresh, userId);
+    },
+    [userId],
+  );
   const request = useCallback(async <T>(path: string, options: RequestInit = {}) => {
     const controller = new AbortController();
     requests.current.add(controller);
@@ -156,6 +196,9 @@ export function useChatData(
       }));
       if (key.startsWith('conversation:')) {
         const id = Number(key.split(':')[1]);
+        readThrough.current.delete(id);
+        queuedRead.current.delete(id);
+        incomingIdentities.current.delete(id);
         updateConversations({
           ...conversationsRef.current,
           items: conversationsRef.current.items.filter((conversation) => conversation.id !== id),
@@ -167,6 +210,9 @@ export function useChatData(
   const denyPrivate = useCallback(
     (error: Error) => {
       privateRevision.current += 1;
+      readThrough.current.clear();
+      queuedRead.current.clear();
+      incomingIdentities.current.clear();
       for (const [key, controller] of latestRequests.current) {
         if (key.startsWith('conversation:')) {
           controller.abort();
@@ -252,6 +298,9 @@ export function useChatData(
             ...previous,
             [key]: {
               ...old,
+              readGeneration:
+                old.readGeneration +
+                (view.kind === 'conversation' && observeIncoming(view.id, fresh) ? 1 : 0),
               // A bounded recovery must not leave an invisible gap above cached older pages.
               // If the limit is reached, older pagination can continue from this fresh window.
               items: mergeChatMessages(
@@ -282,7 +331,7 @@ export function useChatData(
         if (latestRequests.current.get(key) === controller) latestRequests.current.delete(key);
       }
     },
-    [denyHistory, denyPrivate, updateHistories],
+    [denyHistory, denyPrivate, observeIncoming, updateHistories],
   );
 
   const synchronize = useCallback(
@@ -425,6 +474,15 @@ export function useChatData(
         }
         if (visibilityResult.status === 'fulfilled') {
           const readable = visibilityResult.value;
+          // A confirmed visibility removal can be exposed as unread again later.
+          // A failed check only purges content, and does not forget receipt work.
+          for (const [key, history] of Object.entries(historiesRef.current)) {
+            if (!key.startsWith('conversation:')) continue;
+            const identities = incomingIdentities.current.get(Number(key.split(':')[1]));
+            for (const message of history.items)
+              if (cachedIds.has(message.id) && !readable.has(message.id))
+                identities?.delete(incomingIdentity(message));
+          }
           updateHistories((previous) =>
             Object.fromEntries(
               Object.entries(previous).map(([key, history]) => [
@@ -569,6 +627,9 @@ export function useChatData(
           targetKey(currentTarget.current) !== key
         )
           return;
+        // Browsing older pages does not create a new-arrival acknowledgement,
+        // but a later duplicate echo of that history must remain a duplicate.
+        if (view.kind === 'conversation') observeIncoming(view.id, page.items);
         preserveScroll();
         updateHistories((previous) => ({
           ...previous,
@@ -599,7 +660,7 @@ export function useChatData(
           }));
       }
     },
-    [denyHistory, updateHistories],
+    [denyHistory, observeIncoming, updateHistories],
   );
 
   const append = useCallback(
@@ -610,11 +671,19 @@ export function useChatData(
         const items = mergeChatMessages(history.items, [message]);
         return {
           ...previous,
-          [key]: { ...history, items, total: Math.max(history.total, items.length), loaded: true },
+          [key]: {
+            ...history,
+            items,
+            readGeneration:
+              history.readGeneration +
+              (view.kind === 'conversation' && observeIncoming(view.id, [message]) ? 1 : 0),
+            total: Math.max(history.total, items.length),
+            loaded: true,
+          },
         };
       });
     },
-    [updateHistories],
+    [observeIncoming, updateHistories],
   );
 
   const createConversation = useCallback(
@@ -677,23 +746,56 @@ export function useChatData(
   }, [denyPrivate, request, updateConversations]);
 
   const markRead = useCallback(
-    async function acknowledge(conversationId: number, messageId: number, retry = false) {
-      if (readInFlight.current.has(conversationId)) {
-        queuedRead.current.set(
-          conversationId,
-          Math.max(queuedRead.current.get(conversationId) ?? 0, messageId),
-        );
+    async function acknowledge(conversationId: number, messageId: number, options: ReadOptions) {
+      const key = targetKey({ kind: 'conversation', id: conversationId });
+      const history = historiesRef.current[key];
+      if (
+        !alive.current ||
+        userId === undefined ||
+        currentTarget.current?.kind !== 'conversation' ||
+        currentTarget.current.id !== conversationId ||
+        !history?.loaded ||
+        history.denied ||
+        history.readGeneration !== options.generation ||
+        !conversationsRef.current.items.some(
+          (conversation) => conversation.id === conversationId,
+        ) ||
+        !options.isVisible() ||
+        (!options.retry && (readThrough.current.get(conversationId) ?? 0) >= options.generation)
+      )
+        return;
+      const attempt: ReadAttempt = {
+        messageId,
+        generation: options.generation,
+        accessRevision: accessRevisions.current.get(key) ?? 0,
+        privateRevision: privateRevision.current,
+        isVisible: options.isVisible,
+      };
+      const pending = readInFlight.current.get(conversationId);
+      if (pending) {
+        // Repeated effects are one obligation. A later arrival needs a fresh
+        // database snapshot even when it shares the in-flight request's marker.
+        if (
+          attempt.accessRevision !== pending.accessRevision ||
+          attempt.privateRevision !== pending.privateRevision ||
+          attempt.generation > pending.generation
+        )
+          queuedRead.current.set(conversationId, attempt);
         return;
       }
-      if (!retry && (readThrough.current.get(conversationId) ?? 0) >= messageId) return;
-      readInFlight.current.add(conversationId);
-      readThrough.current.set(conversationId, messageId);
-      if (alive.current) setReadErrors((previous) => ({ ...previous, [conversationId]: null }));
+      const authorityCurrent = () =>
+        alive.current &&
+        (accessRevisions.current.get(key) ?? 0) === attempt.accessRevision &&
+        privateRevision.current === attempt.privateRevision;
+      readInFlight.current.set(conversationId, attempt);
+      readThrough.current.set(conversationId, attempt.generation);
+      setReadErrors((previous) => ({ ...previous, [conversationId]: null }));
       try {
         await request<void | Conversation>(`/conversations/${conversationId}/read`, {
           method: 'PUT',
           body: JSON.stringify({ message_id: messageId }),
         });
+        if (!authorityCurrent()) return;
         updateConversations({
           ...conversationsRef.current,
           items: conversationsRef.current.items.map((conversation) =>
@@ -701,35 +803,38 @@ export function useChatData(
               ? {
                   ...conversation,
                   last_read_id: Math.max(conversation.last_read_id ?? 0, messageId),
-                  unread_count:
-                    !conversation.last_message || conversation.last_message.id <= messageId
-                      ? 0
-                      : conversation.unread_count,
                 }
               : conversation,
           ),
         });
+        // The numeric cursor cannot prove that a late commit was included in this
+        // receipt snapshot. Let fresh server metadata establish the unread count.
+        void synchronize(false);
       } catch (error) {
-        if (!alive.current) return;
+        if (!authorityCurrent()) return;
         setReadErrors((previous) => ({ ...previous, [conversationId]: failure(error) }));
         if (isAccessDenied(error)) {
           denyHistory(targetKey({ kind: 'conversation', id: conversationId }), failure(error));
           if (error instanceof ApiError && error.status === 401) denyPrivate(error);
         }
       } finally {
-        readInFlight.current.delete(conversationId);
+        if (readInFlight.current.get(conversationId) === attempt)
+          readInFlight.current.delete(conversationId);
         const queued = queuedRead.current.get(conversationId);
         queuedRead.current.delete(conversationId);
         if (
           alive.current &&
           queued &&
-          queued > messageId &&
-          conversationsRef.current.items.some((conversation) => conversation.id === conversationId)
+          queued.accessRevision === (accessRevisions.current.get(key) ?? 0) &&
+          queued.privateRevision === privateRevision.current
         )
-          void acknowledge(conversationId, queued);
+          void acknowledge(conversationId, queued.messageId, {
+            generation: queued.generation,
+            isVisible: queued.isVisible,
+          });
       }
     },
-    [denyHistory, denyPrivate, request, updateConversations],
+    [denyHistory, denyPrivate, request, synchronize, updateConversations, userId],
   );
 
   const loadPreferences = useCallback(async () => {
@@ -774,6 +879,9 @@ export function useChatData(
     const pendingRequests = requests.current;
     const pendingLatest = latestRequests.current;
     const pendingOlder = olderRequests.current;
+    const pendingReads = queuedRead.current;
+    const attemptedReads = readThrough.current;
+    const observedIncoming = incomingIdentities.current;
     alive.current = true;
     void synchronize();
     if (userId !== undefined) void loadPreferences();
@@ -875,6 +983,9 @@ export function useChatData(
     window.addEventListener('focus', onFocus);
     return () => {
       alive.current = false;
+      pendingReads.clear();
+      attemptedReads.clear();
+      observedIncoming.clear();
       stopped = true;
       socket?.close();
       clearTimeout(reconnectTimer);

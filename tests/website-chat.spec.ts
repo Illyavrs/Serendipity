@@ -79,6 +79,10 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
     sends: [] as { channel: number; body: Record<string, unknown> }[],
     preferenceWrites: [] as Record<string, unknown>[],
     reads: [] as number[],
+    readRequests: [] as { conversation: number; marker: number; viewer: number }[],
+    readGates: {} as Partial<Record<number, Promise<void>>>,
+    receipts: new Map<string, Set<number>>(),
+    lastReads: new Map<string, number>(),
     creates: [] as string[],
     conversationOrder: [101, 102],
     metadataReads: [] as number[],
@@ -88,6 +92,7 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
     historyReads: [] as { channel: number; before: number | null }[],
     historyGates: {} as Partial<Record<string, Promise<void>>>,
     hidden: new Set<number>(),
+    visibilityStatus: 200,
     denied: new Set<number>(),
     canSend: true,
     failCreate: false,
@@ -104,9 +109,17 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
       avatar_url: null,
     },
     last_message:
-      state.transcripts[id]?.filter((item) => !state.hidden.has(item.id)).at(-1) ?? null,
-    last_read_id: state.reads.length ? state.reads.at(-1) : 0,
-    unread_count: state.reads.length ? 0 : 3,
+      state.transcripts[id]
+        ?.filter((item) => !state.hidden.has(item.id))
+        .toSorted((a, b) => a.id - b.id)
+        .at(-1) ?? null,
+    last_read_id: state.lastReads.get(`${state.user.id}:${id}`) ?? 0,
+    unread_count: (state.transcripts[id] ?? []).filter(
+      (item) =>
+        item.user_id !== state.user.id &&
+        !state.hidden.has(item.id) &&
+        !state.receipts.get(`${state.user.id}:${id}`)?.has(item.id),
+    ).length,
     can_send: state.canSend,
     send_restriction: state.canSend ? null : 'friend_only',
     silenced_until: null,
@@ -181,6 +194,11 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
     if (pathname === '/chat/visibility') {
       const ids = request.postDataJSON().message_ids as number[];
       expect(ids.length).toBeLessThanOrEqual(256);
+      if (state.visibilityStatus !== 200)
+        return route.fulfill({
+          status: state.visibilityStatus,
+          json: { error: { code: 'fixture_visibility_unavailable' } },
+        });
       return route.fulfill({ json: { message_ids: ids.filter((id) => !state.hidden.has(id)) } });
     }
     const metadata = /^\/conversations\/(\d+)$/.exec(pathname);
@@ -196,11 +214,26 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
     }
     const read = /^\/conversations\/(\d+)\/read$/.exec(pathname);
     if (read) {
-      const status = state.readStatus[Number(read[1])] ?? 204;
+      const id = Number(read[1]);
+      const marker = request.postDataJSON().message_id as number;
+      const reader = state.user.id;
+      state.readRequests.push({ conversation: id, marker, viewer: reader });
+      const status = state.readStatus[id] ?? 204;
       if (status !== 204)
         return route.fulfill({ status, json: { error: { code: 'fixture_read_denied' } } });
-      state.reads.push(request.postDataJSON().message_id);
-      return route.fulfill({ status: 204 });
+      // A receipt covers this request's committed, visible snapshot. A smaller
+      // ID inserted while its response is delayed needs a second equal marker.
+      const snapshot = (state.transcripts[id] ?? []).filter(
+        (item) => item.id <= marker && item.user_id !== reader && !state.hidden.has(item.id),
+      );
+      if (state.readGates[id]) await state.readGates[id];
+      const receiptKey = `${reader}:${id}`;
+      const receipts = state.receipts.get(receiptKey) ?? new Set<number>();
+      snapshot.forEach((item) => receipts.add(item.id));
+      state.receipts.set(receiptKey, receipts);
+      state.lastReads.set(receiptKey, Math.max(state.lastReads.get(receiptKey) ?? 0, marker));
+      state.reads.push(marker);
+      return route.fulfill({ status: 204 }).catch(() => undefined);
     }
     const history = /^\/(channels|conversations)\/(\d+)\/messages$/.exec(pathname);
     if (history) {
@@ -228,7 +261,9 @@ async function fixture(page: Page, locale = 'zh-TW', mode = 'dark', guest = fals
         }
         return route.fulfill({ json: persisted });
       }
-      const visible = (transcripts[channel] ?? []).filter((item) => !state.hidden.has(item.id));
+      const visible = (transcripts[channel] ?? [])
+        .filter((item) => !state.hidden.has(item.id))
+        .toSorted((a, b) => a.id - b.id);
       const before = Number(url.searchParams.get('before_id') ?? Infinity);
       const after = Number(url.searchParams.get('after_id') ?? 0);
       state.historyReads.push({ channel, before: Number.isFinite(before) ? before : null });
@@ -286,6 +321,299 @@ async function expandNavigation(page: Page) {
     await toggle.click();
 }
 
+async function settleReadEffects(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+}
+
+// This controls browser focus eligibility without depending on a headless
+// runner's operating-system window focus. The rendered UI and request flow run normally.
+async function setReadFocus(page: Page, focused: boolean) {
+  await page.evaluate((value) => {
+    const fixtureWindow = window as unknown as { chatFixtureFocused: boolean };
+    fixtureWindow.chatFixtureFocused = value;
+    Object.defineProperty(document, 'hasFocus', {
+      configurable: true,
+      value: () => fixtureWindow.chatFixtureFocused,
+    });
+    window.dispatchEvent(new Event(value ? 'focus' : 'blur'));
+  }, focused);
+}
+
+test('a focused late lower ID receives one equal marker and duplicate or outgoing events stay quiet', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  state.transcripts[101] = [message(4000)];
+  await page.goto('/chat');
+  await setReadFocus(page, true);
+  await selectPrivate(page);
+  await expect.poll(() => state.reads).toEqual([4000]);
+  const unread = page.locator('[data-conversation-id="101"] .conversation-unread');
+  await expect(unread).toHaveCount(0);
+
+  const late = message(3999, 101, 'Lower ID committed after the visible marker');
+  state.transcripts[101].push(late);
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [late] }));
+  await expect(page.locator('.messages')).toContainText(late.content);
+  await expect.poll(() => state.reads).toEqual([4000, 4000]);
+  expect(state.receipts.get(`${viewer}:101`)).toEqual(new Set([4000, 3999]));
+  await expect(unread).toHaveCount(0);
+
+  const outgoing = message(
+    4001,
+    101,
+    'Already read incoming history with a new outgoing echo',
+    viewer,
+  );
+  state.transcripts[101].push(outgoing);
+  const refreshed = page.waitForResponse((response) =>
+    response.url().includes('/conversations/101/messages?'),
+  );
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [late, late, outgoing] }));
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+  await refreshed;
+  await expect(page.locator('.message[data-message-id="3999"]')).toHaveCount(1);
+  await expect(page.locator('.messages')).toContainText(outgoing.content);
+  await settleReadEffects(page);
+  expect(state.readRequests.map((item) => item.marker)).toEqual([4000, 4000]);
+});
+
+test('an incoming lower ID discovered by REST refresh receives an equal marker', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  state.transcripts[101] = [message(4100)];
+  await page.goto('/chat');
+  await setReadFocus(page, true);
+  await selectPrivate(page);
+  await expect.poll(() => state.reads).toEqual([4100]);
+  const late = message(4099, 101, 'Recovered lower ID without a live message frame');
+  state.transcripts[101].push(late);
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+  await expect(page.locator('.messages')).toContainText(late.content);
+  await expect.poll(() => state.reads).toEqual([4100, 4100]);
+});
+
+test('a lower-ID arrival keeps a long visible history at bottom before acknowledging it', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  state.transcripts[101] = Array.from({ length: 100 }, (_, index) => message(4601 + index));
+  await page.goto('/chat');
+  await setReadFocus(page, true);
+  await selectPrivate(page);
+  await expect.poll(() => state.reads).toEqual([4700]);
+  const late = message(4600, 101, 'Lower ID inserted above a long message history');
+  state.transcripts[101].push(late);
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [late] }));
+  await expect(page.locator('.message[data-message-id="4600"]')).toBeAttached();
+  await expect.poll(() => state.reads).toEqual([4700, 4700]);
+  const distance = await page
+    .locator('.messages')
+    .evaluate((element) => element.scrollHeight - element.scrollTop - element.clientHeight);
+  expect(distance).toBeLessThan(40);
+});
+
+test('failed visibility checks and recovery do not mint equal-marker retry loops', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  state.transcripts[101] = [message(4800)];
+  await page.goto('/chat');
+  await setReadFocus(page, true);
+  await selectPrivate(page);
+  await expect.poll(() => state.reads).toEqual([4800]);
+  await expect(page.locator('[data-conversation-id="101"] .conversation-unread')).toHaveCount(0);
+  state.visibilityStatus = 503;
+  const late = message(
+    4799,
+    101,
+    'Visible receipt arrival during failed authorization revalidation',
+  );
+  state.transcripts[101].push(late);
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [late] }));
+  await expect.poll(() => state.reads).toEqual([4800, 4800]);
+  await expect(page.locator('.messages')).toContainText(late.content);
+  for (const status of [503, 503, 200]) {
+    state.visibilityStatus = status;
+    const refreshed = page.waitForResponse((response) =>
+      response.url().includes('/conversations/101/messages?'),
+    );
+    state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+    await refreshed;
+    await expect(page.locator('.messages')).toContainText(late.content);
+    await settleReadEffects(page);
+    expect(state.readRequests.map((item) => item.marker)).toEqual([4800, 4800]);
+  }
+});
+
+test('restored authority queues a fresh generation behind an obsolete in-flight read', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  state.transcripts[101] = [message(4900)];
+  let release!: () => void;
+  state.readGates[101] = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.goto('/chat');
+  await setReadFocus(page, true);
+  await selectPrivate(page);
+  await expect.poll(() => state.readRequests.length).toBe(1);
+  state.conversationOrder = [102];
+  state.metadataStatus[101] = 403;
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+  await expect(page.locator('.conversation-list [data-conversation-id="101"]')).toHaveCount(0);
+  await expect(page.locator('.messages')).not.toContainText('測試訊息 4900');
+  const late = message(4899, 101, 'Lower ID observed after conversation authority was restored');
+  state.transcripts[101].push(late);
+  state.conversationOrder = [101, 102];
+  state.metadataStatus[101] = 200;
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+  await expect(page.locator('.messages')).toContainText(late.content);
+  await settleReadEffects(page);
+  expect(state.readRequests.length).toBe(1);
+  delete state.readGates[101];
+  release();
+  await expect.poll(() => state.reads).toEqual([4900, 4900]);
+  expect(state.receipts.get(`${viewer}:101`)).toEqual(new Set([4900, 4899]));
+});
+
+for (const eligibility of ['closed', 'unfocused'] as const) {
+  test(`an equal-marker obligation waits while its thread is ${eligibility}, including an in-flight response`, async ({
+    page,
+  }) => {
+    const state = await fixture(page, 'en');
+    state.transcripts[101] = [message(4200)];
+    let release!: () => void;
+    state.readGates[101] = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.goto('/chat');
+    await setReadFocus(page, true);
+    await selectPrivate(page);
+    await expect.poll(() => state.readRequests.length).toBe(1);
+    const late = message(4199, 101, `Lower ID waiting in a ${eligibility} thread`);
+    state.transcripts[101].push(late);
+    state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [late] }));
+    await expect(page.locator('.messages')).toContainText(late.content);
+    await settleReadEffects(page);
+    if (eligibility === 'closed') await page.locator('[data-channel-id="1"]').first().click();
+    else await setReadFocus(page, false);
+    const ineligible = message(4198, 101, `Arrived while the thread was already ${eligibility}`);
+    state.transcripts[101].push(ineligible);
+    state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [ineligible] }));
+    delete state.readGates[101];
+    release();
+    await expect.poll(() => state.reads).toEqual([4200]);
+    await expect(page.locator('[data-conversation-id="101"] .conversation-unread')).toHaveText('2');
+    await settleReadEffects(page);
+    expect(state.readRequests).toEqual([{ conversation: 101, marker: 4200, viewer }]);
+    expect(state.receipts.get(`${viewer}:101`)?.has(4199)).toBe(false);
+    expect(state.receipts.get(`${viewer}:101`)?.has(4198)).toBe(false);
+
+    if (eligibility === 'closed') await selectPrivate(page);
+    else await setReadFocus(page, true);
+    await expect.poll(() => state.reads).toEqual([4200, 4200]);
+    await expect(page.locator('[data-conversation-id="101"] .conversation-unread')).toHaveCount(0);
+  });
+}
+
+test('a new lower ID during an in-flight marker requires a fresh receipt snapshot', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  state.transcripts[101] = [message(4300)];
+  let release!: () => void;
+  state.readGates[101] = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.goto('/chat');
+  await setReadFocus(page, true);
+  await selectPrivate(page);
+  await expect.poll(() => state.readRequests.length).toBe(1);
+  const late = message(4299, 101, 'Arrived after the first receipt snapshot');
+  state.transcripts[101].push(late);
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [late, late] }));
+  await expect(page.locator('.messages')).toContainText(late.content);
+  await settleReadEffects(page);
+  expect(state.readRequests.length).toBe(1);
+  delete state.readGates[101];
+  release();
+  await expect.poll(() => state.reads).toEqual([4300, 4300]);
+  expect(state.receipts.get(`${viewer}:101`)).toEqual(new Set([4300, 4299]));
+  await expect(page.locator('[data-conversation-id="101"] .conversation-unread')).toHaveCount(0);
+  await settleReadEffects(page);
+  expect(state.readRequests.length).toBe(2);
+});
+
+test('an account switch discards a queued equal marker before the old response completes', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  state.transcripts[101] = [message(4400)];
+  let release!: () => void;
+  state.readGates[101] = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.goto('/chat');
+  await setReadFocus(page, true);
+  await selectPrivate(page);
+  await expect.poll(() => state.readRequests.length).toBe(1);
+  const late = message(4399, 101, 'Old account pending unread arrival');
+  state.transcripts[101].push(late);
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [late] }));
+  await expect(page.locator('.messages')).toContainText(late.content);
+  await settleReadEffects(page);
+  state.user.id = viewer + 50;
+  state.user.username = 'Replacement account fixture';
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+  await expect(page.locator('.messages')).toHaveAttribute('data-view-key', 'channel:1');
+  await expect(page.locator('.messages')).not.toContainText(late.content);
+  delete state.readGates[101];
+  release();
+  await expect.poll(() => state.reads).toEqual([4400]);
+  await settleReadEffects(page);
+  expect(state.readRequests).toEqual([{ conversation: 101, marker: 4400, viewer }]);
+  expect(state.receipts.get(`${viewer + 50}:101`)).toBeUndefined();
+});
+
+test('an equal-marker failure waits for an explicit retry through duplicate refreshes', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en');
+  state.transcripts[101] = [message(4500)];
+  await page.goto('/chat');
+  await setReadFocus(page, true);
+  await selectPrivate(page);
+  await expect.poll(() => state.reads).toEqual([4500]);
+  state.readStatus[101] = 503;
+  const late = message(4499, 101, 'Retryable equal marker arrival');
+  state.transcripts[101].push(late);
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [late] }));
+  await expect(page.locator('.chat-read-error')).toBeVisible();
+  const refreshed = page.waitForResponse((response) =>
+    response.url().includes('/conversations/101/messages?'),
+  );
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'messages', items: [late, late] }));
+  state.sockets.at(-1)!.send(JSON.stringify({ type: 'refresh' }));
+  await refreshed;
+  await settleReadEffects(page);
+  expect(state.readRequests.map((item) => item.marker)).toEqual([4500, 4500]);
+  state.readStatus[101] = 204;
+  await page
+    .locator('.chat-read-error')
+    .getByRole('button', { name: 'Try again', exact: true })
+    .click();
+  await expect.poll(() => state.reads).toEqual([4500, 4500]);
+  await expect(page.locator('.chat-read-error')).toHaveCount(0);
+});
+
 test('desktop private history, unread acknowledgement, older pages and live lower IDs', async ({
   page,
 }) => {
@@ -309,6 +637,7 @@ test('desktop private history, unread acknowledgement, older pages and live lowe
   await list.evaluate((element) => {
     element.scrollTop = 0;
   });
+  const readsBeforeLate = state.readRequests.length;
   const late = message(206, 101, 'Late committed fixture');
   const later = message(207, 101, 'Earlier committed fixture');
   state.transcripts[101].push(late, later);
@@ -319,6 +648,8 @@ test('desktop private history, unread acknowledgement, older pages and live lowe
     1,
   );
   await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(0);
+  await settleReadEffects(page);
+  expect(state.readRequests.length).toBe(readsBeforeLate);
   const sameUuid = [
     { ...message(208, 101, 'Peer UUID fixture', peer), client_uuid: 'shared-fixture-uuid' },
     { ...message(209, 101, 'Viewer UUID fixture', viewer), client_uuid: 'shared-fixture-uuid' },

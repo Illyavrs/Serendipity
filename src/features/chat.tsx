@@ -84,6 +84,7 @@ function AccountChat({ user }: { user: User | null }) {
     (!!current && !available && !chat.channels.loading && !chat.conversations.loading);
   const messages = denied ? [] : (history?.items ?? []);
   const lastId = messages.at(-1)?.id;
+  const readGeneration = history?.readGeneration ?? 0;
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const draftsRef = useRef(drafts);
   const [sending, setSending] = useState<Record<string, boolean>>({});
@@ -130,7 +131,12 @@ function AccountChat({ user }: { user: User | null }) {
   const creationFeedback = useRef<HTMLParagraphElement>(null);
   const positions = useRef(new Map<string, ScrollPosition>());
   const pendingScroll = useRef<{ key: string; top: number; height: number } | null>(null);
-  const previousView = useRef<{ key: string | null; lastId?: number; expanded?: boolean }>({
+  const previousView = useRef<{
+    key: string | null;
+    lastId?: number;
+    readGeneration?: number;
+    expanded?: boolean;
+  }>({
     key: null,
   });
   const announcedIds = useRef(new Map<string, number>());
@@ -161,19 +167,37 @@ function AccountChat({ user }: { user: User | null }) {
     };
   }, []);
 
-  const markVisibleRead = useCallback(() => {
-    if (
-      current?.kind !== 'conversation' ||
-      denied ||
-      !lastId ||
-      document.visibilityState !== 'visible'
-    )
-      return;
+  const isReadViewVisible = useCallback(() => {
     const list = messageList.current;
-    if (!list?.getClientRects().length) return;
-    if (list && list.scrollHeight - list.scrollTop - list.clientHeight < 40)
-      void markRead(current.id, lastId);
-  }, [markRead, current?.id, current?.kind, denied, lastId]);
+    return (
+      alive.current &&
+      document.visibilityState === 'visible' &&
+      document.hasFocus() &&
+      !!list?.getClientRects().length &&
+      list.dataset.viewKey === key &&
+      list.scrollHeight - list.scrollTop - list.clientHeight < 40
+    );
+  }, [key]);
+  const markVisibleRead = useCallback(
+    (retry = false) => {
+      if (current?.kind !== 'conversation' || denied || !history?.loaded || !lastId) return;
+      void markRead(current.id, lastId, {
+        generation: readGeneration,
+        isVisible: isReadViewVisible,
+        retry,
+      });
+    },
+    [
+      markRead,
+      current?.id,
+      current?.kind,
+      denied,
+      history?.loaded,
+      lastId,
+      readGeneration,
+      isReadViewVisible,
+    ],
+  );
 
   useLayoutEffect(() => {
     const list = messageList.current;
@@ -185,7 +209,10 @@ function AccountChat({ user }: { user: User | null }) {
       pendingScroll.current = null;
     } else if (previous.key !== key || previous.expanded !== sidebarExpanded) {
       list.scrollTop = positions.current.get(key)?.top ?? list.scrollHeight;
-    } else if (previous.lastId !== lastId && positions.current.get(key)?.atBottom !== false) {
+    } else if (
+      (previous.lastId !== lastId || previous.readGeneration !== readGeneration) &&
+      positions.current.get(key)?.atBottom !== false
+    ) {
       list.scrollTop = list.scrollHeight;
     }
     positions.current.set(key, {
@@ -193,10 +220,11 @@ function AccountChat({ user }: { user: User | null }) {
       height: list.scrollHeight,
       atBottom: list.scrollHeight - list.scrollTop - list.clientHeight < 40,
     });
-    previousView.current = { key, lastId, expanded: sidebarExpanded };
+    previousView.current = { key, lastId, readGeneration, expanded: sidebarExpanded };
   }, [
     key,
     lastId,
+    readGeneration,
     messages.length,
     history?.olderLoading,
     history?.olderError,
@@ -214,11 +242,12 @@ function AccountChat({ user }: { user: User | null }) {
 
   useEffect(() => {
     markVisibleRead();
-    window.addEventListener('focus', markVisibleRead);
-    document.addEventListener('visibilitychange', markVisibleRead);
+    const acknowledge = () => markVisibleRead();
+    window.addEventListener('focus', acknowledge);
+    document.addEventListener('visibilitychange', acknowledge);
     return () => {
-      window.removeEventListener('focus', markVisibleRead);
-      document.removeEventListener('visibilitychange', markVisibleRead);
+      window.removeEventListener('focus', acknowledge);
+      document.removeEventListener('visibilitychange', acknowledge);
     };
   }, [markVisibleRead, sidebarExpanded]);
 
@@ -673,9 +702,7 @@ function AccountChat({ user }: { user: User | null }) {
                 type="button"
                 variant="ghost"
                 disabled={!lastId}
-                onClick={() => {
-                  if (lastId) void chat.markRead(current.id, lastId, true);
-                }}
+                onClick={() => markVisibleRead(true)}
               >
                 {common('retry')}
               </Button>
