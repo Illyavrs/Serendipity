@@ -206,7 +206,8 @@ for (const scene of scenes) {
     }));
     expect(metrics.document_width).toBeLessThanOrEqual(metrics.width);
     expect(metrics.body_font).toContain('Nunito');
-    expect(metrics.body_size).toBe('15px');
+    // Preserve the incumbent responsive body scale while changing glyph families.
+    expect(metrics.body_size).toBe(scene.width <= 600 ? '14px' : '15px');
     expect(metrics.wordmark_svg_count).toBe(0);
     const origin = new URL(test.info().project.use.baseURL as string).origin;
     expect(state.fontResponses.length).toBeGreaterThan(0);

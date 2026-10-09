@@ -207,7 +207,8 @@ test('catalogue request progress follows query success, error and rapid cancella
       await route.fulfill({ status: 503, json: { error: { code: 'service_unavailable' } } });
     else await route.fulfill({ json: empty }).catch(() => {}); // An older fetch may already be aborted.
   });
-  await page.goto('/beatmaps');
+  // This controlled fixture intercepts the server catalogue, not public osu! search.
+  await page.goto('/beatmaps?catalogue=server');
   await expect(progress(page)).toHaveAttribute('data-pending', 'false');
   const input = page.getByRole('textbox', { name: 'Search', exact: true });
   const submit = page
@@ -252,7 +253,7 @@ test('catalogue request progress follows query success, error and rapid cancella
   await expect(page).toHaveURL(/q=cancelled/);
   await expect(progress(page)).toHaveAttribute('data-pending', 'false');
   await page.goForward();
-  await expect(page).toHaveURL(/\/beatmaps$/);
+  await expect(page).toHaveURL(/\/beatmaps\?catalogue=server$/);
   await expect(progress(page)).toHaveAttribute('data-pending', 'false');
 });
 
@@ -378,7 +379,7 @@ test('a short controlled request keeps its visible tail separate from real pendi
     if (url.searchParams.get('q') === 'cached') await short.promise;
     await route.fulfill({ json: empty });
   });
-  await page.goto('/beatmaps');
+  await page.goto('/beatmaps?catalogue=server');
   await expect(progress(page)).toHaveAttribute('data-pending', 'false');
   await expect(progress(page)).toHaveAttribute('data-visible', 'false');
   await progress(page).evaluate((element) => {
@@ -546,7 +547,7 @@ for (const gutter of ['classic', 'zero-width'] as const) {
     page,
   }, info) => {
     await fixture(page);
-    await page.goto('/beatmaps');
+    await page.goto('/beatmaps?catalogue=server');
     await expect(progress(page)).toHaveAttribute('data-pending', 'false');
     await page.addStyleTag({
       content: `html { overflow-y: scroll; ${gutter === 'zero-width' ? 'scrollbar-width: none;' : ''} } html::-webkit-scrollbar { width: ${gutter === 'classic' ? '17px' : '0'}; } body::after { content: ''; display: block; height: 110vh; }`,

@@ -117,6 +117,10 @@ async function fixture(page: Page, locale = 'zh-TW') {
   return state;
 }
 
+const sessionSection = (page: Page) =>
+  page.locator('section[aria-labelledby="account-sessions-heading"]');
+const fixtureProfile = (page: Page) => page.getByRole('banner').locator('a[href="/players/98823"]');
+
 async function capture(page: Page, name: string) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   if (process.env.ILLYA_CAPTURE_ACCOUNT_SESSIONS === '1') {
@@ -147,18 +151,21 @@ test('account sessions show actual client types and timestamps without invented 
   await expect(section).toContainText('登入有效不代表玩家目前在線');
   expect(state.writes).toEqual([]);
   await capture(page, 'desktop-zh-TW-dark-list');
-  const beforeDialog = await section.boundingBox();
+  // Radix hides background content from assistive technology while the modal
+  // is open. Keep role assertions above, but measure the same DOM section.
+  const geometry = sessionSection(page);
+  const beforeDialog = await geometry.boundingBox();
   await section.getByRole('button', { name: '登出其他登入', exact: true }).click();
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toBeVisible();
-  const duringDialog = await section.boundingBox();
+  const duringDialog = await geometry.boundingBox();
   expect(Math.abs(beforeDialog!.x - duringDialog!.x)).toBeLessThan(1);
   expect(Math.abs(beforeDialog!.width - duringDialog!.width)).toBeLessThan(1);
   expect(await dialog.evaluate((node) => getComputedStyle(node).backdropFilter)).toBe('blur(8px)');
   await capture(page, 'desktop-zh-TW-dark-confirm');
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  const afterDialog = await section.boundingBox();
+  const afterDialog = await geometry.boundingBox();
   expect(Math.abs(beforeDialog!.x - afterDialog!.x)).toBeLessThan(1);
   state.preferences.mode = 'light';
   state.preferences.glass_level = 0;
@@ -212,7 +219,7 @@ test('sign-out failure keeps the session and gives an actionable retry after ref
   await page.goto('/settings?tab=account');
   const row = page.locator('[data-session-client="lazer"]');
   await row.getByRole('button').click();
-  await expect(page.getByRole('alert')).toContainText('請求過於頻繁');
+  await expect(sessionSection(page).getByRole('alert')).toContainText('請求過於頻繁');
   await expect(row).toBeVisible();
   await expect(row.getByRole('button')).toBeEnabled();
   state.writeStatus = 200;
@@ -228,10 +235,10 @@ test('a saved sign-out stays removed if the subsequent list refresh fails', asyn
   const row = page.locator('[data-session-client="stable"]');
   await row.getByRole('button').click();
   await expect(row).toHaveCount(0);
-  await expect(page.getByRole('alert')).toContainText('已完成的登出仍有效');
+  await expect(sessionSection(page).getByRole('alert')).toContainText('已完成的登出仍有效');
   state.listStatus = 200;
   await page.getByRole('button', { name: '重新整理列表', exact: true }).click();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(sessionSection(page).getByRole('alert')).toHaveCount(0);
   await expect(
     page.getByRole('list', { name: '你的有效登入工作階段' }).getByRole('listitem'),
   ).toHaveCount(3);
@@ -267,7 +274,12 @@ test('revoke other sessions confirms the full bounded scope and restores keyboar
   ).toHaveCount(1);
   await expect(page.getByText(/This website login is still valid/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Refresh list', exact: true })).toBeFocused();
-  await expect(page.getByRole('link', { name: 'Session fixture', exact: true })).toBeVisible();
+  // The profile shortcut is hidden at this viewport; the sign-out control is
+  // the visible authenticated header affordance on mobile.
+  await expect(fixtureProfile(page)).toHaveCount(1);
+  await expect(
+    page.getByRole('banner').getByRole('button', { name: 'Sign out', exact: true }),
+  ).toBeVisible();
   expect(state.writes).toEqual(['POST /api/v1/me/sessions/revoke-others']);
   await capture(page, 'mobile-en-others-revoked');
 });
@@ -284,7 +296,10 @@ test('current website session asks before sign-out then clears authenticated UI 
   await dialog.getByRole('button', { name: '登出', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.locator('[data-session-client]')).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Session fixture', exact: true })).toHaveCount(0);
+  await expect(fixtureProfile(page)).toHaveCount(0);
+  await expect(
+    page.getByRole('banner').getByRole('button', { name: '登出', exact: true }),
+  ).toHaveCount(0);
   expect(state.authenticated).toBe(false);
   expect(state.writes).toEqual([
     'DELETE /api/v1/me/sessions/web/00000000-0000-4000-8000-000000000001',
@@ -298,7 +313,7 @@ test('initial loading failure retries and Japanese empty state remains readable 
   state.listStatus = 503;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/settings?tab=account');
-  await expect(page.getByRole('alert')).toContainText('一覧を更新して再試行');
+  await expect(sessionSection(page).getByRole('alert')).toContainText('一覧を更新して再試行');
   state.listStatus = 200;
   state.sessions = [];
   await page.getByRole('button', { name: '一覧を更新', exact: true }).click();
@@ -321,15 +336,18 @@ test('an unauthorized session list clears the cached account and replaces the pr
     release = resolve;
   });
   await page.goto('/login?history-marker=sessions');
-  await expect(page.getByRole('link', { name: 'Session fixture', exact: true })).toBeVisible();
+  await expect(fixtureProfile(page)).toBeVisible();
   await page.goto('/settings?tab=account');
   await expect.poll(() => state.gets).toBe(1);
-  await expect(page.getByRole('link', { name: 'Session fixture', exact: true })).toBeVisible();
+  await expect(fixtureProfile(page)).toBeVisible();
   const historyLength = await page.evaluate(() => history.length);
   release();
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.locator('[data-session-client]')).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Session fixture', exact: true })).toHaveCount(0);
+  await expect(fixtureProfile(page)).toHaveCount(0);
+  await expect(
+    page.getByRole('banner').getByRole('button', { name: '登出', exact: true }),
+  ).toHaveCount(0);
   // /me still returns the fixture user: the UI must clear its cached identity
   // itself, without submitting another sign-out request after the 401.
   expect(state.authenticated).toBe(true);
@@ -350,7 +368,7 @@ for (const action of ['individual', 'others'] as const) {
       release = resolve;
     });
     await page.goto('/login?history-marker=sessions');
-    await expect(page.getByRole('link', { name: 'Session fixture', exact: true })).toBeVisible();
+    await expect(fixtureProfile(page)).toBeVisible();
     await page.goto('/settings?tab=account');
     await expect(page.locator('[data-session-client]')).toHaveCount(4);
     const historyLength = await page.evaluate(() => history.length);
@@ -358,13 +376,19 @@ for (const action of ['individual', 'others'] as const) {
       await page.locator('[data-session-client="stable"]').getByRole('button').click();
     } else {
       await page.getByRole('button', { name: '登出其他登入', exact: true }).click();
-      await page.getByRole('alertdialog').getByRole('button', { name: '登出', exact: true }).click();
+      await page
+        .getByRole('alertdialog')
+        .getByRole('button', { name: '登出', exact: true })
+        .click();
     }
     await expect.poll(() => state.writes.length).toBe(1);
     release();
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.locator('[data-session-client]')).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Session fixture', exact: true })).toHaveCount(0);
+    await expect(fixtureProfile(page)).toHaveCount(0);
+    await expect(
+      page.getByRole('banner').getByRole('button', { name: '登出', exact: true }),
+    ).toHaveCount(0);
     expect(state.authenticated).toBe(true);
     expect(state.sessions).toHaveLength(4);
     const expected =

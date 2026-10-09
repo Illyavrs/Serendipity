@@ -362,6 +362,31 @@ for (const variant of [
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
+    // Hidden hero overflow must not conceal a complete localized action label.
+    const actionBounds = await page
+      .locator('.public-official-title .actions [data-slot="button"]')
+      .evaluateAll((actions) =>
+        actions.map((action) => {
+          const button = action.getBoundingClientRect();
+          const parent = action.parentElement!.getBoundingClientRect();
+          const label = action.querySelector('span')!.getBoundingClientRect();
+          return {
+            height: button.height,
+            left: button.left - parent.left,
+            right: parent.right - button.right,
+            labelLeft: label.left - button.left,
+            labelRight: button.right - label.right,
+          };
+        }),
+      );
+    expect(actionBounds).toHaveLength(2);
+    for (const bounds of actionBounds) {
+      expect(bounds.height).toBeGreaterThanOrEqual(44);
+      expect(bounds.left).toBeGreaterThanOrEqual(-1);
+      expect(bounds.right).toBeGreaterThanOrEqual(-1);
+      expect(bounds.labelLeft).toBeGreaterThanOrEqual(0);
+      expect(bounds.labelRight).toBeGreaterThanOrEqual(0);
+    }
     await capture('detail');
   });
 }

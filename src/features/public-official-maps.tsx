@@ -412,19 +412,19 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
                   <Button asChild>
                     <a href={download} rel={archive ? undefined : 'noopener noreferrer'}>
                       <Download aria-hidden="true" />
-                      {maps('downloadPackage')}
+                      <span>{maps('downloadPackage')}</span>
                     </a>
                   </Button>
                 ) : (
                   <Button disabled>
                     <Download aria-hidden="true" />
-                    {maps('downloadPackage')}
+                    <span>{maps('downloadPackage')}</span>
                   </Button>
                 )}
                 <Button asChild variant="outline">
                   <a href={data.official_url} target="_blank" rel="noopener noreferrer">
                     <ExternalLink aria-hidden="true" />
-                    {maps('officialSetPage')}
+                    <span>{maps('officialSetPage')}</span>
                   </a>
                 </Button>
               </div>
