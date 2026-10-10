@@ -27,6 +27,7 @@ import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import type { Page, AdminUser, Role, Beatmap, BeatmapAvailability, Audit } from '@/lib/types';
 import { AdminAnnouncements, type AnnouncementNavigationGuard } from './announcements';
 import { AuditDisclosure, ChatModeration, ScoreModeration } from './admin-moderation';
+import { ScoreRecalculation } from './admin-recalculation';
 import { AdminRankRequests } from './beatmap-rank-requests';
 import { LocalBeatmapAdminCatalogue } from './beatmap-admin-view';
 import moderationStyles from './admin-moderation.module.css';
@@ -48,7 +49,8 @@ const grants = [
   'admin.view',
   'announcements.manage',
 ];
-type Section = 'users' | 'roles' | 'beatmaps' | 'scores' | 'chat' | 'audit' | 'announcements';
+type Section =
+  'users' | 'roles' | 'beatmaps' | 'scores' | 'recalculation' | 'chat' | 'audit' | 'announcements';
 type RefreshAdmin = () => Promise<boolean>;
 const errorKeys = {
   builtin_role: 'errorBuiltinRole',
@@ -955,7 +957,7 @@ function AdminContents() {
     sections.push('users');
   if (allowed('roles.manage')) sections.push('roles');
   if (allowed('beatmaps.rank.review') || allowed('beatmaps.moderate')) sections.push('beatmaps');
-  if (allowed('scores.moderate')) sections.push('scores');
+  if (allowed('scores.moderate')) sections.push('scores', 'recalculation');
   if (allowed('chat.moderate')) sections.push('chat');
   if (allowed('audit.read')) sections.push('audit');
   if (allowed('announcements.manage')) sections.push('announcements');
@@ -981,7 +983,9 @@ function AdminContents() {
     isLoading,
     mutate,
   } = useSWR<Page<AdminUser | Audit>>(
-    ['roles', 'beatmaps', 'announcements', 'scores', 'chat'].includes(section) || !key || !user
+    ['roles', 'beatmaps', 'announcements', 'scores', 'recalculation', 'chat'].includes(section) ||
+      !key ||
+      !user
       ? null
       : section === 'audit'
         ? [key, user.id]
@@ -1107,6 +1111,8 @@ function AdminContents() {
         <BeatmapAdminTools key={user?.id} />
       ) : section === 'scores' ? (
         <ScoreModeration key={user?.id} />
+      ) : section === 'recalculation' ? (
+        <ScoreRecalculation key={user?.id} />
       ) : section === 'chat' ? (
         <ChatModeration key={user?.id} />
       ) : (
@@ -1256,6 +1262,7 @@ function AdminContents() {
         section !== 'beatmaps' &&
         section !== 'announcements' &&
         section !== 'scores' &&
+        section !== 'recalculation' &&
         section !== 'chat' &&
         data && (
           <Pagination page={page} total={data.total} pageSize={data.page_size} onChange={setPage} />

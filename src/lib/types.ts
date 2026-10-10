@@ -214,6 +214,77 @@ export type Conversation = {
   send_restriction: 'friend_only' | 'no_permission' | 'silenced' | null;
   silenced_until: string | null;
 };
+export type RecalcFilters = {
+  user_id: number | null;
+  user_name: string | null;
+  variant: 'vanilla' | 'relax' | null;
+  mode: number | null;
+  from: string | null;
+  to: string | null;
+  beatmap_id: number | null;
+  verification: string[];
+  outdated_only: boolean;
+  min_pp: number | null;
+  max_pp: number | null;
+  score_ids: number[] | null;
+};
+export type RecalcPreview = {
+  filters: RecalcFilters;
+  total: number;
+  outdated: number;
+  players: number;
+  pp_sum: number;
+  by_variant: { vanilla: number; relax: number };
+  by_mode: number[];
+  current_versions: { vanilla: string; relax: string };
+  sample: {
+    id: number;
+    user_id: number;
+    username: string;
+    title: string;
+    artist: string;
+    version: string;
+    beatmap_id: number;
+    mode: number;
+    score_variant: 'vanilla' | 'relax';
+    pp: number;
+    pp_calculation_version: string | null;
+    created_at: string;
+  }[];
+};
+export type RecalcJob = {
+  id: number;
+  created_by_name: string;
+  filters: RecalcFilters;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+  total: number;
+  processed: number;
+  updated: number;
+  unchanged: number;
+  skipped: number;
+  failed: number;
+  cancel_requested: boolean;
+  error: string | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+};
+export type RecalcItem = {
+  score_id: number;
+  outcome: 'updated' | 'skipped' | 'failed';
+  previous_pp: number | null;
+  new_pp: number | null;
+  detail: string | null;
+  username: string;
+  title: string;
+  version: string;
+  beatmap_id: number;
+};
+export type RecalcJobDetail = RecalcJob & {
+  changes: RecalcItem[];
+  problems: RecalcItem[];
+  pp_delta: number;
+};
 export type RoleGroup = {
   id: number;
   name: string;

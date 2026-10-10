@@ -456,6 +456,9 @@ test('a full-permission operator can replace custom wildcard permissions and ret
         name: 'custom_wildcard',
         description: 'Scoped helper access',
         permissions: ['chat.send'],
+        short_name: '',
+        colour: '#3b82f6',
+        display_badge: false,
       },
     });
   await expect(row.getByText('chat.send', { exact: true })).toBeVisible();

@@ -1,0 +1,175 @@
+.workbench {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 20px;
+}
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px 20px;
+  align-items: start;
+}
+.wide {
+  grid-column: 1 / -1;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+.check small {
+  display: block;
+  margin-top: 2px;
+}
+.range > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.stat {
+  align-content: start;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.statLabel {
+  font-size: 12px;
+  color: var(--secondary-text);
+}
+.statValue {
+  font-size: 20px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.statNote {
+  font-size: 11px;
+  color: var(--secondary-text);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+.chip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--secondary);
+  font-size: 12px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table caption {
+  text-align: left;
+  font-weight: 700;
+  padding: 12px 0 8px;
+}
+.table th,
+.table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.table th {
+  color: var(--secondary-text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.number {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.note {
+  color: var(--secondary-text);
+  font-size: 12px;
+}
+.up {
+  color: #5ec27f;
+}
+.down {
+  color: var(--destructive);
+}
+.jobs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.job {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+.jobHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.status {
+  margin-left: 6px;
+}
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--secondary);
+  overflow: hidden;
+}
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 0.4s ease;
+}
+.bar span[data-status='failed'] {
+  background: var(--destructive);
+}
+.bar span[data-status='cancelled'] {
+  background: var(--secondary-text);
+}
+.progressText {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--secondary-text);
+  white-space: nowrap;
+}
+.detail {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar span {
+    transition: none;
+  }
+}
