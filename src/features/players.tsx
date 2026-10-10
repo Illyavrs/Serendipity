@@ -8,6 +8,7 @@ import useSWR, { unstable_serialize, useSWRConfig } from 'swr';
 import { ArrowUpRight, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { RoleBadge } from '@/components/role-badge';
 import {
   PageHeading,
   GameMode,
@@ -432,12 +433,15 @@ export function PlayerPage({ id }: { id: number }) {
                     <span className="dot">·</span> {t('joined')}{' '}
                     {f.dateTime(new Date(player.joined_at), { dateStyle: 'medium' })}
                   </p>
-                  {player.roles.length > 0 && (
-                    <div className="map-tags">
-                      {player.roles.map((role) => (
-                        <Badge variant="secondary" key={role}>
-                          {role}
-                        </Badge>
+                  {player.groups && player.groups.length > 0 && (
+                    <div className="role-badges">
+                      {player.groups.map((group) => (
+                        <RoleBadge
+                          key={group.id}
+                          label={group.short_name}
+                          name={group.name}
+                          colour={group.colour}
+                        />
                       ))}
                     </div>
                   )}

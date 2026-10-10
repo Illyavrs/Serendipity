@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { ColorPicker } from '@/components/color-picker';
+import { RoleBadge } from '@/components/role-badge';
 import {
   PageHeading,
   Protected,
@@ -356,6 +358,10 @@ function UserActions({
     </div>
   );
 }
+const defaultBadgeColour = '#3b82f6';
+const emptyBadge = { show: false, short: '', colour: defaultBadgeColour };
+const badgeSwatches = ['#ff5c8d', '#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6'] as const;
+
 function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissions: string[] }) {
   const t = useTranslations('admin');
   const c = useTranslations('common');
@@ -363,6 +369,7 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
   const { data, error: loadError, isLoading, mutate } = useSWR<Page<Role>>('/admin/roles', fetcher);
   const [edit, setEdit] = useState<Role | null>(null);
   const [chosen, setChosen] = useState<string[]>([]);
+  const [badge, setBadge] = useState(emptyBadge);
   const [deleting, setDeleting] = useState<Role | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -372,10 +379,11 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
   const formRef = useRef<HTMLFormElement>(null);
   const deleteButton = useRef<HTMLButtonElement | null>(null);
   const permissionChoices = Array.from(new Set([...grants, ...chosen]));
-  const editable = !edit || (canDelegate(edit, permissions) && edit.name !== 'administrator');
+  const badgeEditable = !edit || canDelegate(edit, permissions);
+  const editable = badgeEditable && (!edit || edit.name !== 'administrator');
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || stale || !editable) return;
+    if (busy || stale || !badgeEditable) return;
     const form = event.currentTarget;
     const values = new FormData(form);
     setBusy(true);
@@ -388,10 +396,14 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
           name: values.get('name'),
           description: values.get('description') ?? '',
           permissions: chosen,
+          short_name: badge.short.trim(),
+          colour: badge.colour,
+          display_badge: badge.show,
         }),
       });
       setEdit(null);
       setChosen([]);
+      setBadge(emptyBadge);
       form.reset();
       setSuccess(t('saved'));
       setStale(!(await changed()));
@@ -411,6 +423,7 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
       if (edit?.id === deleting.id) {
         setEdit(null);
         setChosen([]);
+        setBadge(emptyBadge);
       }
       setDeleting(null);
       setSuccess(t('roleDeleted'));
@@ -437,13 +450,9 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
           {data?.items.map((role) => {
             const delegable = canDelegate(role, permissions);
             const administrator = role.name === 'administrator';
-            const editAllowed = delegable && !administrator;
+            const editAllowed = delegable;
             const deleteAllowed = delegable && !role.is_builtin && role.membership_count === 0;
-            const lockReason = administrator
-              ? t('operatorRoleReadOnly')
-              : !delegable
-                ? t('roleLocked')
-                : '';
+            const lockReason = !delegable ? t('roleLocked') : '';
             const deleteReason =
               lockReason ||
               (role.is_builtin
@@ -455,7 +464,12 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
               <div className="role-row" key={role.id} data-role-id={role.id}>
                 <div className="section-heading">
                   <div>
-                    <strong>{role.name}</strong>
+                    <strong>
+                      {role.name}
+                      {role.display_badge && (
+                        <RoleBadge label={role.short_name} name={role.name} colour={role.colour} />
+                      )}
+                    </strong>
                     <p className="hint">{role.description}</p>
                     <p className="hint admin-role-meta">
                       {t('memberships', { count: role.membership_count })}
@@ -471,6 +485,11 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
                       onClick={() => {
                         setEdit(role);
                         setChosen(role.permissions);
+                        setBadge({
+                          show: role.display_badge ?? false,
+                          short: role.short_name ?? '',
+                          colour: role.colour ?? defaultBadgeColour,
+                        });
                         setError('');
                         setSuccess('');
                         setDeleting(null);
@@ -504,6 +523,9 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
                     <span key={permission}>{permission}</span>
                   ))}
                 </div>
+                {administrator && (
+                  <p className="hint admin-access-hint">{t('operatorRoleReadOnly')}</p>
+                )}
                 {(lockReason || deleteReason) && (
                   <p className="hint admin-access-hint">{lockReason || deleteReason}</p>
                 )}
@@ -589,9 +611,50 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
         <p className="hint admin-access-hint" id="role-permission-hint">
           {t('roleHint')}
         </p>
+        <fieldset className="field role-badge-fields" disabled={busy || stale || !badgeEditable}>
+          <legend>{t('badge')}</legend>
+          <label htmlFor="roleShowBadge" className="role-badge-toggle">
+            <Checkbox
+              id="roleShowBadge"
+              checked={badge.show}
+              disabled={busy || stale || !badgeEditable}
+              onCheckedChange={(checked) => setBadge((old) => ({ ...old, show: checked === true }))}
+            />
+            <span>{t('badgeShow')}</span>
+          </label>
+          <div className="field">
+            <label htmlFor="roleBadgeLabel">{t('badgeLabel')}</label>
+            <Input
+              id="roleBadgeLabel"
+              maxLength={8}
+              value={badge.short}
+              required={badge.show}
+              onChange={(event) => setBadge((old) => ({ ...old, short: event.target.value }))}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="roleBadgeColour">{t('badgeColour')}</label>
+            <ColorPicker
+              id="roleBadgeColour"
+              label={t('badgeColour')}
+              value={badge.colour}
+              onValueChange={(colour) => setBadge((old) => ({ ...old, colour }))}
+              disabled={busy || stale || !badgeEditable}
+              swatches={badgeSwatches}
+            />
+          </div>
+          <div className="role-badge-preview" aria-label={t('badgePreview')}>
+            <RoleBadge
+              label={badge.short.trim() || t('badgePreviewSample')}
+              name={t('badgePreview')}
+              colour={badge.colour}
+            />
+          </div>
+          <p className="hint">{t('badgeHint')}</p>
+        </fieldset>
         <Feedback error={error} />
         <div className="actions">
-          <Button disabled={busy || stale || !editable}>
+          <Button disabled={busy || stale || !badgeEditable}>
             {busy ? (
               <LoaderCircle className="spin" aria-hidden="true" />
             ) : (
@@ -607,6 +670,7 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
               onClick={() => {
                 setEdit(null);
                 setChosen([]);
+                setBadge(emptyBadge);
                 setError('');
               }}
             >

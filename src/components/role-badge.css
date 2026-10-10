@@ -1,0 +1,40 @@
+/* Role badges: tinted pill using the role colour, as on osu-web group labels. */
+.role-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.role-badge {
+  --role-colour: var(--secondary-text);
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 10px;
+  border: 1px solid color-mix(in srgb, var(--role-colour) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--role-colour) 16%, transparent);
+  color: color-mix(in srgb, var(--role-colour) 80%, var(--foreground));
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  vertical-align: middle;
+}
+.role-row strong .role-badge {
+  margin-left: 10px;
+}
+.role-badge-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+.role-badge-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.role-badge-preview {
+  display: flex;
+}

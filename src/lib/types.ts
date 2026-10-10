@@ -53,6 +53,7 @@ export type User = {
   banner_position_y: number;
   accent_color: string;
   roles: string[];
+  groups?: RoleGroup[];
   permissions: string[];
   joined_at: string;
   pp: number;
@@ -213,11 +214,20 @@ export type Conversation = {
   send_restriction: 'friend_only' | 'no_permission' | 'silenced' | null;
   silenced_until: string | null;
 };
+export type RoleGroup = {
+  id: number;
+  name: string;
+  short_name: string;
+  colour: string | null;
+};
 export type Role = {
   id: number;
   name: string;
   permissions: string[];
   description: string;
+  short_name: string;
+  colour: string | null;
+  display_badge: boolean;
   membership_count: number;
   is_builtin: boolean;
 };
