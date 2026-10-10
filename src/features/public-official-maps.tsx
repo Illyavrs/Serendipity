@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useId, useState, type CSSProperties, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -19,10 +19,10 @@ import { NavigationLink as Link } from '@/components/navigation-motion';
 import { Button } from '@/components/ui/button';
 import { FieldSelect } from '@/components/ui/field-select';
 import { Input } from '@/components/ui/input';
-import { PageHeading } from '@/components/common';
+import { PageHeading, GameMode, Loading, LoadError, Empty, Pagination } from '@/components/common';
 import { useSession } from '@/components/providers';
 import { ApiError, hasPermission } from '@/lib/api';
-import type { OfficialBeatmapSearch, OfficialBeatmapset } from '@/lib/types';
+import type { OfficialBeatmapSearch, OfficialBeatmapset, ScoreBoard } from '@/lib/types';
 import { MapCardPreview } from './map-card-preview';
 import { MapStatus } from './map-status';
 import { BeatmapRankRequestAction } from './beatmap-rank-requests';
@@ -33,9 +33,26 @@ import {
   difficultyLevel,
   mapDuration,
   mapStarRange,
-  safeCatalogueReturn,
   usePublicData,
 } from './map-discovery';
+import {
+  beatmapsetPath,
+  beatmapDifficultyHash,
+  safeCatalogueReturn,
+  parseBeatmapDifficultyHash,
+} from '@/lib/beatmap-routes';
+import {
+  setBeatmapDifficultyLocation,
+  useBeatmapDifficultyHash,
+  useCatalogueReturn,
+} from './beatmap-route-state';
+import {
+  readRankingSelection,
+  updateRankingSelection,
+  correctRankingLocation,
+} from '@/lib/ranking-url-state';
+import { ScoreVariantControl } from '@/components/score-selection';
+import { ScoreTable } from './scores';
 
 const modes = ['osu!', 'taiko', 'catch', 'mania'];
 const statuses = ['ranked', 'qualified', 'loved', 'pending', 'graveyard', 'any'];
@@ -99,7 +116,7 @@ function SetStatuses({ set }: { set: OfficialBeatmapset }) {
   );
 }
 
-function OfficialSetCard({ set, returnTo }: { set: OfficialBeatmapset; returnTo: string }) {
+function OfficialSetCard({ set }: { set: OfficialBeatmapset; returnTo: string }) {
   const t = useTranslations('mapDiscovery');
   const stars = set.difficulties.map((map) => map.stars);
   const lengths = set.difficulties.map((map) => map.length_seconds);
@@ -113,7 +130,7 @@ function OfficialSetCard({ set, returnTo }: { set: OfficialBeatmapset; returnTo:
       style={{ '--catalogue-cover': `url("${set.cover_url}")` } as CSSProperties}
     >
       <Link
-        href={`/beatmaps/official/${set.official_set_id}?returnTo=${encodeURIComponent(returnTo)}`}
+        href={`${beatmapsetPath(set.official_set_id)}${set.difficulties[0] ? beatmapDifficultyHash(set.difficulties[0].mode, set.difficulties[0].official_id) : ''}`}
         className="discovery-set-main"
       >
         <MapArtwork source="official" nativeSetId={set.official_set_id} />
@@ -368,6 +385,8 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
   const rankRequests = useTranslations('rankRequests');
   const { user } = useSession();
   const params = useSearchParams();
+  const hash = useBeatmapDifficultyHash();
+  const fragment = parseBeatmapDifficultyHash(hash);
   const valid =
     /^\d+$/.test(setId) &&
     Number.isSafeInteger(Number(setId)) &&
@@ -376,14 +395,39 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
   const { data, error, loading, retry } = usePublicData<OfficialBeatmapset>(
     `/official/beatmapsets/${valid ? setId : '0'}`,
   );
-  const returnTo = safeCatalogueReturn(params.get('returnTo')) ?? '/beatmaps';
+  const returnTo = useCatalogueReturn();
   const selected =
-    data?.difficulties.find((map) => String(map.official_id) === params.get('difficulty')) ??
+    data?.difficulties.find((map) => map.official_id === fragment?.id) ??
+    data?.difficulties.find((map) => !fragment?.id && map.mode === fragment?.mode) ??
+    data?.difficulties.find(
+      (map) => !fragment && String(map.official_id) === params.get('difficulty'),
+    ) ??
     data?.difficulties[0];
-  function choose(id: number) {
+  useEffect(() => {
+    if (
+      !selected ||
+      window.location.pathname !== beatmapsetPath(Number(setId)) ||
+      window.location.hash !== hash
+    )
+      return;
     const next = new URLSearchParams(window.location.search);
-    next.set('difficulty', String(id));
-    window.history.replaceState(null, '', `/beatmaps/official/${setId}?${next}`);
+    next.delete('difficulty');
+    next.delete('returnTo');
+    const href = `${beatmapsetPath(Number(setId))}${next.size ? `?${next}` : ''}${beatmapDifficultyHash(selected.mode, selected.official_id)}`;
+    setBeatmapDifficultyLocation(href, true);
+  }, [selected, setId, hash]);
+  function choose(id: number) {
+    const map = data?.difficulties.find((item) => item.official_id === id);
+    if (!map) return;
+    const next = new URLSearchParams(window.location.search);
+    next.delete('difficulty');
+    next.delete('returnTo');
+    next.delete('page');
+    next.delete('mode');
+    if (map.mode === 3) next.delete('variant');
+    setBeatmapDifficultyLocation(
+      `${beatmapsetPath(Number(setId))}${next.size ? `?${next}` : ''}${beatmapDifficultyHash(map.mode, id)}`,
+    );
   }
   return (
     <div className="page-container map-discovery public-official-detail">
@@ -504,13 +548,13 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
                   ))}
                 </dl>
                 {selected.local_id !== undefined ? (
-                  <Button asChild>
-                    <Link
-                      href={`/beatmaps/${selected.local_id}?returnTo=${encodeURIComponent(returnTo)}`}
-                    >
-                      <ArrowRight aria-hidden="true" />
-                      {t('serverScores')}
-                    </Link>
+                  <Button
+                    onClick={() =>
+                      document.getElementById('server-scores')?.scrollIntoView({ block: 'start' })
+                    }
+                  >
+                    <ArrowRight aria-hidden="true" />
+                    {t('serverScores')}
                   </Button>
                 ) : (
                   <p className="hint">{t('metadataOnly')}</p>
@@ -523,8 +567,80 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
               </div>
             </div>
           </section>
+          {selected.local_id !== undefined && (
+            <OfficialDifficultyScores
+              key={selected.official_id}
+              mapId={selected.local_id}
+              mapMode={selected.mode}
+            />
+          )}
         </>
       )}
     </div>
+  );
+}
+
+function OfficialDifficultyScores({ mapId, mapMode }: { mapId: number; mapMode: number }) {
+  const t = useTranslations('maps');
+  const c = useTranslations('common');
+  const params = useSearchParams();
+  const options = {
+    defaultMode: mapMode,
+    lockedMode: mapMode !== 0 ? mapMode : undefined,
+    compact: true,
+  };
+  const { mode, variant, page } = readRankingSelection(params, options);
+  const query = new URLSearchParams({ mode, variant, page: String(page), page_size: '24' });
+  const { data, error, loading, retry } = usePublicData<ScoreBoard>(
+    `/beatmaps/${mapId}/scores?${query}`,
+  );
+  useEffect(() => {
+    if (!error && data)
+      correctRankingLocation(
+        window.location.pathname,
+        params.toString(),
+        { defaultMode: mapMode, lockedMode: mapMode !== 0 ? mapMode : undefined, compact: true },
+        data,
+      );
+  }, [data, error, params, mapMode]);
+  return (
+    <section id="server-scores" className="glass content-panel beatmap-leaderboard">
+      <header className="section-heading">
+        <h2>{t('leaderboard')}</h2>
+      </header>
+      <div className="filter-bar">
+        <GameMode
+          value={mode}
+          allowedModes={mapMode === 0 ? undefined : [String(mapMode)]}
+          onChange={(value) => updateRankingSelection({ mode: value, variant }, options)}
+        />
+        <ScoreVariantControl
+          mode={mode}
+          value={variant}
+          onChange={(value) => updateRankingSelection({ mode, variant: value }, options)}
+        />
+      </div>
+      <p className="hint">
+        {mode === '3'
+          ? c('relaxUnsupported')
+          : t(variant === 'relax' ? 'relaxBoard' : 'normalBoard')}
+      </p>
+      {error ? (
+        <LoadError retry={retry} />
+      ) : loading || !data ? (
+        <Loading />
+      ) : data.items.length ? (
+        <ScoreTable scores={data.items} leaderboard orderedBy={data.ordered_by} />
+      ) : (
+        <Empty title={c('empty')} />
+      )}
+      {data && !error && (
+        <Pagination
+          page={page}
+          total={data.total}
+          onChange={(next) => updateRankingSelection({ page: next }, options)}
+        />
+      )}
+    </section>
   );
 }

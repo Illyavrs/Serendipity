@@ -11,6 +11,7 @@ export type RankingUrlOptions = {
   defaultMode?: number;
   lockedMode?: number;
   country?: boolean;
+  compact?: boolean;
 };
 
 export function readRankingSelection(
@@ -41,8 +42,10 @@ function writeSelection(
   selection: RankingSelection,
   options: RankingUrlOptions,
 ) {
-  query.set('mode', selection.mode);
-  query.set('variant', selection.variant);
+  if (options.compact && selection.mode === String(options.defaultMode ?? 0)) query.delete('mode');
+  else query.set('mode', selection.mode);
+  if (options.compact && selection.variant === 'vanilla') query.delete('variant');
+  else query.set('variant', selection.variant);
   if (selection.page > 1) query.set('page', String(selection.page));
   else query.delete('page');
   if (options.country) {

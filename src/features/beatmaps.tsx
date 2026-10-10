@@ -53,10 +53,11 @@ import {
   MapMetadata,
   SetDifficultySelector,
   difficultyLevel,
-  safeCatalogueReturn,
   usePublicData,
 } from './map-discovery';
 import { OfficialArchiveDownload } from './official-archive-download';
+import { canonicalBeatmapHref } from '@/lib/beatmap-routes';
+import { useCatalogueReturn } from './beatmap-route-state';
 export { MapDiscoveryPage as BeatmapsPage } from './map-discovery';
 
 function duration(seconds: number) {
@@ -69,7 +70,7 @@ function DifficultyRows({ items, currentId }: { items: BeatmapDifficulty[]; curr
     <div className="map-list package-difficulty-list">
       {items.map((map) => (
         <Link
-          href={`/beatmaps/${map.id}`}
+          href={canonicalBeatmapHref(map)}
           key={map.id}
           className="map-row package-difficulty-row"
           aria-current={map.id === currentId ? 'page' : undefined}
@@ -138,7 +139,7 @@ function MapDownloads({ map }: { map: Beatmap }) {
       <div className="actions">
         {downloadUrl ? (
           <Button asChild>
-            <a href={downloadUrl} download>
+            <a href={downloadUrl}>
               <Download aria-hidden="true" />
               {t('downloadPackage')}
             </a>
@@ -247,7 +248,7 @@ export function MapRows({ items, compact = false }: { items: Beatmap[]; compact?
     <div className={`map-list map-record-list ${compact ? 'compact' : ''}`}>
       {items.map((map) => (
         <Link
-          href={`/beatmaps/${map.id}`}
+          href={canonicalBeatmapHref(map)}
           key={map.id}
           className="map-row map-record"
           style={
@@ -395,6 +396,7 @@ export function BeatmapPage({ id }: { id: number }) {
   const rankingOptions = {
     defaultMode: map?.mode ?? 0,
     lockedMode: map && map.mode !== 0 ? map.mode : undefined,
+    compact: pathname.startsWith('/beatmapsets/'),
   };
   const { mode, variant, page } = readRankingSelection(search, rankingOptions);
   const select = (nextMode: string, nextVariant: ScoreVariant) =>
@@ -402,7 +404,7 @@ export function BeatmapPage({ id }: { id: number }) {
   const setPage = (nextPage: number) => updateRankingSelection({ page: nextPage }, rankingOptions);
   const selection = new URLSearchParams({ mode, variant });
   const requestedReturn = search.get('returnTo');
-  const catalogueReturn = safeCatalogueReturn(requestedReturn);
+  const catalogueReturn = useCatalogueReturn();
   let reviewReturn: string | null = null;
   if (canManage && requestedReturn) {
     try {
@@ -431,7 +433,11 @@ export function BeatmapPage({ id }: { id: number }) {
     correctRankingLocation(
       pathname,
       search.toString(),
-      { defaultMode: map.mode, lockedMode: map.mode !== 0 ? map.mode : undefined },
+      {
+        defaultMode: map.mode,
+        lockedMode: map.mode !== 0 ? map.mode : undefined,
+        compact: pathname.startsWith('/beatmapsets/'),
+      },
       !scoreError ? scores : undefined,
     );
   }, [pathname, search, map, withdrawn, scores, scoreError]);

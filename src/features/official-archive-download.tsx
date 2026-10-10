@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api';
 import {
   archiveDownloadErrorKey,
   officialArchiveDownloadUrl,
+  officialArchiveFilename,
   readOfficialArchive,
 } from '@/lib/archive-download';
 import type { OfficialBeatmapset } from '@/lib/types';
@@ -59,7 +60,7 @@ export function OfficialArchiveDownload({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `illyaverse-official-${set.official_set_id}.osz`;
+      anchor.download = officialArchiveFilename(response, set);
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
@@ -109,7 +110,6 @@ export function OfficialArchiveDownload({
           <Button asChild>
             <a
               href={href}
-              download
               onClick={download}
               aria-disabled={busy || undefined}
               aria-busy={busy || undefined}

@@ -17,6 +17,7 @@ import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import type { Page } from '@/lib/types';
 import { useDeniedResponseGuard } from './admin-moderation';
 import styles from './beatmap-rank-requests.module.css';
+import { beatmapsetPath, beatmapDifficultyHash } from '@/lib/beatmap-routes';
 
 export type RankRequestStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
 export type RankRequestDifficulty = {
@@ -283,9 +284,8 @@ export function RankDifficultySelection({
 }
 
 function requestHref(item: BeatmapRankRequest) {
-  return item.representative_id !== null
-    ? `/beatmaps/${item.representative_id}`
-    : `/beatmaps/official/${item.native_set_id}`;
+  const first = item.difficulties[0];
+  return `${beatmapsetPath(item.native_set_id, item.source)}${first ? beatmapDifficultyHash(first.mode, first.native_id) : ''}`;
 }
 function RequestRecord({
   item,

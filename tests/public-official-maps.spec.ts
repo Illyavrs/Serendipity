@@ -61,6 +61,7 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
   const state = {
     searches: [] as URLSearchParams[],
     details: [] as number[],
+    scores: [] as string[],
     mutations: [] as string[],
     serverRequests: 0,
     serverQueries: [] as URLSearchParams[],
@@ -133,6 +134,20 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
       state.serverRequests++;
       state.serverQueries.push(new URLSearchParams(url.searchParams));
       return route.fulfill({ json: { items: [], page: 1, page_size: 24, total: 0 } });
+    }
+    if (routePath === '/beatmaps/980001/scores') {
+      state.scores.push(routePath);
+      return route.fulfill({
+        json: {
+          items: [],
+          page: 1,
+          page_size: 24,
+          total: 0,
+          mode: 1,
+          score_variant: 'vanilla',
+          ordered_by: 'pp',
+        },
+      });
     }
     return route.fulfill({ status: 404, json: { error: { code: 'not_found' } } });
   });
@@ -260,7 +275,7 @@ test('busy retries retain filters and empty results have a working reset', async
   expect(state.searches.at(-1)?.get('q')).toBe('');
 });
 
-test('official detail presents every difficulty and only exact retained IDs link to server scores', async ({
+test('official detail presents every difficulty and only exact retained IDs load inline server scores', async ({
   page,
 }) => {
   const state = await fixture(page);
@@ -270,13 +285,13 @@ test('official detail presents every difficulty and only exact retained IDs link
   await expect(
     page.getByText('This difficulty is not stored on this server yet.', { exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Server leaderboard' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Server leaderboard' })).toHaveCount(0);
   const initialDetails = state.details.length;
   await page.locator('.public-official-difficulty-list button').nth(1).click();
-  await expect(page.getByRole('link', { name: 'Server leaderboard' })).toHaveAttribute(
-    'href',
-    '/beatmaps/980001?returnTo=%2Fbeatmaps%3Fq%3Dremember',
-  );
+  await expect(page.getByRole('button', { name: 'Server leaderboard' })).toBeVisible();
+  await expect(page.locator('#server-scores')).toBeVisible();
+  await expect.poll(() => state.scores.length).toBeGreaterThan(0);
+  await expect(page).toHaveURL(/\/beatmapsets\/42#taiko\/4201$/);
   await expect(page.locator('.public-official-selected')).toContainText('501x');
   await expect(page.getByRole('link', { name: 'Download .osz' })).toHaveAttribute(
     'href',

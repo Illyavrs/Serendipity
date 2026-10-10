@@ -23,6 +23,7 @@ import { MapRows } from './beatmaps';
 import { AnnouncementsPreview } from './announcements';
 import type { DiscoverySet } from './map-discovery';
 import { HomeCharacter } from './home-character';
+import { canonicalScoreBeatmapHref } from '@/lib/beatmap-routes';
 
 const modes = ['osu!', 'taiko', 'catch', 'mania'];
 const localCatalogueHref = '/beatmaps?catalogue=server&source=local&uploaded_only=true&sort=recent';
@@ -235,7 +236,7 @@ export function HomePage() {
                             {!score.passed && <span>{t('failedScore')}</span>}
                           </div>
                           <div className="home-score-secondary">
-                            <Link href={`/beatmaps/${score.beatmap_id}`}>{t('viewBeatmap')}</Link>
+                            <Link href={canonicalScoreBeatmapHref(score)}>{t('viewBeatmap')}</Link>
                             <time dateTime={score.created_at}>
                               {f.dateTime(new Date(score.created_at), { dateStyle: 'medium' })}
                             </time>

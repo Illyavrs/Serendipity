@@ -15,11 +15,12 @@ export function ScoreOrigin({ client }: Pick<Score, 'client'>) {
   return (
     <span className="score-origin" data-client={client} role="img" aria-label={label} title={label}>
       {client === 'lazer' ? (
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.75" />
-          <path d="M7.5 6.5 14.5 10.5l-7 4Z" fill="currentColor" />
-          <path d="m11.5 9.5 7 4-7 4Z" fill="currentColor" />
-        </svg>
+        <span className="score-origin-lazer" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M9.5 1.5 3 8.5h4L6.5 14.5 13 7.5H9Z" fill="currentColor" />
+          </svg>
+          <span>lazer</span>
+        </span>
       ) : client === 'stable' ? (
         <Circle aria-hidden="true" />
       ) : (

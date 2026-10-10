@@ -27,8 +27,14 @@ import { FieldSelect } from '@/components/ui/field-select';
 import { PageHeading } from '@/components/common';
 import { useSession } from '@/components/providers';
 import { api, ApiError, hasPermission } from '@/lib/api';
-import type { Beatmap, BeatmapDifficulty, Page, ScoreVariant } from '@/lib/types';
+import type { Beatmap, BeatmapDifficulty, Page } from '@/lib/types';
 import { serverCatalogueSetKey, type ServerCataloguePage } from '@/lib/effective-map-catalogue';
+import {
+  canonicalBeatmapHref,
+  safeCatalogueReturn,
+  type BeatmapNavigation,
+} from '@/lib/beatmap-routes';
+export { safeCatalogueReturn } from '@/lib/beatmap-routes';
 
 // This mirrors the public set response; server filters select matching difficulties first.
 export type DiscoverySet = {
@@ -60,49 +66,12 @@ const filterKeys = [
   'uploaded_only',
   'page',
 ] as const;
-const returnLimit = 2048;
-
-export function safeCatalogueReturn(value: string | null) {
-  if (
-    !value ||
-    !value.startsWith('/') ||
-    value.startsWith('//') ||
-    new TextEncoder().encode(value).length > returnLimit
-  )
-    return null;
-  try {
-    const url = new URL(value, 'https://illya.invalid');
-    const result = `${url.pathname}${url.search}`;
-    return url.origin === 'https://illya.invalid' &&
-      url.pathname === '/beatmaps' &&
-      new TextEncoder().encode(result).length <= returnLimit
-      ? result
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-type DifficultyNavigation = {
-  returnTo?: string | null;
-  mode?: string;
-  variant?: ScoreVariant;
-  management?: boolean;
-};
+type DifficultyNavigation = BeatmapNavigation;
 export function beatmapDifficultyHref(
   map: BeatmapDifficulty,
   navigation: DifficultyNavigation = {},
 ) {
-  const query = new URLSearchParams();
-  if (navigation.mode !== undefined || navigation.variant !== undefined) {
-    const mode =
-      map.mode === 0 && /^[0-3]$/.test(navigation.mode ?? '') ? navigation.mode! : String(map.mode);
-    query.set('mode', mode);
-    query.set('variant', mode === '3' ? 'vanilla' : (navigation.variant ?? 'vanilla'));
-  }
-  if (navigation.returnTo) query.set('returnTo', navigation.returnTo);
-  if (navigation.management) query.set('management', '1');
-  return `/beatmaps/${map.id}${query.size ? `?${query}` : ''}`;
+  return canonicalBeatmapHref(map, navigation);
 }
 
 export function boundMapSearch(value: string) {

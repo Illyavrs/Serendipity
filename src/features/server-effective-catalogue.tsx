@@ -8,13 +8,13 @@ import type { EffectiveOfficialBeatmapset } from '@/lib/effective-map-catalogue'
 import { MapCardPreview } from './map-card-preview';
 import { MapStatus } from './map-status';
 import { MapArtwork, mapDuration, mapStarRange } from './map-discovery';
+import { beatmapsetPath, beatmapDifficultyHash } from '@/lib/beatmap-routes';
 
 const modes = ['osu!', 'taiko', 'catch', 'mania'];
 
 /** Official metadata has a canonical set route and never a fabricated local map ID. */
 export function ServerOfficialSetCard({
   set,
-  returnTo,
   matchingStatus,
 }: {
   set: EffectiveOfficialBeatmapset;
@@ -40,7 +40,7 @@ export function ServerOfficialSetCard({
       style={{ '--catalogue-cover': `url("${set.cover_url}")` } as CSSProperties}
     >
       <Link
-        href={`/beatmaps/official/${set.official_set_id}?returnTo=${encodeURIComponent(returnTo)}`}
+        href={`${beatmapsetPath(set.official_set_id)}${set.difficulties[0] ? beatmapDifficultyHash(set.difficulties[0].mode, set.difficulties[0].official_id) : ''}`}
         className="discovery-set-main"
       >
         <MapArtwork source="official" nativeSetId={set.official_set_id} />

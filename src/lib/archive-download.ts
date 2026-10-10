@@ -3,6 +3,38 @@ import type { OfficialBeatmapset } from './types';
 
 export const MAX_OFFICIAL_ARCHIVE_BYTES = 64 * 1024 * 1024;
 
+export function officialArchiveFilename(
+  response: Response,
+  set: Pick<OfficialBeatmapset, 'official_set_id' | 'artist' | 'title'>,
+) {
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const extended = /(?:^|;)\s*filename\*=UTF-8''([^;]+)/i.exec(disposition);
+  const basic = /(?:^|;)\s*filename="([^"\\]*)"/i.exec(disposition);
+  let filename: string | undefined;
+  if (extended) {
+    try {
+      filename = decodeURIComponent(extended[1].trim());
+    } catch {
+      /* Use the safe fallback below. */
+    }
+  }
+  filename ??= basic?.[1];
+  if (
+    filename &&
+    filename.endsWith('.osz') &&
+    filename.length <= 255 &&
+    !/[\u0000-\u001f\u007f/\\<>:"|?*]/.test(filename)
+  )
+    return filename;
+  const identity = `${set.official_set_id} ${set.artist} - ${set.title}`
+    .replace(/[\u0000-\u001f\u007f/\\<>:"|?*]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 240)
+    .replace(/[. ]+$/, '');
+  return `${identity}.osz`;
+}
+
 /** Only this server's exact archive routes can become a download target. */
 export function officialArchiveDownloadUrl(set: OfficialBeatmapset): string | null {
   const id = set.official_set_id;

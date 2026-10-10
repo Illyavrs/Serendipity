@@ -14,6 +14,7 @@ import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import { scoreMods, scoreVerificationKey } from '@/lib/score-display';
 import type { Beatmap, User, Score } from '@/lib/types';
 import './score-presentation.css';
+import { canonicalBeatmapHref } from '@/lib/beatmap-routes';
 import { ScoreModerationControls, useDeniedResponseGuard } from './admin-moderation';
 type ScoreDetail = Score & {
   user: User;
@@ -352,7 +353,10 @@ export function ScorePage({ id }: { id: number }) {
           <div className="score-detail-identity">
             <Link
               className="score-detail-map-link"
-              href={`/beatmaps/${score.beatmap_id}?${selection}`}
+              href={canonicalBeatmapHref(score.beatmap, {
+                mode: String(score.mode),
+                variant: score.score_variant,
+              })}
             >
               <h1 id="score-record-title">{score.title}</h1>
               <ArrowUpRight aria-hidden="true" />

@@ -74,6 +74,10 @@ export type Preferences = {
 };
 export type BeatmapDifficulty = {
   id: number;
+  native_id?: number;
+  native_set_id?: number;
+  official_id?: number | null;
+  official_set_id?: number | null;
   title: string;
   artist: string;
   creator: string;
@@ -130,6 +134,10 @@ export type Score = {
   version: string;
   artist?: string | null;
   beatmapset_id?: number | null;
+  native_beatmapset_id?: number | null;
+  native_beatmap_id?: number | null;
+  beatmap_source?: string | null;
+  beatmap_mode?: number | null;
   stars?: number | null;
   grade?: 'SS' | 'SSH' | 'S' | 'SH' | 'A' | 'B' | 'C' | 'D' | 'F' | null;
   hit_counts?: Record<string, number> | null;

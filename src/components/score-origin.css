@@ -10,6 +10,32 @@
 }
 
 .score-origin[data-client='lazer'] {
+  flex-basis: auto;
+  width: auto;
+  height: auto;
+  color: var(--readable-accent);
+}
+
+.score-origin-lazer {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 5px 2px 3px;
+  border: 1px solid color-mix(in srgb, var(--readable-accent) 40%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--readable-accent) 9%, transparent);
+  color: var(--foreground);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.score-origin-lazer > svg {
+  display: block;
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
   color: var(--readable-accent);
 }
 

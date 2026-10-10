@@ -5,6 +5,7 @@ import { flushSync } from 'react-dom';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { LazyMotion, MotionConfig } from 'motion/react';
+import { rememberCatalogueReturn } from '@/lib/beatmap-routes';
 import type { Middleware } from 'swr';
 import {
   createContext,
@@ -368,11 +369,24 @@ export function NavigationLink({ onNavigate, ...props }: NavigationLinkProps) {
         const href = hrefString(props.as ?? props.href);
         const current = new URL(window.location.href);
         const destination = new URL(href, current);
+        if (current.pathname === '/beatmaps')
+          rememberCatalogueReturn(href, `${current.pathname}${current.search}`);
         if (destination.href === current.href) {
           event.preventDefault();
           return;
         }
-        if (routeUrl(destination) === routeUrl(current)) return;
+        if (routeUrl(destination) === routeUrl(current)) {
+          if (destination.pathname.startsWith('/beatmapsets/')) {
+            event.preventDefault();
+            window.history[props.replace ? 'replaceState' : 'pushState'](
+              null,
+              '',
+              href,
+            );
+            window.dispatchEvent(new Event('illyaverse:beatmap-difficulty'));
+          }
+          return;
+        }
         event.preventDefault();
         navigate(href, { replace: props.replace, scroll: props.scroll });
       }}

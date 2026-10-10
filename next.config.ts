@@ -6,7 +6,10 @@ const config: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.resolve(process.cwd(), '../..'),
   async redirects() {
-    return [{ source: '/players/:id', destination: '/users/:id', permanent: true }];
+    return [
+      { source: '/players/:id', destination: '/users/:id', permanent: true },
+      { source: '/beatmaps/official/:setId', destination: '/beatmapsets/:setId', permanent: true },
+    ];
   },
   async rewrites() {
     const origin = process.env.API_INTERNAL_URL || 'http://127.0.0.1:8080';
