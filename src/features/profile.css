@@ -152,9 +152,9 @@
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 10px;
-  max-width: 360px;
-  padding-top: 4px;
+  gap: 8px;
+  max-width: 440px;
+  padding-top: 0;
 }
 .profile-page .profile-owner-actions:empty {
   display: none;
@@ -162,6 +162,39 @@
 .profile-page .profile-owner-actions .relationship-actions,
 .profile-page .profile-owner-actions [data-slot='button'] {
   margin: 0;
+}
+.profile-page .profile-owner-actions .relationship-actions {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+.profile-page .profile-owner-actions .relationship-action-row {
+  justify-content: flex-end;
+}
+.profile-page .profile-owner-actions [data-slot='button'] {
+  min-height: 38px;
+  height: 38px;
+  font-size: 13px;
+}
+.profile-page .profile-owner-actions .relationship-confirm {
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+.profile-page .profile-owner-actions .relationship-confirm p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-align: start;
+}
+.profile-page .profile-owner-actions .relationship-confirm .actions {
+  justify-content: flex-end;
+}
+.profile-page .profile-owner-actions .form-error {
+  margin: 0;
+  text-align: start;
 }
 .profile-page .profile-mode-rail {
   display: flex;
@@ -710,6 +743,10 @@
     justify-content: flex-start;
     padding-top: 0;
   }
+  .profile-page .profile-owner-actions .relationship-action-row,
+  .profile-page .profile-owner-actions .relationship-confirm .actions {
+    justify-content: flex-start;
+  }
 }
 @media (max-width: 800px) {
   .profile-page {
@@ -749,6 +786,10 @@
     width: 100%;
     grid-column: 1 / -1;
     justify-content: flex-start;
+  }
+  .profile-page .profile-owner-actions [data-slot='button'] {
+    min-height: 44px;
+    height: 44px;
   }
   .profile-page .profile-player-name h1 {
     font-size: clamp(21px, 6vw, 26px);

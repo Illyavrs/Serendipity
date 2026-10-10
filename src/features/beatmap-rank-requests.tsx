@@ -600,7 +600,7 @@ function RequestCollection({ staff }: { staff: boolean }) {
   return (
     <div className={styles.workbench}>
       {staff && (
-        <div>
+        <div className={styles.collectionHeading}>
           <h2>{t('queueTitle')}</h2>
           <p className="hint">{t('queueDescription')}</p>
         </div>
@@ -618,8 +618,8 @@ function RequestCollection({ staff }: { staff: boolean }) {
             ]}
           />
         </div>
-        <Button type="button" variant="outline" size="sm" disabled={refreshing} onClick={refresh}>
-          <RefreshCw aria-hidden="true" />
+        <Button type="button" variant="outline" disabled={refreshing} onClick={refresh}>
+          <RefreshCw aria-hidden="true" className={refreshing ? 'spin' : undefined} />
           {t('refresh')}
         </Button>
       </div>

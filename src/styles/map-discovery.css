@@ -140,6 +140,25 @@
   font-size: 13px;
   color: var(--readable-accent);
 }
+.discovery-modified-filter {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  width: fit-content;
+  color: var(--foreground);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.discovery-continuation {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 16px 0;
+  color: var(--secondary-text);
+  font-size: 13px;
+}
 @media (max-width: 1050px) {
   .map-discovery .discovery-controls {
     grid-template-columns: minmax(0, 1fr);

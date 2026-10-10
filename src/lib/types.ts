@@ -1,4 +1,22 @@
 export type Page<T> = { items: T[]; total: number; page: number; page_size: number };
+export type Notification = {
+  id: number;
+  kind: 'rank_request_approved' | 'rank_request_rejected' | 'announcement_published';
+  title: string;
+  message: string | null;
+  href: string;
+  created_at: string;
+  read_at: string | null;
+};
+export type NotificationPage = Page<Notification> & {
+  unread_count: number;
+  snapshot_id: string;
+  snapshot_size: number;
+};
+export type NotificationReadResult = {
+  updated: number;
+  unread_count: number;
+};
 export type AnnouncementStatus = 'draft' | 'published' | 'archived';
 export type Announcement = {
   id: number;
@@ -290,4 +308,8 @@ export type OfficialBeatmapSearch = {
   items: OfficialBeatmapset[];
   total: number;
   cursor_string: string | null;
+  /** Federated pages present this server's modified sets before upstream sets. */
+  ordering?: 'server_modified_first';
+  /** The upstream search count cannot claim to be an exact federated union. */
+  total_is_exact?: boolean;
 };

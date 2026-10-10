@@ -19,11 +19,13 @@ import { NavigationLink as Link } from '@/components/navigation-motion';
 import { Button } from '@/components/ui/button';
 import { FieldSelect } from '@/components/ui/field-select';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PageHeading, GameMode, Loading, LoadError, Empty, Pagination } from '@/components/common';
 import { useSession } from '@/components/providers';
 import { ApiError, hasPermission } from '@/lib/api';
 import type { OfficialBeatmapSearch, OfficialBeatmapset, ScoreBoard } from '@/lib/types';
 import { MapCardPreview } from './map-card-preview';
+import { MapAudioPreview } from './map-audio-preview';
 import { MapStatus } from './map-status';
 import { BeatmapRankRequestAction } from './beatmap-rank-requests';
 import { OfficialArchiveDownload } from './official-archive-download';
@@ -158,6 +160,7 @@ function OfficialSetCard({ set }: { set: OfficialBeatmapset; returnTo: string })
         </div>
         <ArrowRight className="discovery-open" aria-hidden="true" />
       </Link>
+      <MapAudioPreview setId={set.official_set_id} title={set.title} />
       <div className="discovery-difficulties">
         <SetStatuses set={set} />
         <MapCardPreview official={set} />
@@ -207,17 +210,24 @@ export function OfficialMapDiscoveryPage() {
   const sort = sorts.includes(params.get('sort') ?? '') ? params.get('sort')! : 'ranked_desc';
   const cursor = params.get('cursor');
   const safeCursor =
-    cursor && cursor.length <= 2048 && /^[\x20-\x7e]+$/.test(cursor) ? cursor : null;
+    cursor && cursor.length <= 6144 && /^[\x20-\x7e]+$/.test(cursor) ? cursor : null;
+  const modifiedOnly = params.get('status_modified_only') === 'true';
   const view = params.get('view') === 'list' ? 'list' : 'grid';
   const query = new URLSearchParams({ q, mode, status, sort });
   if (safeCursor) query.set('cursor_string', safeCursor);
+  if (modifiedOnly) query.set('status_modified_only', 'true');
   const { data, error, loading, retry } = usePublicData<OfficialBeatmapSearch>(
     `/official/beatmapsets/search?${query}`,
   );
   const returnTo =
     safeCatalogueReturn(`/beatmaps${params.size ? `?${params}` : ''}`) ?? '/beatmaps';
   const filtered =
-    !!q || mode !== 'all' || status !== 'ranked' || sort !== 'ranked_desc' || !!safeCursor;
+    !!q ||
+    mode !== 'all' ||
+    status !== 'ranked' ||
+    sort !== 'ranked_desc' ||
+    !!safeCursor ||
+    modifiedOnly;
   function reset() {
     const next = new URLSearchParams();
     if (view === 'list') next.set('view', view);
@@ -265,7 +275,7 @@ export function OfficialMapDiscoveryPage() {
               />
             </div>
             <div className="field">
-              <label htmlFor="official-status">{t('officialStatusFilter')}</label>
+              <label htmlFor="official-status">{c('statusLabel')}</label>
               <FieldSelect
                 id="official-status"
                 className="native-select"
@@ -288,13 +298,32 @@ export function OfficialMapDiscoveryPage() {
               />
             </div>
           </div>
+          <label className="discovery-modified-filter" htmlFor="official-modified-only">
+            <Checkbox
+              id="official-modified-only"
+              checked={modifiedOnly}
+              onCheckedChange={(checked) =>
+                updateCatalogue('status_modified_only', checked === true ? 'true' : '')
+              }
+            />
+            <span>{c('statusModifiedOnly')}</span>
+          </label>
         </section>
       </div>
       <div className="discovery-result-bar">
         <div className="discovery-result-count" role="status" aria-live="polite">
-          {loading ? c('loading') : !error && data ? c('setCount', { count: data.total }) : ''}
+          {loading
+            ? c('loading')
+            : !error && data
+              ? c(data.total_is_exact === false ? 'setCountEstimate' : 'setCount', {
+                  count: data.total,
+                })
+              : ''}
           {!loading && !error && data && (
             <span>{t('showingCount', { count: data.items.length })}</span>
+          )}
+          {!loading && !error && data?.ordering === 'server_modified_first' && (
+            <span>{c('serverModifiedFirst')}</span>
           )}
         </div>
         <div className="discovery-result-actions">
@@ -337,6 +366,10 @@ export function OfficialMapDiscoveryPage() {
           </div>
         ) : error ? (
           <OfficialFeedback error={error} retry={retry} />
+        ) : !data?.items.length && data?.cursor_string ? (
+          <p className="discovery-continuation" role="status">
+            {c('emptyPageHint')}
+          </p>
         ) : !data?.items.length ? (
           <div className="discovery-feedback glass">
             <h2>{c('emptyFilteredTitle')}</h2>

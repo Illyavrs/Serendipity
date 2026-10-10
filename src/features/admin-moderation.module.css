@@ -2,27 +2,101 @@
   display: grid;
   gap: 16px;
 }
+.beatmapWorkbench {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.sectionNavigation:global(.admin-toolbar),
+.subNavigation {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--secondary-text) transparent;
+}
+.sectionNavigation:global(.admin-toolbar) {
+  margin-bottom: 24px;
+}
+.sectionNavigation:global(.admin-toolbar) > :global([data-slot='button']),
+.subNavigation > :global([data-slot='button']) {
+  position: relative;
+  min-height: 42px;
+  height: auto;
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--secondary-text);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: none;
+}
+.sectionNavigation:global(.admin-toolbar) > :global([data-slot='button'])::after,
+.subNavigation > :global([data-slot='button'])::after {
+  content: '';
+  position: absolute;
+  inset-inline: 14px;
+  bottom: 0;
+  height: 2px;
+  background: transparent;
+}
+.sectionNavigation:global(.admin-toolbar) > :global([data-slot='button'][aria-pressed='true']),
+.subNavigation > :global([data-slot='button'][aria-pressed='true']) {
+  color: var(--readable-accent);
+}
+.sectionNavigation:global(.admin-toolbar)
+  > :global([data-slot='button'][aria-pressed='true'])::after,
+.subNavigation > :global([data-slot='button'][aria-pressed='true'])::after {
+  background: var(--user-accent);
+}
+.sectionNavigation:global(.admin-toolbar) > :global([data-slot='button']):focus-visible,
+.subNavigation > :global([data-slot='button']):focus-visible {
+  outline: 2px solid var(--readable-accent);
+  outline-offset: -3px;
+}
 .filters {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 .filters :global(.field),
-.search :global(.field),
 .silenceFields :global(.field) {
   min-width: 0;
   margin: 0;
 }
-.search {
+.search,
+.search:global(.admin-search) {
+  display: grid;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+.searchLabel {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.searchControls {
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
-.search :global(.field) {
+.searchControls > :global([data-slot='input']) {
   flex: 1;
+  min-width: 0;
 }
-.search > button {
-  margin-top: 27px;
+.searchControls > :global([data-slot='input']),
+.searchControls > :global([data-slot='button']) {
+  height: 38px;
+  min-height: 38px;
+}
+.searchHint:global(.hint) {
+  margin: 0;
 }
 .table {
   min-width: 730px;
@@ -127,6 +201,22 @@
   white-space: pre-wrap;
 }
 @media (max-width: 600px) {
+  .sectionNavigation:global(.admin-toolbar) > :global([data-slot='button']),
+  .subNavigation > :global([data-slot='button']) {
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+  .searchControls {
+    flex-wrap: wrap;
+  }
+  .searchControls > :global([data-slot='input']) {
+    flex-basis: 100%;
+  }
+  .searchControls > :global([data-slot='input']),
+  .searchControls > :global([data-slot='button']) {
+    height: 44px;
+    min-height: 44px;
+  }
   .scoreTable,
   .chatTable,
   .auditTable {
@@ -209,13 +299,11 @@
     grid-template-columns: 1fr;
     gap: 10px;
   }
-  .search {
-    flex-wrap: wrap;
-  }
-  .search :global(.field) {
-    flex-basis: 100%;
-  }
-  .search > button {
-    margin-top: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .sectionNavigation:global(.admin-toolbar) > :global([data-slot='button']):hover,
+  .subNavigation > :global([data-slot='button']):hover {
+    background: color-mix(in srgb, var(--foreground) 4%, transparent);
+    color: var(--foreground);
   }
 }

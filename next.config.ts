@@ -13,9 +13,14 @@ const config: NextConfig = {
   },
   async rewrites() {
     const origin = process.env.API_INTERNAL_URL || 'http://127.0.0.1:8080';
+    const resonance = process.env.RESONANCE_INTERNAL_URL || 'http://127.0.0.1:8081';
     return [
       { source: '/api/v1/:path*', destination: `${origin}/api/v1/:path*` },
       { source: '/media/:path*', destination: `${origin}/media/:path*` },
+      {
+        source: '/api/v2/beatmapsets/:id([0-9]+)/preview',
+        destination: `${resonance}/api/v2/beatmapsets/:id/preview`,
+      },
     ];
   },
   async headers() {

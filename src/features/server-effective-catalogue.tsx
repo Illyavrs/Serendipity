@@ -6,6 +6,7 @@ import { ArrowRight, Clock, Star } from 'lucide-react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import type { EffectiveOfficialBeatmapset } from '@/lib/effective-map-catalogue';
 import { MapCardPreview } from './map-card-preview';
+import { MapAudioPreview } from './map-audio-preview';
 import { MapStatus } from './map-status';
 import { MapArtwork, mapDuration, mapStarRange } from './map-discovery';
 import { beatmapsetPath, beatmapDifficultyHash } from '@/lib/beatmap-routes';
@@ -68,6 +69,7 @@ export function ServerOfficialSetCard({
         </div>
         <ArrowRight className="discovery-open" aria-hidden="true" />
       </Link>
+      <MapAudioPreview setId={set.official_set_id} title={set.title} />
       <div className="discovery-difficulties">
         <div className={`discovery-set-statuses${mixed ? ' discovery-set-statuses-mixed' : ''}`}>
           <MapStatus

@@ -834,6 +834,7 @@ export function BeatmapAvailabilityAction({
 
 function BeatmapAdminTools() {
   const t = useTranslations('rankRequests');
+  const a = useTranslations('admin');
   const { user } = useSession();
   const query = useSearchParams();
   const canReview = !!user && hasPermission(user.permissions, 'beatmaps.rank.review');
@@ -847,8 +848,8 @@ function BeatmapAdminTools() {
     window.history.pushState(null, '', `/admin?${next}`);
   }
   return (
-    <>
-      <div className="mode-control" role="group" aria-label={t('mapTools')}>
+    <div className={moderationStyles.beatmapWorkbench}>
+      <div className={moderationStyles.subNavigation} role="group" aria-label={t('mapTools')}>
         {canReview && (
           <Button
             type="button"
@@ -856,7 +857,7 @@ function BeatmapAdminTools() {
             aria-pressed={tool === 'requests'}
             onClick={() => select('requests')}
           >
-            {t('queueTitle')}
+            {a('rankRequests')}
           </Button>
         )}
         {canModerate && (
@@ -871,7 +872,7 @@ function BeatmapAdminTools() {
         )}
       </div>
       {tool === 'requests' ? <AdminRankRequests /> : <LocalBeatmapAdminCatalogue />}
-    </>
+    </div>
   );
 }
 
@@ -963,10 +964,16 @@ function AdminContents() {
   }
   return (
     <>
-      <div className="admin-toolbar" role="group" aria-label={t('sections')}>
+      <div
+        className={`admin-toolbar ${moderationStyles.sectionNavigation}`}
+        role="group"
+        aria-label={t('sections')}
+      >
         {sections.map((s) => (
-          <button
+          <Button
             key={s}
+            type="button"
+            variant="ghost"
             aria-pressed={section === s}
             onClick={() => {
               if (section === s) return;
@@ -983,20 +990,22 @@ function AdminContents() {
             }}
           >
             {t(s)}
-          </button>
+          </Button>
         ))}
       </div>
       {section === 'users' && (
         <form
-          className="admin-search"
+          className={`admin-search ${moderationStyles.search}`}
           onSubmit={(event) => {
             event.preventDefault();
             setSearch(searchInput.trim());
             setPage(1);
           }}
         >
-          <div className="field">
-            <label htmlFor="admin-user-search">{t('searchUsers')}</label>
+          <label className={moderationStyles.searchLabel} htmlFor="admin-user-search">
+            {t('searchUsers')}
+          </label>
+          <div className={moderationStyles.searchControls}>
             <Input
               id="admin-user-search"
               type="search"
@@ -1005,11 +1014,6 @@ function AdminContents() {
               onChange={(event) => setSearchInput(event.target.value)}
               aria-describedby="admin-search-hint"
             />
-            <p className="hint" id="admin-search-hint">
-              {t('searchHint')}
-            </p>
-          </div>
-          <div className="actions">
             <Button type="submit" variant="outline">
               <Search aria-hidden="true" />
               {c('search')}
@@ -1028,6 +1032,9 @@ function AdminContents() {
               </Button>
             )}
           </div>
+          <p className={`hint ${moderationStyles.searchHint}`} id="admin-search-hint">
+            {t('searchHint')}
+          </p>
         </form>
       )}
       {section === 'announcements' ? (

@@ -207,6 +207,20 @@ test('archive blob filenames honor Unicode server disposition and reject path in
   ).toBe('42 Yorushika - Song (TV Size).osz');
 });
 
+test('catalogue returns retain bounded federated cursors without admitting other routes', () => {
+  const cursor = `illyaf2.${'a'.repeat(6100)}`;
+  const filtered = `/beatmaps?status=ranked&status_modified_only=true&cursor=${cursor}`;
+  expect(safeCatalogueReturn(filtered)).toBe(filtered);
+  const prefix = '/beatmaps?cursor=';
+  const maximum = prefix + 'a'.repeat(12288 - prefix.length);
+  expect(safeCatalogueReturn(maximum)).toBe(maximum);
+  expect(safeCatalogueReturn(maximum + 'a')).toBeNull();
+  expect(safeCatalogueReturn('/beatmaps?cursor=' + '星'.repeat(4096))).toBeNull();
+  expect(safeCatalogueReturn('/beatmaps/official/42?cursor=' + cursor)).toBeNull();
+  expect(safeCatalogueReturn('https://other.invalid/beatmaps?cursor=' + cursor)).toBeNull();
+  expect(safeCatalogueReturn('//other.invalid/beatmaps?cursor=' + cursor)).toBeNull();
+});
+
 test('official canonical deep link selects difficulty and back-forward restores selection', async ({
   page,
 }) => {

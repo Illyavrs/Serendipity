@@ -34,6 +34,7 @@ import { useAppearance, useSession } from './providers';
 import { hasPermission } from '@/lib/api';
 import { isLocale } from '@/i18n/config';
 import { AppearanceControls } from '@/features/settings';
+import { NotificationBell } from '@/features/notifications';
 import { Avatar } from './common';
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -205,6 +206,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </Sheet>
             {user ? (
               <>
+                <NotificationBell key={user.id} userId={user.id} />
                 <Link href={`/users/${user.id}`} className="user-link" aria-label={t('profile')}>
                   <Avatar name={user.username} url={user.avatar_url} />
                   <span>{user.username}</span>
@@ -238,9 +240,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   <nav className="mobile-nav">
                     {navigation()}
                     {user ? (
-                      <Link href={`/users/${user.id}`} onNavigate={() => setNavOpen(false)}>
-                        {t('profile')}
-                      </Link>
+                      <>
+                        <Link href="/notifications" onNavigate={() => setNavOpen(false)}>
+                          {t('notifications')}
+                        </Link>
+                        <Link href={`/users/${user.id}`} onNavigate={() => setNavOpen(false)}>
+                          {t('profile')}
+                        </Link>
+                      </>
                     ) : (
                       <>
                         <Link href="/login" onNavigate={() => setNavOpen(false)}>

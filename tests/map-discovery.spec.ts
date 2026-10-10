@@ -653,6 +653,10 @@ test('read-only difficulty previews open on keyboard focus and keep catalogue na
   const trigger = card.locator('.discovery-difficulty-trigger');
   await card.locator('.discovery-set-main').focus();
   await page.keyboard.press('Tab');
+  await expect(
+    card.getByRole('button', { name: 'Play preview: Discovery fixture song', exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press('Tab');
   const popup = page.locator('.discovery-difficulty-popover');
   await expect(popup).toBeVisible();
   await expect(trigger).toBeFocused();

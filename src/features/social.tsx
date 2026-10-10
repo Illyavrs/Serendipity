@@ -64,42 +64,50 @@ export function RelationshipActions({
     }
   }
   return (
-    <div className="relationship-actions">
-      {canMessage && (
-        <Button asChild variant="outline">
-          <Link href={`/chat?recipient=${encodeURIComponent(targetUsername!)}`}>
-            <MessageCircle />
-            {t('message')}
-          </Link>
-        </Button>
-      )}
-      {canManage &&
-        (loadError ? (
-          <Button variant="outline" onClick={() => mutate()}>
-            {c('retry')}
+    <div className="relationship-actions" aria-busy={busy}>
+      <div className="relationship-action-row flex flex-wrap items-center gap-2">
+        {canMessage && (
+          <Button asChild variant="outline">
+            <Link href={`/chat?recipient=${encodeURIComponent(targetUsername!)}`}>
+              <MessageCircle aria-hidden="true" />
+              {t('message')}
+            </Link>
           </Button>
-        ) : (
-          <div className="actions">
-            {!blocked && (
-              <Button
-                variant="outline"
-                disabled={!data || busy}
-                onClick={() => change('friend', friend)}
-              >
-                {busy ? <LoaderCircle className="spin" /> : friend ? <UserMinus /> : <UserPlus />}
-                {t(friend ? 'removeFriend' : 'addFriend')}
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              disabled={!data || busy}
-              onClick={() => (blocked ? change('block', true) : setConfirm(true))}
-            >
-              <Ban />
-              {t(blocked ? 'unblock' : 'block')}
+        )}
+        {canManage &&
+          (loadError ? (
+            <Button variant="outline" onClick={() => mutate()}>
+              {c('retry')}
             </Button>
-          </div>
-        ))}
+          ) : (
+            <>
+              {!blocked && (
+                <Button
+                  variant="outline"
+                  disabled={!data || busy}
+                  onClick={() => change('friend', friend)}
+                >
+                  {busy ? (
+                    <LoaderCircle aria-hidden="true" className="spin" />
+                  ) : friend ? (
+                    <UserMinus aria-hidden="true" />
+                  ) : (
+                    <UserPlus aria-hidden="true" />
+                  )}
+                  {t(friend ? 'removeFriend' : 'addFriend')}
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                disabled={!data || busy}
+                onClick={() => (blocked ? change('block', true) : setConfirm(true))}
+              >
+                <Ban aria-hidden="true" />
+                {t(blocked ? 'unblock' : 'block')}
+              </Button>
+            </>
+          ))}
+      </div>
       {confirm && (
         <div className="relationship-confirm" role="group" aria-label={t('block')}>
           <p>{t('blockConfirm')}</p>

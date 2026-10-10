@@ -117,7 +117,7 @@ export function safeCatalogueReturn(value: string | null) {
     !value ||
     !value.startsWith('/') ||
     value.startsWith('//') ||
-    new TextEncoder().encode(value).length > 2048
+    new TextEncoder().encode(value).length > 12288
   )
     return null;
   try {
@@ -125,7 +125,7 @@ export function safeCatalogueReturn(value: string | null) {
     const result = `${url.pathname}${url.search}`;
     return url.origin === 'https://illya.invalid' &&
       url.pathname === '/beatmaps' &&
-      new TextEncoder().encode(result).length <= 2048
+      new TextEncoder().encode(result).length <= 12288
       ? result
       : null;
   } catch {

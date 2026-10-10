@@ -733,8 +733,10 @@ export function ChatModeration() {
           select({ search: value });
         }}
       >
-        <div className="field">
-          <label htmlFor="chat-moderation-search">{t('searchPlayers')}</label>
+        <label className={styles.searchLabel} htmlFor="chat-moderation-search">
+          {t('searchPlayers')}
+        </label>
+        <div className={styles.searchControls}>
           <Input
             key={search}
             id="chat-moderation-search"
@@ -744,19 +746,19 @@ export function ChatModeration() {
             maxLength={64}
             aria-describedby="chat-moderation-search-hint"
           />
-          <p id="chat-moderation-search-hint" className="hint">
-            {t('searchHint')}
-          </p>
-        </div>
-        <Button type="submit" variant="outline" size="sm">
-          <Search aria-hidden="true" />
-          {c('search')}
-        </Button>
-        {search && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => select({ search: '' })}>
-            {t('clearSearch')}
+          <Button type="submit" variant="outline">
+            <Search aria-hidden="true" />
+            {c('search')}
           </Button>
-        )}
+          {search && (
+            <Button type="button" variant="ghost" onClick={() => select({ search: '' })}>
+              {t('clearSearch')}
+            </Button>
+          )}
+        </div>
+        <p id="chat-moderation-search-hint" className={`hint ${styles.searchHint}`}>
+          {t('searchHint')}
+        </p>
       </form>
       {searchError && (
         <p className="form-error" role="alert">

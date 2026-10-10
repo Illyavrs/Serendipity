@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useState, type CSSProperties, type FormEvent
 import { NavigationLink as Link, useNavigationProgress } from '@/components/navigation-motion';
 import Image from 'next/image';
 import { MapCardPreview } from './map-card-preview';
+import { MapAudioPreview } from './map-audio-preview';
 import { OfficialMapDiscoveryPage } from './public-official-maps';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -49,6 +50,8 @@ export type DiscoverySet = {
   length_max: number;
   added_at: string;
   preview: BeatmapDifficulty[];
+  /** Optional confirmed availability; a retained osz can otherwise be attempted on click. */
+  preview_available?: boolean | null;
 };
 
 const modes = ['osu!', 'taiko', 'catch', 'mania'] as const;
@@ -390,6 +393,13 @@ function MapSetCard({ set, returnTo }: { set: DiscoverySet; returnTo: string }) 
         </div>
         <ArrowRight className="discovery-open" aria-hidden="true" />
       </Link>
+      <MapAudioPreview
+        setId={set.native_set_id}
+        title={map.title}
+        available={
+          map.source === 'official' || (set.preview_available ?? map.package?.kind === 'osz')
+        }
+      />
       <div className="discovery-difficulties">
         <div className="discovery-set-statuses">
           {set.matching_statuses.map((status) => (
