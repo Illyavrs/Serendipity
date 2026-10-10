@@ -1,4 +1,4 @@
-/* Role badges: tinted pill using the role colour, as on osu-web group labels. */
+/* Role badges follow osu-web's group badge: a dark translucent pill with the label in the group colour. */
 .role-badges {
   display: flex;
   flex-wrap: wrap;
@@ -7,18 +7,17 @@
   margin-top: 8px;
 }
 .role-badge {
-  --role-colour: var(--secondary-text);
+  --role-colour: var(--primary);
   display: inline-flex;
+  justify-content: center;
   align-items: center;
-  padding: 1px 10px;
-  border: 1px solid color-mix(in srgb, var(--role-colour) 45%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--role-colour) 16%, transparent);
-  color: color-mix(in srgb, var(--role-colour) 80%, var(--foreground));
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: hsl(260 8% 8% / 0.75);
+  color: var(--role-colour);
   font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  line-height: 1.6;
+  font-weight: 600;
+  line-height: 1.5;
   vertical-align: middle;
 }
 .role-row strong .role-badge {
