@@ -32,21 +32,12 @@ function render(markdown) {
   );
 }
 
-test('the public reader retains twenty guides and exposes the eight added guides', () => {
-  assert.equal(Object.keys(documents).length, 28);
-  assert.equal(documentFilename('kaleidoscope'), 'kaleidoscope-launcher.md');
-  for (const slug of [
-    'appearance-state',
-    'profile-presentation',
-    'native-score-submission',
-    'mutation-authorization',
-    'website-chat',
-    'announcements',
-    'rank-history',
-    'map-discovery',
-  ])
+test('the in-site reader exposes only the player guides', () => {
+  assert.equal(Object.keys(documents).length, 4);
+  for (const slug of ['scores-and-pp', 'beatmaps', 'account', 'markdown'])
     assert.equal(documentFilename(slug), `${slug}.md`);
-  assert.equal(new Set(Object.values(documents)).size, 28);
+  assert.equal(documentFilename('deployment'), undefined);
+  assert.equal(new Set(Object.values(documents)).size, 4);
   assert.ok(Object.isFrozen(documents));
 });
 

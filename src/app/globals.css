@@ -80,7 +80,9 @@
    Define every material on the theme root so portaled menus inherit it too. */
 :root {
   --glass-surface: rgb(var(--surface-channels) / var(--panel-opacity));
-  --glass-surface-strong: rgb(var(--surface-strong-channels) / clamp(0, calc(var(--panel-opacity) + 0.15), 1));
+  --glass-surface-strong: rgb(
+    var(--surface-strong-channels) / clamp(0, calc(var(--panel-opacity) + 0.15), 1)
+  );
   --glass-surface-raised: rgb(var(--surface-raised-channels) / var(--panel-opacity));
   --glass-surface-subtle: rgb(var(--surface-subtle-channels) / var(--panel-opacity));
   --solid-surface: rgb(var(--surface-channels));
@@ -122,14 +124,28 @@
   --section-surface-subtle: var(--solid-surface-subtle);
   --section-blur: 0px;
 }
-:root:is([data-glass-tier='navigation'], [data-glass-tier='identity'], [data-glass-tier='section']) {
+:root:is(
+  [data-glass-tier='navigation'],
+  [data-glass-tier='identity'],
+  [data-glass-tier='section']
+) {
   --content-surface: var(--solid-surface);
   --content-surface-strong: var(--solid-surface-strong);
   --content-surface-raised: var(--solid-surface-raised);
   --content-surface-subtle: var(--solid-surface-subtle);
   --content-blur: 0px;
 }
-:is([data-material='navigation'], [data-material='floating'], .site-header, .site-navigation, .profile-section-nav, .settings-layout [data-slot='tabs-list'], [data-slot='sheet-content'], [data-slot='select-content'], [data-slot='dropdown-menu-content']) {
+:is(
+  [data-material='navigation'],
+  [data-material='floating'],
+  .site-header,
+  .site-navigation,
+  .profile-section-nav,
+  .settings-layout [data-slot='tabs-list'],
+  [data-slot='sheet-content'],
+  [data-slot='select-content'],
+  [data-slot='dropdown-menu-content']
+) {
   --surface: var(--glass-surface);
   --surface-strong: var(--glass-surface-strong);
   --surface-raised: var(--glass-surface-raised);
@@ -137,7 +153,17 @@
   --material-blur: var(--panel-blur);
   backdrop-filter: blur(var(--material-blur));
 }
-:is([data-material='identity'], .home-introduction, .profile-identity, .profile-record-header, .profile-preview, .map-detail-cover, .beatmap-detail-identity, .score-detail-header, .score-detail-identity) {
+:is(
+  [data-material='identity'],
+  .home-introduction,
+  .profile-identity,
+  .profile-record-header,
+  .profile-preview,
+  .map-detail-cover,
+  .beatmap-detail-identity,
+  .score-detail-header,
+  .score-detail-identity
+) {
   --surface: var(--identity-surface);
   --surface-strong: var(--identity-surface-strong);
   --surface-raised: var(--identity-surface-raised);
@@ -145,7 +171,18 @@
   --material-blur: var(--identity-blur);
   backdrop-filter: blur(var(--material-blur));
 }
-:is([data-material='section'], .home-section-heading, .rankings-toolbar, .profile-section-heading, .profile-scores-header, .filter-bar, .score-record-table thead, .map-detail-stats, .discovery-controls, .discovery-view-control) {
+:is(
+  [data-material='section'],
+  .home-section-heading,
+  .rankings-toolbar,
+  .profile-section-heading,
+  .profile-scores-header,
+  .filter-bar,
+  .score-record-table thead,
+  .map-detail-stats,
+  .discovery-controls,
+  .discovery-view-control
+) {
   --surface: var(--section-surface);
   --surface-strong: var(--section-surface-strong);
   --surface-raised: var(--section-surface-raised);
@@ -3532,4 +3569,217 @@ input[type='checkbox'] {
     padding: 7px 14px;
     font-size: 12px;
   }
+}
+
+/* Empty results are one quiet line of context, not a page-sized block. */
+.empty-state {
+  min-height: 0;
+  padding: 28px 20px;
+  gap: 8px;
+}
+.empty-state .empty-disc {
+  width: 28px;
+  height: 28px;
+}
+.empty-state h2 {
+  font-size: 16px;
+}
+.empty-state p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Sign-in and registration are one focused form; the empty art half is gone. */
+.auth-layout {
+  grid-template-columns: minmax(0, 460px);
+  justify-content: center;
+  margin-block: 48px;
+}
+.auth-art {
+  display: none;
+}
+.auth-form {
+  border-radius: var(--radius);
+}
+
+/* Player-written Markdown */
+.user-markdown {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.user-markdown > :first-child {
+  margin-top: 0;
+}
+.user-markdown > :last-child {
+  margin-bottom: 0;
+}
+.user-markdown p,
+.user-markdown ul,
+.user-markdown ol,
+.user-markdown blockquote,
+.user-markdown pre,
+.user-markdown table {
+  margin: 0 0 0.9em;
+}
+.user-markdown h1,
+.user-markdown h2,
+.user-markdown h3,
+.user-markdown h4 {
+  margin: 1.3em 0 0.5em;
+  font-size: 1.1em;
+  font-weight: 850;
+}
+.user-markdown h1 {
+  font-size: 1.3em;
+}
+.user-markdown ul,
+.user-markdown ol {
+  padding-left: 1.4em;
+}
+.user-markdown ul {
+  list-style: disc;
+}
+.user-markdown ol {
+  list-style: decimal;
+}
+.user-markdown a {
+  color: var(--readable-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.user-markdown blockquote {
+  padding-left: 14px;
+  border-left: 1px solid var(--divider-strong);
+  color: var(--secondary-text);
+}
+.user-markdown code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--surface-raised);
+  font-size: 0.92em;
+}
+.user-markdown pre {
+  padding: 12px 14px;
+  overflow-x: auto;
+  border-radius: calc(var(--radius) * 0.6);
+  background: var(--surface-raised);
+}
+.user-markdown pre code {
+  padding: 0;
+  background: none;
+}
+.user-markdown table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.user-markdown th,
+.user-markdown td {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.user-markdown hr {
+  margin: 1.2em 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* Compact sign-in button */
+.header-tools .sign-in {
+  height: 30px;
+  margin-left: 8px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+/* Connection guide */
+.guide-body h3 {
+  margin: 28px 0 12px;
+  font-size: 16px;
+  font-weight: 850;
+}
+.guide-body h3:first-child {
+  margin-top: 0;
+}
+.connect-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  counter-reset: connect-step;
+}
+.connect-steps li {
+  position: relative;
+  padding-left: 38px;
+  line-height: 1.8;
+  counter-increment: connect-step;
+}
+.connect-steps li::before {
+  content: counter(connect-step);
+  position: absolute;
+  left: 0;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--selection-fill);
+  color: var(--readable-accent);
+  font-size: 13px;
+  font-weight: 850;
+}
+.connect-help {
+  display: grid;
+  gap: 18px;
+}
+.connect-help dt {
+  font-weight: 850;
+}
+.connect-help dd {
+  margin: 4px 0 0;
+  color: var(--secondary-text);
+  line-height: 1.8;
+}
+
+/* Player guide index */
+.docs-index-title {
+  font-size: 30px;
+  font-weight: 900;
+}
+.docs-index-lede {
+  margin: 10px 0 28px;
+  color: var(--secondary-text);
+}
+.docs-index-lede a {
+  color: var(--readable-accent);
+  font-weight: 800;
+}
+.docs-index-list {
+  display: grid;
+  gap: 2px;
+  max-width: 720px;
+  padding: 0;
+  list-style: none;
+}
+.docs-index-list a {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: calc(var(--radius) * 0.6);
+  transition: background-color 140ms ease-out;
+}
+.docs-index-list a:hover,
+.docs-index-list a:focus-visible {
+  background: var(--surface-raised);
+}
+.docs-index-list strong {
+  font-weight: 850;
+}
+.docs-index-list span {
+  color: var(--secondary-text);
+  font-size: 13px;
 }

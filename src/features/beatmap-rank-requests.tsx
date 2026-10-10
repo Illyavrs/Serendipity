@@ -1,5 +1,6 @@
 'use client';
 
+import { Markdown } from '@/components/markdown';
 import { Suspense, useId, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -327,12 +328,12 @@ function RequestRecord({
         </p>
         <div className={styles.reason}>
           <strong>{t('reason')}</strong>
-          <p>{item.reason}</p>
+          <Markdown>{item.reason}</Markdown>
         </div>
         {item.review_reason && (
           <div className={styles.reason}>
             <strong>{t('reviewReason')}</strong>
-            <p>{item.review_reason}</p>
+            <Markdown>{item.review_reason}</Markdown>
             {item.reviewer && (
               <Link href={`/users/${item.reviewer.id}`}>
                 {t('reviewer')} · {item.reviewer.username}

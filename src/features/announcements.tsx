@@ -1,5 +1,6 @@
 'use client';
 
+import { Markdown } from '@/components/markdown';
 import { Suspense, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -243,7 +244,7 @@ export function AnnouncementPage({ id }: { id: number }) {
             <h1>{announcement.title}</h1>
             <AnnouncementMeta announcement={announcement} />
           </header>
-          <div className="announcement-body">{announcement.body}</div>
+          <Markdown className="announcement-body">{announcement.body}</Markdown>
         </article>
       )}
     </div>

@@ -63,7 +63,7 @@
     "titleField": "タイトル",
     "bodyField": "本文",
     "titleHint": "{count} / 160文字",
-    "bodyHint": "{count} / 20,000文字 · プレーンテキスト、最大64 KiB。改行は保持されます。",
+    "bodyHint": "{count} / 20,000文字 · Markdown 対応（太字、リスト、リンク、表）、最大64 KiB。",
     "draftHint": "公開済みのお知らせだけが一般サイトに表示されます。",
     "publishedHint": "このお知らせは公開中です。公開内容を保存すると、一般サイトの本文が更新されます。",
     "unsaved": "未保存の変更",
@@ -259,7 +259,35 @@
     "relax": "Relax (RX)",
     "relaxUnsupported": "mania では RX を利用できません。",
     "graveyard": "Graveyard",
-    "wip": "制作中"
+    "wip": "制作中",
+    "judgementLabels": {
+      "geki": "激 (Geki)",
+      "katu": "喝 (Katu)",
+      "n300": "300",
+      "n100": "100",
+      "n50": "50",
+      "misses": "ミス",
+      "nmiss": "ミス",
+      "miss": "ミス",
+      "ngeki": "激 (Geki)",
+      "nkatu": "喝 (Katu)",
+      "large_tick_hits": "大ティック命中",
+      "small_tick_hits": "小ティック命中",
+      "slider_end_hits": "スライダー終端命中",
+      "large_bonus": "大ボーナス",
+      "small_bonus": "小ボーナス",
+      "great": "Great",
+      "ok": "Ok",
+      "meh": "Meh",
+      "perfect": "Perfect",
+      "good": "Good",
+      "ignore_hit": "無視ヒット",
+      "ignore_miss": "無視ミス",
+      "large_tick_miss": "大ティックミス",
+      "small_tick_miss": "小ティックミス",
+      "slider_tail_hit": "スライダー終端命中",
+      "combo_break": "コンボ切れ"
+    }
   },
   "auth": {
     "loginTitle": "ログイン",
@@ -753,35 +781,59 @@
     "rankRequests": "譜面のランク申請"
   },
   "connect": {
-    "localTesting": "管理者向けローカルテストガイド",
     "title": "接続ガイド",
-    "subtitle": "アカウント設定、Kaleidoscope の操作、現在の stable・lazer 互換性。",
+    "subtitle": "3ステップ：アカウント作成、ゲームの選択、手順に沿って接続します。",
+    "guide": "接続ガイド",
     "stable": "osu!stable",
     "lazer": "osu!lazer",
-    "accountTitle": "アカウントを作成",
-    "accountText": "ここで登録したユーザー名とパスワードを使用します。公式 osu! アカウントとは独立しています。",
-    "clientTitle": "ゲームクライアントを選ぶ",
-    "stableTitle": "インストール済みの stable を使う",
-    "stableText": "Kaleidoscope で stable の実行ファイルを選びます。ランチャーが Illyaverse の -devserver 引数を設定します。起動を押して、コミュニティアカウントでログインしてください。ゲームが実行中の場合は再起動が表示され、押すとゲームを閉じて起動し直します。",
-    "stableCommand": "osu!.exe -devserver illya.test",
-    "toolTitle": "Kaleidoscope から起動",
-    "toolText": "ランチャーの接続先は Illyaverse に設定されています。インストール済みの stable または公式 lazer を選び、ガイドに沿って起動・再起動してください。公開ダウンロードはまだ用意されていないため、まずテスト操作ガイドをご覧ください。",
-    "tlsTitle": "DNS と HTTPS を確認",
-    "tlsText": "現在のローカルテストは illya.test を使います。管理者がガイドに沿ってローカル DNS または hosts と、信頼できるテスト証明書を設定する必要があります。本番環境で公開 DNS と有効な HTTPS が使える場合、プレイヤーの hosts 変更は不要です。",
-    "lazerTitle": "インストール済みの公式 lazer を使う",
-    "lazerText": "Kaleidoscope は対応する公式 lazer に小さな Transfiguration 接続ブリッジを一時的に読み込みます。クライアント全体の再ビルドは不要です。既存の譜面ライブラリを使用し、公式と Illyaverse のログイン設定は別に保存します。公式の更新が対応バージョンを超えた場合は起動を停止します。対応版を待ち、ランチャーとブリッジのパッケージを一緒に更新してください。",
-    "compatibilityTitle": "現在の互換性",
-    "compatibilityText": "ランチャーのコア、接続ブリッジ、サーバープロトコルは自動テスト済みです。実際のゲーム画面の起動、stable・lazer の完全なプレイ、マルチプレイ、リプレイは、引き続き実クライアントでの検証が必要です。現在は実験的なテストです。",
-    "restoreTitle": "公式サーバーに戻る",
-    "restoreText": "ゲームを正常終了すると、ランチャーと監視プロセスが今回配置した接続 DLL を削除します。ランチャーが異常終了した場合は、Kaleidoscope を再度開いて復元の結果を確認してください。削除が完了したら、元の公式ショートカットからゲームを起動できます。",
-    "download": "ランチャー操作ガイド",
-    "operator": "管理者向けデプロイガイド",
-    "copy": "コマンドをコピー",
+    "accountTitle": "1. アカウントを作成",
+    "accountText": "このサイトでアカウントを登録します。公式 osu! アカウントとは別で、パスワードも共有されません。",
+    "clientTitle": "2. ゲームを選ぶ",
+    "stableTitle": "osu!stable の接続方法",
+    "stableShortcutTitle": "方法A：ショートカットを作る（ツール不要）",
+    "stableShortcutSteps": [
+      "osu!.exe を右クリックして「ショートカットの作成」を選び、デスクトップに置きます。",
+      "新しいショートカットを右クリックして「プロパティ」を開きます。",
+      "「リンク先」の末尾にスペースを1つ入力し、下のテキストを貼り付けます。元のパスは変更しないでください。",
+      "「OK」を押します。以後はこのショートカットから起動し、このサイトのアカウントでログインします。"
+    ],
+    "stableShortcutNote": "公式サーバーに戻したいときは、元の osu!.exe から起動してください。ショートカットの影響はありません。",
+    "stableToolTitle": "方法B：Kaleidoscope ランチャーを使う",
+    "stableToolSteps": [
+      "Kaleidoscope をダウンロードして展開します。ファイルは同じフォルダに置いてください。",
+      "Kaleidoscope を開き、osu!.exe を選びます。",
+      "「起動」を押すと、ゲームがこのサーバーに接続します。アカウントでログインしてください。"
+    ],
+    "lazerTitle": "osu!lazer の接続方法",
+    "lazerSteps": [
+      "Kaleidoscope をダウンロードして展開します。ファイルは同じフォルダに置いてください。",
+      "Kaleidoscope を開き、インストール済みの公式 osu!lazer を選びます。",
+      "「起動」を押し、このサイトのアカウントでログインします。",
+      "ゲームを終了すると、Kaleidoscope が接続用ファイルを自動で片付けます。"
+    ],
+    "lazerNote": "ビートマップライブラリとゲーム設定はそのまま使われます。アカウントのログイン情報だけが別に保存されます。",
+    "download": "Kaleidoscope をダウンロード",
+    "downloadUnavailable": "ダウンロードリンクはまだ公開されていません。サーバー管理者にお問い合わせください。",
+    "command": "-devserver {domain}",
+    "copy": "コピー",
     "copied": "コピーしました",
-    "copyError": "コピーできませんでした。上のコマンドを選択して手動でコピーしてください。",
-    "source": "参考資料",
-    "requirements": "接続の前に",
-    "guide": "接続ガイド"
+    "copyError": "コピーできませんでした。テキストを選択して手動でコピーしてください。",
+    "helpTitle": "困ったときは",
+    "helpItems": [
+      [
+        "接続できない／証明書エラー",
+        "一般の公開サーバーでは追加設定は不要です。管理者のローカルテスト環境（例：illya.test）では、hosts と テスト証明書の設定が必要です。管理者向けドキュメントをご覧ください。"
+      ],
+      [
+        "公式サーバーに戻す",
+        "stable は元の osu!.exe から起動します。lazer は通常どおり終了すると Kaleidoscope が元に戻します。異常終了した場合はもう一度開くと片付けます。"
+      ],
+      [
+        "現在の対応状況",
+        "stable と lazer のログイン、プレイ、チャット、スコア送信はテスト済みです。マルチプレイと観戦は検証中のため、問題が起きる可能性があります。"
+      ]
+    ],
+    "operatorDocs": "管理者向けデプロイドキュメント"
   },
   "social": {
     "message": "メッセージ",
@@ -836,7 +888,8 @@
     "originLazer": "osu!lazer でプレイ",
     "originStable": "osu!stable でプレイ",
     "originApi": "API から送信",
-    "originUnknown": "クライアント情報なし"
+    "originUnknown": "クライアント情報なし",
+    "gradeLabel": "グレード {grade}"
   },
   "mapModeration": {
     "title": "ビートマップの管理",

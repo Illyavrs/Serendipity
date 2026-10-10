@@ -4,6 +4,7 @@ WORKDIR /illyaverse
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json ./
 COPY apps/serendipity/package.json ./apps/serendipity/package.json
+COPY apps/docs/package.json ./apps/docs/package.json
 COPY tools/kaleidoscope/ui/package.json ./tools/kaleidoscope/ui/package.json
 RUN npm ci --include=dev
 COPY apps/serendipity ./apps/serendipity
@@ -15,7 +16,7 @@ RUN npm run build
 
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /illyaverse
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000 ILLYA_DOCS_PATH=/illyaverse/docs API_INTERNAL_URL=http://sanctuary:8080 RESONANCE_INTERNAL_URL=http://resonance:8081
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000 ILLYA_DOCS_PATH=/illyaverse/docs/player API_INTERNAL_URL=http://sanctuary:8080 RESONANCE_INTERNAL_URL=http://resonance:8081
 COPY --from=builder --chown=node:node /illyaverse/apps/serendipity/.next/standalone ./
 COPY --from=builder --chown=node:node /illyaverse/apps/serendipity/public ./apps/serendipity/public
 COPY --from=builder --chown=node:node /illyaverse/apps/serendipity/.next/static ./apps/serendipity/.next/static

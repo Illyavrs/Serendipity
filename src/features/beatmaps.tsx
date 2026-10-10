@@ -1,4 +1,5 @@
 'use client';
+import { difficultyStyle } from '@/lib/difficulty-color';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -48,13 +49,7 @@ import {
 import { BeatmapAvailabilityAction } from './admin';
 import { OfficialMapSearch } from './official-map-search';
 import { BeatmapRankRequestAction } from './beatmap-rank-requests';
-import {
-  MapArtwork,
-  MapMetadata,
-  SetDifficultySelector,
-  difficultyLevel,
-  usePublicData,
-} from './map-discovery';
+import { MapArtwork, MapMetadata, SetDifficultySelector, usePublicData } from './map-discovery';
 import { OfficialArchiveDownload } from './official-archive-download';
 import { canonicalBeatmapHref } from '@/lib/beatmap-routes';
 import { useCatalogueReturn } from './beatmap-route-state';
@@ -253,7 +248,7 @@ export function MapRows({ items, compact = false }: { items: Beatmap[]; compact?
           className="map-row map-record"
           style={
             {
-              '--difficulty-color': `var(--difficulty-${difficultyLevel(map.stars)})`,
+              ...difficultyStyle(map.stars),
             } as CSSProperties
           }
         >
@@ -548,7 +543,7 @@ export function BeatmapPage({ id }: { id: number }) {
                 aria-label={t('currentDifficulty')}
                 style={
                   {
-                    '--difficulty-color': `var(--difficulty-${difficultyLevel(map.stars)})`,
+                    ...difficultyStyle(map.stars),
                   } as CSSProperties
                 }
               >
@@ -898,7 +893,7 @@ export function MapUploadPage({ official = false }: { official?: boolean }) {
                   <p className="hint" id="official-archive-hint">
                     {t('archiveImportHint')}
                   </p>
-                  <Link href="/docs/official-archives" className="text-link">
+                  <Link href="/docs/beatmaps" className="text-link">
                     {t('archiveImportGuide')}
                     <ArrowRight />
                   </Link>

@@ -63,7 +63,7 @@
     "titleField": "Title",
     "bodyField": "Body",
     "titleHint": "{count} / 160 characters",
-    "bodyHint": "{count} / 20,000 characters · Plain text, up to 64 KiB. Line breaks are preserved.",
+    "bodyHint": "{count} / 20,000 characters · Markdown supported (bold, lists, links, tables), up to 64 KiB.",
     "draftHint": "Only published announcements appear on the public website.",
     "publishedHint": "This announcement is public. Saving published changes updates the public text.",
     "unsaved": "Unsaved changes",
@@ -259,7 +259,35 @@
     "relax": "Relax (RX)",
     "relaxUnsupported": "RX is unavailable for mania.",
     "graveyard": "Graveyard",
-    "wip": "Work in progress"
+    "wip": "Work in progress",
+    "judgementLabels": {
+      "geki": "Geki",
+      "katu": "Katu",
+      "n300": "300",
+      "n100": "100",
+      "n50": "50",
+      "misses": "Miss",
+      "nmiss": "Miss",
+      "miss": "Miss",
+      "ngeki": "Geki",
+      "nkatu": "Katu",
+      "large_tick_hits": "Large tick hits",
+      "small_tick_hits": "Small tick hits",
+      "slider_end_hits": "Slider end hits",
+      "large_bonus": "Large bonus",
+      "small_bonus": "Small bonus",
+      "great": "Great",
+      "ok": "Ok",
+      "meh": "Meh",
+      "perfect": "Perfect",
+      "good": "Good",
+      "ignore_hit": "Ignore hit",
+      "ignore_miss": "Ignore miss",
+      "large_tick_miss": "Large tick miss",
+      "small_tick_miss": "Small tick miss",
+      "slider_tail_hit": "Slider tail hit",
+      "combo_break": "Combo break"
+    }
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -753,35 +781,59 @@
     "rankRequests": "Ranking requests"
   },
   "connect": {
-    "localTesting": "Operator local testing guide",
-    "title": "Connection guide",
-    "subtitle": "Account setup, Kaleidoscope instructions and current stable/lazer compatibility.",
+    "title": "How to connect",
+    "subtitle": "Three steps: create an account, pick your game version, follow the steps.",
+    "guide": "Connection guide",
     "stable": "osu!stable",
     "lazer": "osu!lazer",
-    "accountTitle": "Create a community account",
-    "accountText": "Use the username and password you registered here. Your official osu! account remains separate.",
-    "clientTitle": "Choose your game client",
-    "stableTitle": "Use your installed stable client",
-    "stableText": "Choose your stable executable in Kaleidoscope. The launcher supplies Illyaverse's -devserver argument. Click Launch, then sign in with your community account. If the game is already running, the launcher shows Restart; clicking it closes and relaunches the game.",
-    "stableCommand": "osu!.exe -devserver illya.test",
-    "toolTitle": "Launch with Kaleidoscope",
-    "toolText": "The launcher is configured for Illyaverse. Choose your installed stable or official lazer client and follow the guide to launch or restart. A public download is not available yet; start with the test operation guide.",
-    "tlsTitle": "Check DNS and HTTPS",
-    "tlsText": "Local testing currently uses illya.test and requires local DNS or hosts routing plus a trusted test certificate, configured by the operator using the local testing guide. With public DNS and valid HTTPS in a production deployment, players do not need to edit hosts.",
-    "lazerTitle": "Use your installed official lazer client",
-    "lazerText": "Kaleidoscope temporarily loads the small Transfiguration connection bridge into a supported official lazer client, without rebuilding the whole client. It reuses your existing beatmap library while keeping official and Illyaverse sign-in settings separate. If an official update exceeds the supported version, the launcher stops; wait for and update the compatible launcher and bridge package together.",
-    "compatibilityTitle": "Current compatibility",
-    "compatibilityText": "The launcher core, connection bridge and server protocols have automated tests. Launching the actual game interface, full stable/lazer gameplay, multiplayer and replays still need native client validation. This remains an experimental test.",
-    "restoreTitle": "Return to official play",
-    "restoreText": "After a normal game exit, the launcher and guardian clean up the connection DLLs they installed. If the launcher exits unexpectedly, reopen Kaleidoscope and check recovery. Once cleanup is complete, start the game from its usual official shortcut.",
-    "download": "Launcher operation guide",
-    "operator": "Operator deployment guide",
-    "copy": "Copy command",
-    "copied": "Command copied",
-    "copyError": "Could not copy the command. Select and copy the text above manually.",
-    "source": "Connection references",
-    "requirements": "Before connecting",
-    "guide": "Connection guide"
+    "accountTitle": "1. Create an account",
+    "accountText": "Register an account on this site. It is separate from your official osu! account and the password is not shared.",
+    "clientTitle": "2. Choose your game",
+    "stableTitle": "Connecting osu!stable",
+    "stableShortcutTitle": "Option A: make a shortcut (no extra tools)",
+    "stableShortcutSteps": [
+      "Find osu!.exe, right-click it and choose Create shortcut. Put the shortcut on your desktop.",
+      "Right-click the new shortcut and choose Properties.",
+      "In the Target field, go to the very end, type one space, then paste the text below. Do not change the existing path.",
+      "Click OK. Always start the game from this shortcut and sign in with your account from this site."
+    ],
+    "stableShortcutNote": "To play on the official servers again, just start the original osu!.exe. The shortcut does not affect it.",
+    "stableToolTitle": "Option B: use the Kaleidoscope launcher",
+    "stableToolSteps": [
+      "Download and extract Kaleidoscope. Keep all files in one folder.",
+      "Open Kaleidoscope and pick your osu!.exe.",
+      "Press Launch. The game connects to this server; sign in with your account."
+    ],
+    "lazerTitle": "Connecting osu!lazer",
+    "lazerSteps": [
+      "Download and extract Kaleidoscope. Keep all files in one folder.",
+      "Open Kaleidoscope and pick your installed official osu!lazer.",
+      "Press Launch, then sign in with your account from this site.",
+      "When you close the game, Kaleidoscope cleans up the connection files automatically."
+    ],
+    "lazerNote": "Your beatmap library and game settings are reused. Only the account sign-in data is kept separate.",
+    "download": "Download Kaleidoscope",
+    "downloadUnavailable": "The download link is not public yet. Ask the server administrator.",
+    "command": "-devserver {domain}",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyError": "Could not copy. Select the text and copy it manually.",
+    "helpTitle": "Troubleshooting",
+    "helpItems": [
+      [
+        "Cannot connect or certificate error",
+        "Public servers need no extra setup. On an administrator's local test setup (for example illya.test), the hosts file and test certificate must be configured first; see the operator documentation."
+      ],
+      [
+        "Going back to the official servers",
+        "For stable, start the original osu!.exe. For lazer, closing the game normally lets Kaleidoscope restore everything. If the launcher exited abnormally, open it again and it will clean up."
+      ],
+      [
+        "Current support status",
+        "Sign-in, play, chat and score submission have been tested on stable and lazer. Multiplayer and spectating are still being verified and may have problems."
+      ]
+    ],
+    "operatorDocs": "Operator deployment docs"
   },
   "social": {
     "message": "Message",
@@ -836,7 +888,8 @@
     "originLazer": "Played in osu!lazer",
     "originStable": "Played in osu!stable",
     "originApi": "Submitted through API",
-    "originUnknown": "Client source unavailable"
+    "originUnknown": "Client source unavailable",
+    "gradeLabel": "Grade {grade}"
   },
   "mapModeration": {
     "title": "Beatmap moderation",

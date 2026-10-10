@@ -24,7 +24,7 @@ Parent: [Illyavrs/Illyaverse](https://github.com/Illyavrs/Illyaverse).
   glass surfaces and self-hosted Nunito, TaiwanPearl and Zen Maru Gothic fonts.
 
 Client verification and deployment status are tracked in the parent's
-[current integration record](https://github.com/Illyavrs/Illyaverse/blob/main/docs/current-integration-20261010.md).
+[current integration record](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/reference/release-readiness.md).
 
 ## Develop
 
@@ -39,7 +39,7 @@ npm run dev --workspace @illyaverse/serendipity
 Open [http://localhost:3000](http://localhost:3000). The website forwards
 `/api/v1` and `/media` to Sanctuary through `API_INTERNAL_URL`, which defaults
 to `http://127.0.0.1:8080`. Start the backend and database using the parent's
-[architecture guide](https://github.com/Illyavrs/Illyaverse/blob/main/docs/architecture.md).
+[architecture guide](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/deploy/architecture.md).
 
 ```sh
 npm run typecheck --workspace @illyaverse/serendipity
@@ -55,8 +55,8 @@ configuration and integration tooling. Docker builds use its root as their conte
 and include its documentation. A standalone clone does not include those
 shared inputs or a complete server environment.
 
-Follow the parent's [deployment guide](https://github.com/Illyavrs/Illyaverse/blob/main/docs/deployment.md) for a complete
-local or public server. See the [repository guide](https://github.com/Illyavrs/Illyaverse/blob/main/docs/repository-layout.md)
+Follow the parent's [deployment guide](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/deploy/deployment.md) for a complete
+local or public server. See the [repository guide](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/deploy/repository-layout.md)
 for submodule workflows and [DESIGN.md](https://github.com/Illyavrs/Illyaverse/blob/main/DESIGN.md) for the product design.
 
 ## License and contributions

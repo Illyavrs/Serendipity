@@ -12,7 +12,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const file = documentFilename(slug);
   if (!file) notFound();
   const t = await getTranslations('common');
-  const root = process.env.ILLYA_DOCS_PATH ?? path.resolve(process.cwd(), '../../docs');
+  const root = process.env.ILLYA_DOCS_PATH ?? path.resolve(process.cwd(), '../../docs/player');
   // The Docker runtime explicitly includes the allowlisted docs directory.
   const markdown = await readFile(
     /* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ root, file),

@@ -1,37 +1,12 @@
 import type { Nodes, PhrasingContent, Root } from 'mdast';
 import type {} from 'mdast-util-to-hast';
 
-// Only these public guides may supply a filesystem filename to the reader.
+// Player-facing guides only. Operator documentation lives in the separate docs site (apps/docs).
 export const documents = Object.freeze({
-  connection: 'connection.md',
-  kaleidoscope: 'kaleidoscope-launcher.md',
-  'local-client': 'local-client-testing.md',
-  'lazer-client': 'lazer-client-build.md',
-  'native-chat': 'native-chat.md',
-  'native-mods': 'native-mods.md',
-  'native-maps': 'native-beatmap-discovery.md',
-  'map-packages': 'local-map-packages.md',
-  'official-archives': 'official-beatmap-archives.md',
-  'official-search': 'official-map-search.md',
-  relax: 'relax.md',
-  'score-normalization': 'score-normalization.md',
-  replays: 'lazer-replays.md',
-  deployment: 'deployment.md',
-  'account-recovery': 'account-recovery.md',
-  architecture: 'architecture.md',
-  permissions: 'permissions.md',
-  announcements: 'announcements.md',
-  'rank-history': 'rank-history.md',
-  'map-discovery': 'map-discovery.md',
-  protocol: 'protocol-compatibility.md',
-  realtime: 'signalr-compatibility.md',
-  'room-scores': 'lazer-room-scores-plan.md',
-  verification: 'verification.md',
-  'appearance-state': 'appearance-state.md',
-  'profile-presentation': 'profile-presentation.md',
-  'native-score-submission': 'native-score-submission.md',
-  'mutation-authorization': 'mutation-authorization.md',
-  'website-chat': 'website-chat.md',
+  'scores-and-pp': 'scores-and-pp.md',
+  beatmaps: 'beatmaps.md',
+  account: 'account.md',
+  markdown: 'markdown.md',
 } as const);
 
 export function documentFilename(slug: unknown): string | undefined {

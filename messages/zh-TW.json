@@ -63,7 +63,7 @@
     "titleField": "標題",
     "bodyField": "內文",
     "titleHint": "{count} / 160 字",
-    "bodyHint": "{count} / 20,000 字 · 純文字，最多 64 KiB，保留換行。",
+    "bodyHint": "{count} / 20,000 字 · 支援 Markdown（粗體、清單、連結、表格），最多 64 KiB。",
     "draftHint": "只有已發布的公告會顯示在公開網站。",
     "publishedHint": "這則公告已公開。儲存已發布內容會更新公開的文字。",
     "unsaved": "尚未儲存的變更",
@@ -259,7 +259,35 @@
     "relax": "Relax (RX)",
     "relaxUnsupported": "mania 不支援 RX。",
     "graveyard": "Graveyard",
-    "wip": "製作中"
+    "wip": "製作中",
+    "judgementLabels": {
+      "geki": "激 (Geki)",
+      "katu": "喝 (Katu)",
+      "n300": "300",
+      "n100": "100",
+      "n50": "50",
+      "misses": "Miss",
+      "nmiss": "Miss",
+      "miss": "Miss",
+      "ngeki": "激 (Geki)",
+      "nkatu": "喝 (Katu)",
+      "large_tick_hits": "大 Tick 命中",
+      "small_tick_hits": "小 Tick 命中",
+      "slider_end_hits": "滑條尾端命中",
+      "large_bonus": "大獎勵",
+      "small_bonus": "小獎勵",
+      "great": "Great",
+      "ok": "Ok",
+      "meh": "Meh",
+      "perfect": "Perfect",
+      "good": "Good",
+      "ignore_hit": "忽略命中",
+      "ignore_miss": "忽略失誤",
+      "large_tick_miss": "大 Tick 失誤",
+      "small_tick_miss": "小 Tick 失誤",
+      "slider_tail_hit": "滑條尾端命中",
+      "combo_break": "斷 Combo"
+    }
   },
   "auth": {
     "loginTitle": "登入",
@@ -753,35 +781,59 @@
     "rankRequests": "圖譜排名申請"
   },
   "connect": {
-    "localTesting": "管理員本機測試指南",
     "title": "連線教學",
-    "subtitle": "帳號設定、Kaleidoscope 操作方式與目前的 stable／lazer 相容性。",
+    "subtitle": "三個步驟：註冊帳號、選擇你的遊戲版本、照著做就能連上。",
+    "guide": "連線指南",
     "stable": "osu!stable",
     "lazer": "osu!lazer",
-    "accountTitle": "建立社群帳號",
-    "accountText": "使用在這裡註冊的帳號與密碼。它與你的官方 osu! 帳號各自獨立。",
-    "clientTitle": "選擇遊戲客戶端",
-    "stableTitle": "使用已安裝的 stable",
-    "stableText": "在 Kaleidoscope 選擇你的 stable 執行檔。啟動器會帶入 Illyaverse 的 -devserver 參數；按下啟動後登入你的社群帳號。如果遊戲已在執行，啟動器會顯示重新啟動，由你按下後關閉遊戲並重新開啟。",
-    "stableCommand": "osu!.exe -devserver illya.test",
-    "toolTitle": "從 Kaleidoscope 啟動",
-    "toolText": "啟動器已固定連接 Illyaverse。選擇電腦上已安裝的 stable 或官方 lazer，即可依操作指南啟動或重新啟動。公開下載尚未提供，目前請先閱讀測試操作指南。",
-    "tlsTitle": "確認網域與 HTTPS",
-    "tlsText": "目前本機測試使用 illya.test，需要本機 DNS／hosts 對應與可信任的測試憑證，由管理員依本機測試指南設定。正式部署使用公開 DNS 與有效 HTTPS 憑證時，一般玩家不需修改 hosts。",
-    "lazerTitle": "使用已安裝的官方 lazer",
-    "lazerText": "Kaleidoscope 會為支援的官方 lazer 暫時載入小型 Transfiguration 連線橋接，不必重新建置整個客戶端。沿用現有圖譜庫，官方與私服登入設定分開保存。若官方更新超出支援版本，啟動器會停止啟動；請等待並一起更新相容的啟動器與橋接套件。",
-    "compatibilityTitle": "目前相容性",
-    "compatibilityText": "啟動器核心、連線橋接與伺服器協定已有自動測試。實際遊戲畫面的啟動、完整 stable／lazer 遊玩、多人遊戲與 Replay 仍待原生客戶端驗證，目前屬於實驗性測試。",
-    "restoreTitle": "回到官方伺服器",
-    "restoreText": "正常關閉遊戲後，啟動器與監護程序會清理本次放入的連線 DLL。若啟動器異常退出，再開啟 Kaleidoscope 查看復原結果；完成清理後，從原本的官方捷徑啟動遊戲。",
-    "download": "啟動器操作指南",
-    "operator": "部署管理員指南",
-    "copy": "複製指令",
-    "copied": "已複製指令",
-    "copyError": "無法複製指令。請選取上方文字後手動複製。",
-    "source": "連線參考資料",
-    "requirements": "連線之前",
-    "guide": "連線指南"
+    "accountTitle": "1. 建立帳號",
+    "accountText": "在本站註冊一個帳號。它和你的官方 osu! 帳號是分開的，密碼也不會共用。",
+    "clientTitle": "2. 選擇你的遊戲",
+    "stableTitle": "osu!stable 連線方式",
+    "stableShortcutTitle": "方法 A：建立捷徑（不用安裝任何工具）",
+    "stableShortcutSteps": [
+      "在資料夾中找到 osu!.exe，按右鍵選擇「建立捷徑」，放到桌面。",
+      "在新捷徑上按右鍵，選擇「內容」。",
+      "在「目標」欄位最後面，先輸入一個空格，再貼上下面這段（不要改動前面原有的路徑）。",
+      "按「確定」，之後都用這個捷徑開遊戲，登入畫面輸入你在本站註冊的帳號密碼。"
+    ],
+    "stableShortcutNote": "想回到官方伺服器時，直接用原本的 osu!.exe 開遊戲即可，捷徑不會影響它。",
+    "stableToolTitle": "方法 B：使用 Kaleidoscope 啟動器",
+    "stableToolSteps": [
+      "下載並解壓縮 Kaleidoscope（所有檔案要放在同一個資料夾）。",
+      "開啟 Kaleidoscope，選擇你的 osu!.exe。",
+      "按「啟動」，遊戲會自動連到本站，登入你的帳號即可。"
+    ],
+    "lazerTitle": "osu!lazer 連線方式",
+    "lazerSteps": [
+      "下載並解壓縮 Kaleidoscope（所有檔案要放在同一個資料夾）。",
+      "開啟 Kaleidoscope，選擇你電腦上已安裝的官方 osu!lazer。",
+      "按「啟動」，遊戲開啟後使用本站的帳號密碼登入。",
+      "遊戲關閉後，Kaleidoscope 會自動清理連線用的檔案。"
+    ],
+    "lazerNote": "你的圖譜庫與遊戲設定會沿用原本的；只有帳號登入資訊會分開保存。",
+    "download": "下載 Kaleidoscope",
+    "downloadUnavailable": "下載連結尚未公開，請向伺服器管理員索取。",
+    "command": "-devserver {domain}",
+    "copy": "複製",
+    "copied": "已複製",
+    "copyError": "無法複製，請選取文字後手動複製。",
+    "helpTitle": "常見問題",
+    "helpItems": [
+      [
+        "連不上或顯示憑證錯誤",
+        "一般伺服器不需要額外設定。若是管理員的本機測試環境（例如 illya.test），需要先設定 hosts 與信任測試憑證，請參考管理員文件。"
+      ],
+      [
+        "想回到官方伺服器",
+        "stable 直接用原本的 osu!.exe；lazer 正常關閉遊戲後，Kaleidoscope 會還原。若啟動器異常結束，再開啟一次它就會清理。"
+      ],
+      [
+        "目前的支援狀態",
+        "stable 與 lazer 的登入、遊玩、聊天與成績提交已有測試，多人遊戲與觀戰仍在驗證中，可能遇到問題。"
+      ]
+    ],
+    "operatorDocs": "管理員部署文件"
   },
   "social": {
     "message": "傳送訊息",
@@ -836,7 +888,8 @@
     "originLazer": "在 osu!lazer 遊玩",
     "originStable": "在 osu!stable 遊玩",
     "originApi": "透過 API 提交",
-    "originUnknown": "未記錄遊戲來源"
+    "originUnknown": "未記錄遊戲來源",
+    "gradeLabel": "等級 {grade}"
   },
   "mapModeration": {
     "title": "圖譜審核",

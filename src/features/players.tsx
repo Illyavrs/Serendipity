@@ -1,4 +1,5 @@
 'use client';
+import { Markdown } from '@/components/markdown';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -630,7 +631,11 @@ export function PlayerPage({ id }: { id: number }) {
                 aria-labelledby="profile-about-heading"
               >
                 <h2 id="profile-about-heading">{t('about')}</h2>
-                <p className="profile-bio">{player.bio || t('noBio')}</p>
+                {player.bio ? (
+                  <Markdown className="profile-bio">{player.bio}</Markdown>
+                ) : (
+                  <p className="profile-bio">{t('noBio')}</p>
+                )}
               </section>
               <section
                 className="content-panel glass profile-scores"
