@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Send, LoaderCircle, Plus, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { PageHeading, Loading, LoadError, Empty, Avatar } from '@/components/common';
@@ -513,13 +514,13 @@ function AccountChat({ user }: { user: User | null }) {
                 </form>
                 <div className="chat-privacy chat-preferences">
                   <label htmlFor="pm_friends_only">
-                    <input
+                    <Checkbox
                       id="pm_friends_only"
-                      type="checkbox"
+                      className="mt-0.5"
                       checked={chat.preferences.value}
                       disabled={!chat.preferences.loaded || chat.preferences.busy}
                       aria-describedby="chat-privacy-hint"
-                      onChange={(event) => void chat.savePreferences(event.target.checked)}
+                      onCheckedChange={(checked) => void chat.savePreferences(checked === true)}
                     />
                     <span>{t('friendsOnly')}</span>
                   </label>

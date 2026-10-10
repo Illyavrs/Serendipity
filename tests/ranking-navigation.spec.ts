@@ -182,7 +182,10 @@ test('player deep links apply country, page and RX partition while preserving ot
   );
   const panel = rows(page, false);
   await expect(panel.getByText(record('Rank fixture TW 1 relax 25'))).toBeVisible();
-  await expect(panel.getByRole('textbox', { name: 'Country', exact: true })).toHaveValue('TW');
+  await expect(panel.getByRole('combobox', { name: 'Country', exact: true })).toHaveAttribute(
+    'data-value',
+    'TW',
+  );
   await expect(panel.getByRole('button', { name: 'taiko', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -209,12 +212,17 @@ test('player pagination and country selection restore with Back and Forward', as
   await expect(panel.getByText(record('Rank fixture TW 0 vanilla 25'))).toBeVisible();
   await panel.getByRole('button', { name: 'Next', exact: true }).click();
   await expect(panel.getByText(record('Rank fixture TW 0 vanilla 49'))).toBeVisible();
-  await panel.getByRole('textbox', { name: 'Country', exact: true }).fill('JP');
+  await panel.getByRole('combobox', { name: 'Country', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Search countries', exact: true }).fill('Japan');
+  await page.getByRole('option', { name: 'Japan', exact: true }).click();
   await expect(panel.getByText(record('Rank fixture JP 0 vanilla 1'))).toBeVisible();
   await query(page, { country: 'JP', page: null, campaign: 'history' }, '#rankings');
   await page.goBack();
   await expect(panel.getByText(record('Rank fixture TW 0 vanilla 49'))).toBeVisible();
-  await expect(panel.getByRole('textbox', { name: 'Country', exact: true })).toHaveValue('TW');
+  await expect(panel.getByRole('combobox', { name: 'Country', exact: true })).toHaveAttribute(
+    'data-value',
+    'TW',
+  );
   await page.goBack();
   await expect(panel.getByText(record('Rank fixture TW 0 vanilla 25'))).toBeVisible();
   await page.goForward();
@@ -269,21 +277,25 @@ test('invalid player URL fields normalize to safe defaults without dropping enco
   ).toBe(true);
 });
 
-test('country input keeps an incomplete draft without invalid API filters and clearing resets page', async ({
+test('country search keeps the current filter until selecting a country and All resets page', async ({
   page,
 }) => {
   const state = await fixture(page);
   await page.goto('/rankings?country=TW&page=2&mode=0&variant=vanilla#rankings');
   const panel = rows(page, false);
-  const input = panel.getByRole('textbox', { name: 'Country', exact: true });
+  const trigger = panel.getByRole('combobox', { name: 'Country', exact: true });
   await expect(panel.getByText(record('Rank fixture TW 0 vanilla 25'))).toBeVisible();
+  await trigger.click();
+  const input = page.getByRole('combobox', { name: 'Search countries', exact: true });
   await input.fill('j');
-  await expect(input).toHaveValue('J');
+  await expect(input).toHaveValue('j');
   await query(page, { country: 'TW', page: '2' });
   await input.pressSequentially('p');
-  await expect(input).toHaveValue('JP');
+  await input.press('Enter');
+  await expect(trigger).toHaveAttribute('data-value', 'JP');
   await expect(panel.getByText(record('Rank fixture JP 0 vanilla 1'))).toBeVisible();
-  await input.fill('');
+  await trigger.click();
+  await page.getByRole('option', { name: 'All countries', exact: true }).click();
   await expect(panel.getByText(record('Rank fixture global 0 vanilla 1'))).toBeVisible();
   await query(page, { country: null, page: null }, '#rankings');
   expect(

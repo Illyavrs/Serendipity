@@ -547,7 +547,7 @@
     "backgroundUploading": "正在上傳背景…",
     "backgroundUploadError": "無法上傳背景。設定已保留，請重試。",
     "bio": "自我介紹",
-    "country": "國家代碼",
+    "country": "國家／地區",
     "banner": "橫幅",
     "avatar": "頭像",
     "removeAvatar": "移除頭像",
@@ -582,7 +582,15 @@
     "currentPassword": "目前密碼",
     "newPassword": "新密碼",
     "passwordHint": "至少 12 個字元。變更後，其他裝置與遊戲客戶端會登出。",
-    "passwordChanged": "密碼已變更，請在遊戲客戶端重新登入。"
+    "passwordChanged": "密碼已變更，請在遊戲客戶端重新登入。",
+    "backgroundMode": "背景",
+    "backgroundDefault": "主題背景",
+    "backgroundImage": "圖片",
+    "backgroundColor": "純色",
+    "backgroundColorHint": "選擇純色背景；已儲存的圖片仍可切換使用。",
+    "colorPicker": "{label}：選擇顏色",
+    "colorHex": "{label}：HEX 色碼",
+    "invalidColor": "請輸入六位 HEX 色碼，例如 #F28EB6。"
   },
   "chat": {
     "title": "聊天",
@@ -999,7 +1007,7 @@
     "clearUploadedOnly": "顯示所有已儲存圖譜",
     "difficultyStatusFact": "Illyaverse 狀態：{status}",
     "setStatusFact": "圖譜組狀態：{status}",
-    "serverDescription": "搜尋玩家上傳的圖譜，以及由本伺服器調整難度狀態的官方圖譜。",
+    "serverDescription": "搜尋上傳到本伺服器的圖譜。",
     "serverMetadataOnly": "僅圖譜資訊",
     "serverMetadataOnlyHint": "這組圖譜已有本伺服器的難度狀態設定，但尚未保存可遊玩的圖譜包。"
   },
@@ -1161,5 +1169,11 @@
     "selectionPages": "切換難度分頁時會保留選擇，只會提交勾選的難度。",
     "noEligibleDifficulties": "目前沒有可申請的難度，Ranked、Loved 與 WIP 難度無法申請。",
     "createSelectedCount": "已選 {selected} 個 · 目前顯示 {total} 個可申請難度"
+  },
+  "countries": {
+    "all": "所有國家／地區",
+    "search": "搜尋國家／地區",
+    "empty": "找不到國家／地區",
+    "choose": "選擇國家／地區"
   }
 }

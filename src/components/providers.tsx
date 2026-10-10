@@ -17,6 +17,7 @@ import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import { AnnouncementDraftProvider } from '@/features/announcement-draft';
 import { isLocale, type Locale } from '@/i18n/config';
 import type { Preferences, User } from '@/lib/types';
+import '@/styles/color-picker.css';
 import {
   NavigationProgressProvider,
   navigationLoadingMiddleware,
@@ -27,6 +28,8 @@ const defaults: Preferences = {
   mode: 'dark',
   accent_color: '#f28eb6',
   background_url: null,
+  background_mode: 'default',
+  background_color: '#000000',
   background_blur: 0,
   background_dim: 0.76,
   panel_blur: 8,
@@ -89,16 +92,25 @@ export const useAppearance = () => useContext(AppearanceContext);
 function validate(value: Partial<Preferences>): Preferences {
   const number = (n: unknown, min: number, max: number, fallback: number) =>
     typeof n === 'number' && Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
+  const backgroundUrl =
+    typeof value.background_url === 'string' &&
+    /^\/media\/[a-zA-Z0-9/_-]+\.(png|jpe?g|webp)$/i.test(value.background_url)
+      ? value.background_url
+      : null;
   return {
     mode: ['dark', 'light', 'system'].includes(value.mode ?? '') ? value.mode! : defaults.mode,
     accent_color: /^#[0-9a-f]{6}$/i.test(value.accent_color ?? '')
       ? value.accent_color!
       : defaults.accent_color,
-    background_url:
-      typeof value.background_url === 'string' &&
-      /^\/media\/[a-zA-Z0-9/_-]+\.(png|jpe?g|webp)$/i.test(value.background_url)
-        ? value.background_url
-        : null,
+    background_url: backgroundUrl,
+    background_mode: ['default', 'image', 'color'].includes(value.background_mode ?? '')
+      ? value.background_mode!
+      : backgroundUrl
+        ? 'image'
+        : 'default',
+    background_color: /^#[0-9a-f]{6}$/i.test(value.background_color ?? '')
+      ? value.background_color!.toLowerCase()
+      : defaults.background_color,
     background_blur: number(value.background_blur, 0, 48, 0),
     background_dim: number(value.background_dim, 0, 1, 0.76),
     panel_blur: Math.round(number(value.panel_blur, 0, 48, defaults.panel_blur)),
@@ -258,6 +270,8 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
       mode: p.mode,
       accent_color: p.accent_color,
       background_url: p.background_url,
+      background_mode: p.background_mode,
+      background_color: p.background_color,
       background_blur: p.background_blur,
       background_dim: p.background_dim,
       panel_blur: p.panel_blur,
@@ -279,7 +293,11 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         body: data,
       });
-      const next = validate({ ...preferencesRef.current, background_url: result.url });
+      const next = validate({
+        ...preferencesRef.current,
+        background_url: result.url,
+        background_mode: 'image',
+      });
       preferencesRef.current = next;
       setPreferences(next);
     });
@@ -337,14 +355,24 @@ function AppearanceProvider({ children }: { children: ReactNode }) {
     >
       <div
         className="global-scene"
+        data-background-mode={preferences.background_mode}
         style={{
-          backgroundImage: preferences.background_url
-            ? `url(${JSON.stringify(preferences.background_url)})`
-            : undefined,
+          backgroundColor:
+            preferences.background_mode === 'color'
+              ? preferences.background_color
+              : 'var(--page-ground)',
+          backgroundImage:
+            preferences.background_mode === 'image' && preferences.background_url
+              ? `url(${JSON.stringify(preferences.background_url)})`
+              : undefined,
         }}
         aria-hidden="true"
       />
-      <div className="global-veil" aria-hidden="true" />
+      <div
+        className="global-veil"
+        data-background-mode={preferences.background_mode}
+        aria-hidden="true"
+      />
       {children}
     </AppearanceContext.Provider>
   );

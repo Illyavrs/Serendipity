@@ -44,7 +44,8 @@ function official(id = 42, count = 12): EffectiveOfficialBeatmapset {
 
 function stored(index = 0): DiscoverySet {
   const map = {
-    id: 980000 + index,
+    id: 980000 + index * 100,
+    native_id: 2_020_000_000 + index * 100,
     native_set_id: 2_010_000_000 + index,
     official_id: null,
     official_set_id: null,
@@ -60,25 +61,37 @@ function stored(index = 0): DiscoverySet {
     bpm: 180,
     max_combo: 400,
     play_count: 0,
-    uploaded_by: 990501,
+    uploaded_by: 990501 as number | null,
     md5: '0'.repeat(32),
-    download_url: `/api/v1/beatmaps/${980000 + index}/download`,
+    download_url: `/api/v1/beatmaps/${980000 + index * 100}/download`,
     download_kind: 'osu' as const,
     package: null,
   };
+  const preview =
+    index === 0
+      ? Array.from({ length: 12 }, (_, member) => ({
+          ...map,
+          id: 980000 + member,
+          native_id: 2_020_000_000 + member,
+          version: `Difficulty ${member + 1}`,
+          mode: member % 4,
+          status: member === 0 ? 'ranked' : member === 1 ? 'wip' : 'graveyard',
+          stars: 1.25 + member * 0.25,
+        }))
+      : [map];
   return {
     native_set_id: map.native_set_id,
     representative: map,
-    matching_count: 1,
-    stored_count: 1,
-    matching_modes: [0],
-    matching_statuses: ['graveyard'],
+    matching_count: preview.length,
+    stored_count: preview.length,
+    matching_modes: [...new Set(preview.map((difficulty) => difficulty.mode))],
+    matching_statuses: [...new Set(preview.map((difficulty) => difficulty.status))],
     stars_min: 2.25,
     stars_max: 2.25,
     length_min: 90,
     length_max: 90,
     added_at: '2026-10-09T00:00:00Z',
-    preview: [map],
+    preview,
   };
 }
 
@@ -107,10 +120,19 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
       ),
     { locale, theme },
   );
+  const ownerless = stored(900);
+  ownerless.representative.uploaded_by = null;
+  const retained = stored(901);
+  retained.representative.source = 'official';
+  retained.representative.official_id = 4300;
+  retained.representative.official_set_id = 43;
   const state = {
     items: [
       { kind: 'official_metadata', official: official() },
+      { kind: 'official_metadata', official: official(43) },
       ...Array.from({ length: 25 }, (_, index) => ({ kind: 'stored', stored: stored(index) })),
+      { kind: 'stored', stored: ownerless },
+      { kind: 'stored', stored: retained },
     ] as ServerCatalogueSet[],
     queries: [] as URLSearchParams[],
     officialQueries: [] as URLSearchParams[],
@@ -144,22 +166,46 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
     if (endpoint === '/server/beatmapsets') {
       state.queries.push(new URLSearchParams(query));
       const search = query.get('q') ?? '';
-      const items = state.items.filter((item) => {
-        const metadata = item.kind === 'official_metadata';
-        if (query.get('source') && query.get('source') !== (metadata ? 'official' : 'local'))
-          return false;
-        if (metadata && (query.has('uploaded_by') || query.get('uploaded_only') === 'true'))
-          return false;
-        const record = metadata ? item.official : item.stored.representative;
-        if (search && !`${record.title} ${record.artist} ${record.creator}`.includes(search))
-          return false;
-        const diffs = metadata ? item.official.difficulties : item.stored.preview;
-        return diffs.some(
-          (diff) =>
-            (!query.has('mode') || String(diff.mode) === query.get('mode')) &&
-            (!query.has('status') || diff.status === query.get('status')),
-        );
-      });
+      const matchesDifficulty = (diff: { mode: number; status: string }) =>
+        (!query.has('mode') || String(diff.mode) === query.get('mode')) &&
+        (!query.has('status') || diff.status === query.get('status'));
+      const items = state.items
+        .filter((item) => {
+          const metadata = item.kind === 'official_metadata';
+          const record = metadata ? item.official : item.stored.representative;
+          const source = metadata ? 'official' : item.stored.representative.source;
+          if (query.get('source') && query.get('source') !== source) return false;
+          if (
+            query.get('uploaded_only') === 'true' &&
+            (metadata || item.stored.representative.uploaded_by === null)
+          )
+            return false;
+          if (
+            query.has('uploaded_by') &&
+            (metadata ||
+              String(item.stored.representative.uploaded_by) !== query.get('uploaded_by'))
+          )
+            return false;
+          if (search && !`${record.title} ${record.artist} ${record.creator}`.includes(search))
+            return false;
+          const diffs = metadata ? item.official.difficulties : item.stored.preview;
+          return diffs.some(matchesDifficulty);
+        })
+        .map((item): ServerCatalogueSet => {
+          if (item.kind !== 'stored') return item;
+          const matching = item.stored.preview.filter(matchesDifficulty);
+          return {
+            kind: 'stored',
+            stored: {
+              ...item.stored,
+              representative: { ...item.stored.representative, ...matching[0] },
+              matching_count: matching.length,
+              matching_modes: [...new Set(matching.map((diff) => diff.mode))],
+              matching_statuses: [...new Set(matching.map((diff) => diff.status))],
+              preview: matching,
+            },
+          };
+        });
       if (search === state.holdQuery)
         await new Promise<void>((resolve) => state.releases.push(resolve));
       state.settled.push(search);
@@ -201,10 +247,26 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
       );
       return item?.kind === 'stored'
         ? route.fulfill({
-            json: { items: item.stored.preview, total: 1, stored_count: 1 },
+            json: {
+              items: item.stored.preview,
+              total: item.stored.preview.length,
+              stored_count: item.stored.stored_count,
+            },
           })
         : fail(route, 404, 'not_found');
     }
+    if (/^\/beatmaps\/\d+\/scores$/.test(endpoint))
+      return route.fulfill({
+        json: {
+          items: [],
+          total: 0,
+          page: 1,
+          page_size: 24,
+          mode: Number(query.get('mode') ?? 0),
+          score_variant: query.get('variant') ?? 'vanilla',
+          ordered_by: 'standardised_score',
+        },
+      });
     if (endpoint === '/beatmapsets') {
       state.oldFeedQueries.push(new URLSearchParams(query));
       return route.fulfill({ json: { items: [], total: 0, page: 1, page_size: 3 } });
@@ -226,39 +288,39 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
   return state;
 }
 
-test('server catalogue joins stored uploads and ranked metadata with an exact finite total', async ({
+test('server browse contains only uploaded local sets with an exact finite total', async ({
   page,
 }) => {
   const state = await fixture(page);
   await page.goto('/beatmaps?catalogue=server');
   await expect(page.locator('.discovery-set')).toHaveCount(24);
-  await expect(page.locator('.discovery-result-count')).toContainText('26');
+  await expect(page.locator('.discovery-result-count')).toContainText('25 beatmap sets');
   await expect(page.locator('.discovery-result-count')).toContainText('1–24');
   expect(state.queries[0].get('page_size')).toBe('24');
+  expect(state.queries[0].get('source')).toBe('local');
+  expect(state.queries[0].get('uploaded_only')).toBe('true');
+  await expect(page.locator('[data-catalogue-kind="official-metadata"]')).toHaveCount(0);
+  await expect(page.getByText('Official fixture 43', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Uploaded set fixture 900', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Uploaded set fixture 901', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Source', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Clear uploaded-only filter' })).toHaveCount(0);
+  await expect(page.locator('.discovery-set-main').first()).toHaveAttribute(
+    'href',
+    '/beatmapsets/local-2010000000#osu/2020000000',
+  );
   expect(state.officialQueries).toHaveLength(0);
   expect(state.oldFeedQueries).toHaveLength(0);
-  const metadata = page.locator('[data-catalogue-kind="official-metadata"]');
-  await expect(metadata).toHaveCount(1);
-  await expect(metadata.locator('.status-pending')).toHaveText('Pending');
-  await expect(metadata).toContainText('Mixed statuses');
-  await expect(metadata).toContainText('Metadata only');
-  await expect(metadata.locator('.discovery-set-main')).toHaveAttribute(
-    'href',
-    `/beatmaps/official/42?returnTo=${encodeURIComponent('/beatmaps?catalogue=server')}`,
-  );
-  await expect(
-    metadata.locator('a[href*="/api/"], a[href$=".osu"], a[href*="/archive"]'),
-  ).toHaveCount(0);
+  expect(state.details).toHaveLength(0);
   expect(state.mutations).toHaveLength(0);
 });
 
-test('all difficulty statuses and stars are passive, complete and do not import content', async ({
+test('uploaded difficulty statuses and stars are passive and complete without importing content', async ({
   page,
 }) => {
   const state = await fixture(page);
-  await page.goto('/beatmaps?catalogue=server&status=ranked&source=official');
+  await page.goto('/beatmaps?catalogue=server&status=ranked');
   await expect(page.locator('.discovery-set')).toHaveCount(1);
-  await expect(page.locator('.discovery-set .status-ranked')).toHaveText('Ranked');
   await page.locator('.discovery-difficulty-trigger').focus();
   await page.keyboard.press('Enter');
   const popup = page.locator('.discovery-difficulty-popover');
@@ -271,52 +333,53 @@ test('all difficulty statuses and stars are passive, complete and do not import 
   );
   await expect(popup.getByText('Difficulty 12', { exact: true })).toBeAttached();
   await expect(popup.locator('a')).toHaveCount(0);
-  expect(state.previewRequests).toBe(0);
   expect(state.details).toHaveLength(0);
+  expect(state.officialQueries).toHaveLength(0);
   expect(state.mutations).toHaveLength(0);
 });
 
-test('metadata route retains catalogue filters and cannot offer a fabricated server score link', async ({
+test('official metadata remains reachable by its canonical detail route without fabricated score links', async ({
   page,
 }) => {
   const state = await fixture(page);
-  const returnTo = '/beatmaps?catalogue=server&status=ranked&source=official&view=list';
-  await page.goto(returnTo);
-  await page.locator('.discovery-set-main').click();
-  await expect(page).toHaveURL(/\/beatmaps\/official\/42\?returnTo=/);
+  await page.goto('/beatmapsets/42#osu/4200');
   await expect(page.locator('.public-official-selected .status-ranked')).toHaveText('Ranked');
   await expect(page.locator('.public-official-selected a[href^="/beatmaps/"]')).toHaveCount(0);
   await expect(page.locator('.public-official-title a[href*="/archive"]')).toHaveCount(0);
   await expect(
     page.locator('.public-official-title').getByRole('button', { name: /Download/ }),
   ).toBeDisabled();
-  await page.locator('.back-link').click();
-  await expect(page).toHaveURL(new RegExp(`${returnTo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`));
+  await expect(page.locator('.back-link')).toHaveAttribute('href', '/beatmaps');
   expect(state.details.length).toBeGreaterThan(0);
   expect(state.details.every((id) => id === 42)).toBe(true);
+  expect(state.queries).toHaveLength(0);
   expect(state.mutations).toHaveLength(0);
 });
 
-test('partial imported sets retain the official route and exactly one catalogue entry', async ({
+test('partially retained official sets stay out of uploaded browse but expose their retained difficulty directly', async ({
   page,
 }) => {
   const state = await fixture(page);
-  const item = state.items[0];
-  if (item.kind !== 'official_metadata') throw new Error('Fixture branch missing');
+  const item = state.items.find(
+    (item) => item.kind === 'official_metadata' && item.official.official_set_id === 43,
+  );
+  if (!item || item.kind !== 'official_metadata') throw new Error('Fixture branch missing');
   item.official.metadata_only = false;
   item.official.local.stored_count = 1;
   item.official.difficulties[1].local_id = 987654;
-  await page.goto('/beatmaps?catalogue=server&source=official&status=ranked');
-  await expect(page.locator('.discovery-set')).toHaveCount(1);
-  await expect(page.locator('.discovery-set')).not.toContainText('Metadata only');
-  await expect(page.locator('.discovery-set-main')).toHaveAttribute(
-    'href',
-    /\/beatmaps\/official\/42/,
-  );
-  expect(state.previewRequests).toBe(0);
+  await page.goto('/beatmaps?catalogue=server&source=official&uploaded_only=false');
+  await expect(page.locator('.discovery-set')).toHaveCount(24);
+  await expect(page.locator('[data-catalogue-kind="official-metadata"]')).toHaveCount(0);
+  expect(state.queries[0].get('source')).toBe('local');
+  expect(state.queries[0].get('uploaded_only')).toBe('true');
+  expect(state.details).toHaveLength(0);
+  await page.goto('/beatmapsets/43#taiko/4301');
+  await expect(page.locator('.public-official-selected h3')).toHaveText('Difficulty 2');
+  await expect(page.locator('#server-scores')).toBeVisible();
+  expect(state.mutations).toHaveLength(0);
 });
 
-test('legacy unranked decisions stay visible as supplied instead of becoming pending', async ({
+test('legacy unranked official decisions are displayed faithfully on direct detail pages', async ({
   page,
 }) => {
   const state = await fixture(page);
@@ -326,44 +389,59 @@ test('legacy unranked decisions stay visible as supplied instead of becoming pen
   item.official.difficulties.forEach((difficulty) => {
     difficulty.status = 'unranked';
   });
-  await page.goto('/beatmaps?catalogue=server&source=official&status=unranked');
-  await expect(page.locator('.discovery-set')).toHaveCount(1);
-  await expect(page.locator('.discovery-set .status-unranked')).toHaveText('Unranked');
-  await page.locator('.discovery-difficulty-trigger').click();
-  await expect(page.locator('.difficulty-preview-row .status-unranked')).toHaveCount(12);
-  await expect(page.locator('.difficulty-preview-row .status-pending')).toHaveCount(0);
-  expect(state.queries.at(-1)?.get('status')).toBe('unranked');
+  await page.goto('/beatmapsets/42#osu/4200');
+  await expect(page.locator('.public-official-selected .status-unranked')).toHaveText('Unranked');
+  await expect(page.locator('.public-official-difficulty-list .status-unranked')).toHaveCount(12);
+  await expect(page.locator('.public-official-difficulty-list .status-pending')).toHaveCount(0);
+  expect(state.queries).toHaveLength(0);
 });
 
-test('filters combine mode and effective status on the server route and keep URL history', async ({
+test('obsolete source filters cannot broaden upload scope and edits remove them while preserving URL history', async ({
   page,
 }) => {
   const state = await fixture(page);
-  await page.goto('/beatmaps?catalogue=server&context=profile&cursor=upstream-only#maps');
+  await page.goto(
+    '/beatmaps?catalogue=server&source=official&uploaded_only=false&context=profile&cursor=upstream-only#maps',
+  );
   await expect(page.locator('.discovery-set')).toHaveCount(24);
   expect(state.queries[0].has('cursor')).toBe(false);
-  await selectField(page.locator('#discovery-source'), 'official');
   await selectField(page.locator('#discovery-status'), 'ranked');
+  await expect(page.locator('.discovery-set')).toHaveCount(1);
+  expect(new URL(page.url()).searchParams.has('source')).toBe(false);
+  expect(new URL(page.url()).searchParams.has('uploaded_only')).toBe(false);
   await selectField(page.locator('#discovery-mode'), '1');
   await expect(page.locator('.discovery-set')).toHaveCount(0);
   expect(state.queries.at(-1)?.get('status')).toBe('ranked');
   expect(state.queries.at(-1)?.get('mode')).toBe('1');
-  expect(state.queries.at(-1)?.get('source')).toBe('official');
+  expect(
+    state.queries.every(
+      (query) => query.get('source') === 'local' && query.get('uploaded_only') === 'true',
+    ),
+  ).toBe(true);
   await page.goBack();
   await expect(page.locator('.discovery-set')).toHaveCount(1);
   expect(new URL(page.url()).searchParams.get('context')).toBe('profile');
   expect(new URL(page.url()).hash).toBe('#maps');
+  await page.goto(
+    '/beatmaps?catalogue=server&source=official&uploaded_only=false&q=Uploaded&context=profile#maps',
+  );
+  await expect(page.locator('.discovery-set')).toHaveCount(24);
+  await page.getByRole('button', { name: 'Reset filters', exact: true }).click();
+  expect(new URL(page.url()).searchParams.has('source')).toBe(false);
+  expect(new URL(page.url()).searchParams.has('uploaded_only')).toBe(false);
+  expect(new URL(page.url()).searchParams.get('context')).toBe('profile');
+  expect(new URL(page.url()).hash).toBe('#maps');
+  expect(state.officialQueries).toHaveLength(0);
+  expect(state.mutations).toHaveLength(0);
 });
 
-test('finite pagination counts metadata entries once and remains reversible in browser history', async ({
-  page,
-}) => {
+test('finite uploaded pagination remains reversible in browser history', async ({ page }) => {
   const state = await fixture(page);
   await page.goto('/beatmaps?catalogue=server&view=list');
   await expect(page.locator('.discovery-set')).toHaveCount(24);
   await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(page.locator('.discovery-set')).toHaveCount(2);
-  await expect(page.locator('.discovery-result-count')).toContainText('25–26');
+  await expect(page.locator('.discovery-set')).toHaveCount(1);
+  await expect(page.locator('.discovery-result-count')).toContainText('25–25');
   expect(state.queries.at(-1)?.get('page')).toBe('2');
   await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
   await page.goBack();
@@ -372,7 +450,7 @@ test('finite pagination counts metadata entries once and remains reversible in b
   expect(state.queries.at(-1)?.get('page')).toBe('1');
 });
 
-test('late search responses cannot resurrect stale metadata after filters change', async ({
+test('late search responses cannot resurrect excluded metadata after upload filters change', async ({
   page,
 }) => {
   const state = await fixture(page);
@@ -389,9 +467,10 @@ test('late search responses cannot resurrect stale metadata after filters change
   await expect.poll(() => state.settled.includes('metadata')).toBe(true);
   await expect(page.locator('[data-catalogue-kind="official-metadata"]')).toHaveCount(0);
   await expect(page.locator('.discovery-result-count')).toContainText('25');
+  expect(state.officialQueries).toHaveLength(0);
 });
 
-test('server errors retry the same finite catalogue without replacing the source with official search', async ({
+test('server errors retry the same uploaded scope without substituting official search', async ({
   page,
 }) => {
   const state = await fixture(page);
@@ -403,19 +482,30 @@ test('server errors retry the same finite catalogue without replacing the source
   await page.getByRole('button', { name: 'Retry', exact: true }).click();
   await expect(page.locator('.discovery-set')).toHaveCount(1);
   expect(state.queries.length).toBeGreaterThan(failedRequests);
-  expect(state.queries.every((query) => query.get('status') === 'ranked')).toBe(true);
+  expect(
+    state.queries.every(
+      (query) =>
+        query.get('status') === 'ranked' &&
+        query.get('source') === 'local' &&
+        query.get('uploaded_only') === 'true',
+    ),
+  ).toBe(true);
   expect(state.officialQueries).toHaveLength(0);
 });
 
-test('uploaded-only and uploader scopes exclude metadata without changing the home feed', async ({
+test('uploader filtering and the independent home feed both exclude official and ownerless records', async ({
   page,
 }) => {
   const state = await fixture(page);
-  await page.goto('/beatmaps?catalogue=server&source=local&uploaded_only=true&uploaded_by=990501');
+  await page.goto('/beatmaps?catalogue=server&uploaded_by=990501');
   await expect(page.locator('.discovery-set')).toHaveCount(24);
-  await expect(page.locator('[data-catalogue-kind="official-metadata"]')).toHaveCount(0);
-  expect(state.queries[0].get('uploaded_only')).toBe('true');
   expect(state.queries[0].get('uploaded_by')).toBe('990501');
+  await page.goto('/beatmaps?catalogue=server&uploaded_by=990999');
+  await expect(
+    page.getByRole('heading', { name: 'No matching beatmap sets', exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('.discovery-set')).toHaveCount(0);
+  expect(state.queries.at(-1)?.get('uploaded_by')).toBe('990999');
   const catalogueRequests = state.queries.length;
   await page.goto('/');
   await expect.poll(() => state.oldFeedQueries.length).toBeGreaterThan(0);
@@ -426,9 +516,10 @@ test('uploaded-only and uploader scopes exclude metadata without changing the ho
     page_size: '3',
   });
   expect(state.queries).toHaveLength(catalogueRequests);
+  expect(state.mutations).toHaveLength(0);
 });
 
-test('default beatmap catalogue still uses the original official search', async ({ page }) => {
+test('default beatmap catalogue continues to search the official API', async ({ page }) => {
   const state = await fixture(page);
   await page.goto('/beatmaps');
   await expect.poll(() => state.officialQueries.length).toBeGreaterThan(0);
@@ -442,12 +533,19 @@ for (const scenario of [
   { width: 390, locale: 'zh-TW', theme: 'dark' },
   { width: 320, locale: 'ja', theme: 'light' },
 ]) {
-  test(`metadata and stored cards retain compact equal heights at ${scenario.width}px ${scenario.locale}`, async ({
+  test(`uploaded cards retain compact equal heights at ${scenario.width}px ${scenario.locale}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: scenario.width, height: 900 });
     const state = await fixture(page, scenario.locale, scenario.theme);
-    state.items = state.items.slice(0, 2);
+    state.items = state.items
+      .filter(
+        (item) =>
+          item.kind === 'stored' &&
+          item.stored.representative.source === 'local' &&
+          item.stored.representative.uploaded_by !== null,
+      )
+      .slice(0, 2);
     for (const view of ['grid', 'list']) {
       await page.goto(`/beatmaps?catalogue=server&view=${view}`);
       await expect(page.locator('.discovery-set')).toHaveCount(2);

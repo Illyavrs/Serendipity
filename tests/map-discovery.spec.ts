@@ -6,17 +6,14 @@ import path from 'node:path';
 // All map/user data is synthetic. No account, mutation, map download or import is performed.
 const stamp = '2026-10-08T00:00:00Z';
 function difficulty(index: number, setIndex = 0) {
-  const official = setIndex % 2 === 0;
   const id = 980000 + setIndex * 100 + index;
+  const nativeSetId = 2_010_000_000 + setIndex;
   return {
     id,
-    native_set_id: official
-      ? setIndex === 0
-        ? 2588526
-        : 1030378 + setIndex
-      : 2_010_000_000 + setIndex,
-    official_id: official ? id : null,
-    official_set_id: official ? (setIndex === 0 ? 2588526 : 1030378 + setIndex) : null,
+    native_id: 2_020_000_000 + setIndex * 100 + index,
+    native_set_id: nativeSetId,
+    official_id: null as number | null,
+    official_set_id: null as number | null,
     title:
       setIndex === 0
         ? 'Discovery fixture song'
@@ -26,17 +23,28 @@ function difficulty(index: number, setIndex = 0) {
     version: `Difficulty ${index + 1}`,
     mode: index % 4,
     status: ['ranked', 'loved', 'pending', 'unranked'][index % 4],
-    source: official ? 'official' : 'local',
+    source: 'local',
     stars: Number((1.25 + index * 0.28).toFixed(2)),
     length_seconds: 91 + index,
     bpm: 180,
     max_combo: 400,
     play_count: 0,
-    uploaded_by: 990501,
+    uploaded_by: 990501 as number | null,
     md5: '0'.repeat(32),
     download_url: `/api/v1/beatmaps/${id}/download`,
-    download_kind: 'osu',
-    package: null,
+    download_kind: 'osz',
+    package: {
+      id: `00000000-0000-4000-8000-${String(setIndex).padStart(12, '0')}`,
+      native_set_id: nativeSetId,
+      kind: 'osz',
+      legacy: false,
+      difficulty_count: setIndex === 0 ? 28 : 2,
+      beatmap_ids: Array.from(
+        { length: setIndex === 0 ? 28 : 2 },
+        (_, member) => 980000 + setIndex * 100 + member,
+      ),
+      download_url: `/api/v1/beatmaps/${980000 + setIndex * 100}/archive`,
+    },
     availability: { withdrawn: false, revision: 0, reason: null, changed_at: null },
   };
 }
@@ -71,6 +79,27 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
     maps: Array.from({ length: 30 }, (_, set) =>
       Array.from({ length: set === 0 ? 28 : 2 }, (_, index) => difficulty(index, set)),
     ).flat(),
+    excludedMaps: [
+      {
+        ...difficulty(0, 90),
+        source: 'official',
+        native_set_id: 2588526,
+        native_id: 5914819,
+        official_id: 5914819,
+        official_set_id: 2588526,
+        title: 'Retained official fixture',
+      },
+      {
+        ...difficulty(0, 91),
+        source: 'official',
+        native_set_id: 2298826,
+        native_id: 4911785,
+        official_id: 4911785,
+        official_set_id: 2298826,
+        title: 'Imported official fixture',
+      },
+      { ...difficulty(0, 92), uploaded_by: null, title: 'Ownerless local fixture' },
+    ],
     setQueries: [] as URLSearchParams[],
     selectorQueries: [] as string[],
     previewQueries: [] as string[],
@@ -91,6 +120,8 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
     withdrawn: false,
     staff: false,
     coverRequests: [] as string[],
+    officialQueries: [] as string[],
+    mutations: [] as string[],
   };
   await page.route('https://assets.ppy.sh/**', async (route) => {
     state.coverRequests.push(route.request().url());
@@ -106,8 +137,10 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
     const url = new URL(request.url());
     const routePath = url.pathname.replace('/api/v1', '');
     const query = url.searchParams;
-    if (request.method() !== 'GET')
+    if (request.method() !== 'GET') {
+      state.mutations.push(routePath);
       throw new Error(`Unexpected write in discovery fixture: ${request.method()} ${routePath}`);
+    }
     if (routePath === '/me')
       return state.staff
         ? route.fulfill({
@@ -128,6 +161,10 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
           })
         : fail(route, 401, 'unauthorized');
     if (routePath === '/me/preferences') return route.fulfill({ json: appearance });
+    if (routePath === '/official/beatmapsets/search') {
+      state.officialQueries.push(url.search);
+      return route.fulfill({ json: { items: [], total: 0, cursor_string: null } });
+    }
     const officialSet = /^\/official\/beatmapsets\/(\d+)$/.exec(routePath);
     if (officialSet) {
       const id = Number(officialSet[1]);
@@ -150,8 +187,9 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
           state.setReleases.push(resolve);
         });
       if (state.failSets) return fail(route, 503, 'service_unavailable');
-      const matched = state.maps.filter(
+      const matched = [...state.maps, ...state.excludedMaps].filter(
         (map) =>
+          (query.get('uploaded_only') !== 'true' || map.uploaded_by !== null) &&
           ['mode', 'status', 'source', 'uploaded_by'].every(
             (key) =>
               !query.has(key) || query.get(key) === String(map[key as keyof FixtureDifficulty]),
@@ -193,6 +231,18 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
           page_size: 24,
         },
       });
+    }
+    const canonicalSet = /^\/beatmapsets\/(\d+)$/.exec(routePath);
+    if (canonicalSet) {
+      if (state.withdrawn) return fail(route, 410, 'beatmap_withdrawn');
+      const maps = state.maps.filter((map) => map.native_set_id === Number(canonicalSet[1]));
+      const selectedId = query.get('difficulty');
+      const selected = selectedId
+        ? maps.find((map) => String(map.native_id) === selectedId)
+        : query.has('mode')
+          ? maps.find((map) => String(map.mode) === query.get('mode'))
+          : maps[0];
+      return selected ? route.fulfill({ json: selected }) : fail(route, 404, 'beatmap_not_found');
     }
     const preview = /^\/beatmaps\/(\d+)\/set\/preview$/.exec(routePath);
     if (preview) {
@@ -308,12 +358,11 @@ async function fixture(page: Page, locale = 'en', theme = 'dark') {
 }
 
 function partialStoredSet(state: Awaited<ReturnType<typeof fixture>>) {
+  // A compact catalogue preview is truncated; all uploaded chart rows remain stored.
+  state.previewLimit = 2;
   state.previewMaps = state.maps
-    .filter((map) => map.native_set_id === 2588526)
-    .map((map, index) => ({ ...map, id: index < 2 ? map.id : null }));
-  state.maps = state.maps.filter(
-    (map) => map.native_set_id !== 2588526 || [980000, 980001].includes(map.id),
-  );
+    .filter((map) => map.native_set_id === 2_010_000_000)
+    .map((map) => ({ ...map }));
 }
 
 async function noOverflow(page: Page) {
@@ -444,7 +493,7 @@ async function capture(
         theme,
         synthetic: true,
         artwork_origin:
-          'https://assets.ppy.sh/beatmaps/{validated_official_set_id}/covers/cover.jpg; browser rendered only; fallback on failure',
+          'Uploaded local maps: labelled local artwork fallback; no upstream image fetch',
         ...metadata,
       },
       null,
@@ -461,6 +510,12 @@ test('set results show complete read-only hover previews and server pages', asyn
     /^30 beatmap sets\s*Showing 1–24$/,
   );
   await expect(page.locator('.discovery-result-count > span')).toHaveText('Showing 1–24');
+  expect(state.setQueries[0].get('source')).toBe('local');
+  expect(state.setQueries[0].get('uploaded_only')).toBe('true');
+  await expect(page.getByText('Retained official fixture', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Imported official fixture', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Ownerless local fixture', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Source', { exact: true })).toHaveCount(0);
   const first = page.locator('.discovery-set').first();
   const trigger = first.locator('.discovery-difficulty-trigger');
   await expect(trigger).toHaveAccessibleName(/28 stored difficulties/);
@@ -486,6 +541,13 @@ test('set results show complete read-only hover previews and server pages', asyn
   await expect(page.locator('.discovery-set').first().locator('.discovery-status')).toHaveText([
     'Unranked',
   ]);
+  expect(
+    state.setQueries.every(
+      (query) => query.get('source') === 'local' && query.get('uploaded_only') === 'true',
+    ),
+  ).toBe(true);
+  expect(state.officialQueries).toEqual([]);
+  expect(state.mutations).toEqual([]);
 });
 
 test('dense catalogue cards keep one compact height and complete read-only previews across widths and views', async ({
@@ -495,7 +557,8 @@ test('dense catalogue cards keep one compact height and complete read-only previ
   state.previewLimit = 24;
   state.maps = state.maps.filter(
     (map) =>
-      [2588526, 2_010_000_001, 2_010_000_005].includes(map.native_set_id) || map.id === 980300,
+      [2_010_000_000, 2_010_000_001, 2_010_000_005].includes(map.native_set_id) ||
+      map.id === 980300,
   );
   const longTitle = 'A long catalogue title 圖譜タイトル'.repeat(9);
   state.maps[0].title = longTitle;
@@ -584,8 +647,8 @@ test('read-only difficulty previews open on keyboard focus and keep catalogue na
 }) => {
   const state = await fixture(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/beatmaps?catalogue=server&source=official&view=grid&sort=stars');
-  await expect(page.locator('.discovery-set')).toHaveCount(15);
+  await page.goto('/beatmaps?catalogue=server&view=grid&sort=stars');
+  await expect(page.locator('.discovery-set')).toHaveCount(24);
   const card = page.locator('.discovery-set').first();
   const trigger = card.locator('.discovery-difficulty-trigger');
   await card.locator('.discovery-set-main').focus();
@@ -607,17 +670,14 @@ test('read-only difficulty previews open on keyboard focus and keep catalogue na
   await expect(popup).toHaveCount(0);
   expect(state.selectorQueries).toHaveLength(0);
   await card.locator('.discovery-set-main').click();
-  await expect(page).toHaveURL(/\/beatmaps\/980000\?/);
+  await expect(page).toHaveURL(/\/beatmapsets\/local-2010000000#osu\/2020000000$/);
   await expect(page.locator('.back-link')).toHaveAttribute(
     'href',
-    '/beatmaps?catalogue=server&source=official&view=grid&sort=stars',
+    '/beatmaps?catalogue=server&view=grid&sort=stars',
   );
   await page.locator('.back-link').click();
   await expect(page.locator('.discovery-results')).toHaveClass(/view-grid/);
-  await expect(page.getByLabel('Source', { exact: true })).toHaveAttribute(
-    'data-value',
-    'official',
-  );
+  await expect(page.getByLabel('Source', { exact: true })).toHaveCount(0);
 });
 test('read-only difficulty previews open by touch, ignore row taps and close outside on a phone', async ({
   browser,
@@ -631,8 +691,8 @@ test('read-only difficulty previews open by touch, ignore row taps and close out
   try {
     const page = await context.newPage();
     await fixture(page);
-    await page.goto('/beatmaps?catalogue=server&source=official&view=list');
-    await expect(page.locator('.discovery-set')).toHaveCount(15);
+    await page.goto('/beatmaps?catalogue=server&view=list');
+    await expect(page.locator('.discovery-set')).toHaveCount(24);
     const card = page.locator('.discovery-set').first();
     await card.locator('.discovery-difficulty-trigger').tap();
     const popup = page.locator('.discovery-difficulty-popover');
@@ -645,10 +705,10 @@ test('read-only difficulty previews open by touch, ignore row taps and close out
     await page.getByRole('heading', { name: 'Beatmaps', exact: true }).tap();
     await expect(popup).toHaveCount(0);
     await card.locator('.discovery-set-main').tap();
-    await expect(page).toHaveURL(/\/beatmaps\/980000\?/);
+    await expect(page).toHaveURL(/\/beatmapsets\/local-2010000000#osu\/2020000000$/);
     await expect(page.locator('.back-link')).toHaveAttribute(
       'href',
-      '/beatmaps?catalogue=server&source=official&view=list',
+      '/beatmaps?catalogue=server&view=list',
     );
     await noOverflow(page);
   } finally {
@@ -656,7 +716,7 @@ test('read-only difficulty previews open by touch, ignore row taps and close out
   }
 });
 
-test('a partial stored set shows all 28 metadata difficulties without importing or linking rows', async ({
+test('a truncated uploaded catalogue preview loads all 28 stored difficulties without writes or row links', async ({
   page,
 }) => {
   const state = await fixture(page);
@@ -665,11 +725,11 @@ test('a partial stored set shows all 28 metadata difficulties without importing 
   await page.goto('/beatmaps?catalogue=server');
   const card = page.locator('.discovery-set').first();
   const trigger = card.locator('.discovery-difficulty-trigger');
-  await expect(trigger).toHaveAccessibleName(/2 stored difficulties/);
+  await expect(trigger).toHaveAccessibleName(/28 stored difficulties/);
   await expect(card.locator('.discovery-difficulty-ticks .difficulty-marker')).toHaveCount(2);
   await trigger.click();
   const popup = page.locator('.discovery-difficulty-popover');
-  await expect(popup.getByText('2 stored difficulties', { exact: true })).toBeVisible();
+  await expect(popup.getByText('28 stored difficulties', { exact: true })).toBeVisible();
   await expect(popup.getByRole('status')).toHaveText('Loading the complete difficulty list…');
   await expect(popup.locator('.difficulty-preview-row')).toHaveCount(2);
   await expect.poll(() => state.previewReleases.length).toBe(1);
@@ -684,7 +744,7 @@ test('a partial stored set shows all 28 metadata difficulties without importing 
   await expect(popup.getByRole('status')).toHaveCount(0);
   expect(state.previewQueries).toEqual(['/beatmaps/980000/set/preview']);
   expect(state.selectorQueries).toHaveLength(0);
-  expect(state.maps.filter((map) => map.native_set_id === 2588526)).toHaveLength(2);
+  expect(state.maps.filter((map) => map.native_set_id === 2_010_000_000)).toHaveLength(28);
 });
 
 test('preview failures label the stored fallback and retry loads the complete list', async ({
@@ -699,7 +759,7 @@ test('preview failures label the stored fallback and retry loads the complete li
   await expect(popup.getByRole('status')).toContainText(
     'The complete list is unavailable. Only stored previews are shown; try again shortly.',
   );
-  await expect(popup.getByText('2 stored difficulties', { exact: true })).toBeVisible();
+  await expect(popup.getByText('28 stored difficulties', { exact: true })).toBeVisible();
   await expect(popup.locator('.difficulty-preview-row')).toHaveCount(2);
   await expect(popup.getByText('28 difficulties', { exact: true })).toHaveCount(0);
   state.failPreview = 0;
@@ -811,7 +871,7 @@ test('catalogue toolbar uses one transparent material layer with readable fields
         iconCenterOffset: Math.abs(icon.top + icon.height / 2 - input.top - input.height / 2),
       };
     });
-    expect(toolbarGeometry.heights).toHaveLength(6);
+    expect(toolbarGeometry.heights).toHaveLength(5);
     for (const height of toolbarGeometry.heights)
       expect(height, `${width}px toolbar control height`).toBeCloseTo(width <= 600 ? 44 : 36, 0);
     expect(toolbarGeometry.iconCenterOffset).toBeLessThanOrEqual(1);
@@ -893,7 +953,7 @@ test('catalogue toolbar uses one transparent material layer with readable fields
           return { label: copy.textContent, minimum: Math.min(...contrast) };
         });
       });
-      expect(contrastSamples).toHaveLength(6);
+      expect(contrastSamples).toHaveLength(5);
       for (const sample of contrastSamples)
         expect(sample.minimum, `${theme} glass ${level}: ${sample.label}`).toBeGreaterThanOrEqual(
           4.5,
@@ -920,26 +980,25 @@ test('filter URLs restore through history; uploader clearing and layout keep oth
 }) => {
   const state = await fixture(page);
   await page.goto(
-    '/beatmaps?catalogue=server&q=fixture&mode=1&status=loved&source=official&sort=title&uploaded_by=990501&page=2&view=list&context=profile',
+    '/beatmaps?catalogue=server&q=fixture&mode=1&status=loved&source=official&uploaded_only=false&sort=title&uploaded_by=990501&page=999&view=list&context=profile',
   );
   await expect(page.getByLabel('Search', { exact: true })).toHaveValue('fixture');
   await expect(page.getByLabel('Game mode', { exact: true })).toHaveAttribute('data-value', '1');
   await expect(page.locator('.discovery-results')).toHaveClass(/view-list/);
   await expect(page.getByRole('button', { name: 'First page', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Clear uploader', exact: true }).click();
-  await expect(page).not.toHaveURL(/uploaded_by|page=2/);
+  await expect(page).not.toHaveURL(/uploaded_by|page=999|source=|uploaded_only=/);
   const url = new URL(page.url());
   for (const [key, value] of Object.entries({
     q: 'fixture',
     mode: '1',
     status: 'loved',
-    source: 'official',
     sort: 'title',
     view: 'list',
     context: 'profile',
   }))
     expect(url.searchParams.get(key)).toBe(value);
-  await expect(page.locator('.discovery-set')).toHaveCount(15);
+  await expect(page.locator('.discovery-set')).toHaveCount(24);
   const requests = state.setQueries.length;
   await page.getByRole('button', { name: 'Grid', exact: true }).click();
   await expect(page.locator('.discovery-results')).toHaveClass(/view-grid/);
@@ -949,7 +1008,7 @@ test('filter URLs restore through history; uploader clearing and layout keep oth
   await expect(page.locator('.discovery-set')).toHaveCount(0);
   await page.goBack();
   await expect(page.getByLabel('Status', { exact: true })).toHaveAttribute('data-value', 'loved');
-  await expect(page.locator('.discovery-set')).toHaveCount(15);
+  await expect(page.locator('.discovery-set')).toHaveCount(24);
   await page.goBack();
   await expect(page.locator('.discovery-results')).toHaveClass(/view-list/);
   await page.goForward();
@@ -990,7 +1049,7 @@ test('search is bounded in UTF-8 and pending, error, empty and invalid-page stat
   await expect(page.locator('.discovery-set')).toHaveCount(24);
 });
 
-test('known siblings work without an archive, page fully and preserve score variant selection', async ({
+test('uploaded set archives and known siblings page fully and preserve score variant selection', async ({
   page,
 }) => {
   const state = await fixture(page);
@@ -1004,7 +1063,7 @@ test('known siblings work without an archive, page fully and preserve score vari
   await expect(page.getByRole('link', { name: /Download.*\.osu/ })).toHaveCount(0);
   await expect(page.getByRole('link', { name: /Download.*\.osz/ })).toHaveAttribute(
     'href',
-    '/api/v1/official/beatmapsets/2588526/archive',
+    '/api/v1/beatmaps/980000/archive',
   );
   await expect.poll(() => state.scoreQueries.at(-1)?.get('variant')).toBe('relax');
   await expect(page.getByRole('link', { name: 'RX fixture player', exact: true })).toBeVisible();
@@ -1032,7 +1091,7 @@ test('known siblings work without an archive, page fully and preserve score vari
   await selector.locator('.set-difficulty-summary').click();
   expect(state.selectorQueries.at(-1)).toContain('page=2&page_size=24');
   await selector.locator('.set-difficulty-row').first().click();
-  await expect(page).toHaveURL(/\/beatmaps\/980024/);
+  await expect(page).toHaveURL(/\/beatmapsets\/local-2010000000\?variant=relax#osu\/2020000024$/);
   await expect.poll(() => state.scoreQueries.at(-1)?.get('variant')).toBe('relax');
   await expect(selector.locator('.set-difficulty-row')).toHaveCount(24);
   await expect(selector.locator('.set-difficulty-disclosure')).not.toHaveAttribute('open', '');
@@ -1046,8 +1105,10 @@ test('difficulty details start collapsed, expand with a keyboard and keep the le
 }) => {
   await fixture(page);
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/beatmaps/980000');
+  await page.goto('/beatmapsets/local-2010000000#osu/2020000000');
+  await expect(page).toHaveURL(/\/beatmapsets\/local-2010000000#osu\/2020000000$/);
   const selector = page.locator('.set-difficulty-selector');
+  await expect(selector).toHaveAttribute('aria-busy', 'false');
   const disclosure = selector.locator('.set-difficulty-disclosure');
   const summary = selector.locator('.set-difficulty-summary');
   await expect(selector.locator('.set-difficulty-strip .difficulty-chip')).toHaveCount(24);
@@ -1105,9 +1166,9 @@ test('difficulty navigation retains catalogue filters and RX; native mania force
 }) => {
   const state = await fixture(page);
   await page.goto(
-    '/beatmaps?catalogue=server&q=fixture&mode=0&status=ranked&source=official&sort=stars&uploaded_by=990501&view=list&context=profile',
+    '/beatmaps?catalogue=server&q=fixture&mode=0&status=ranked&sort=stars&uploaded_by=990501&view=list&context=profile',
   );
-  await expect(page.locator('.discovery-set')).toHaveCount(15);
+  await expect(page.locator('.discovery-set')).toHaveCount(24);
   const catalogue = new URL(page.url());
   const returnTo = `${catalogue.pathname}${catalogue.search}`;
   await page.locator('.discovery-set').first().locator('.discovery-set-main').click();
@@ -1116,23 +1177,20 @@ test('difficulty navigation retains catalogue filters and RX; native mania force
   const selector = page.locator('.set-difficulty-selector');
   await expect(selector.locator('.set-difficulty-row')).toHaveCount(24);
   await selector.locator('.set-difficulty-strip .difficulty-chip').nth(1).click();
-  await expect(page).toHaveURL(/mode=1&variant=relax/);
+  await expect(page).toHaveURL(/variant=relax#taiko\/2020000001$/);
   await expect.poll(() => state.scoreQueries.at(-1)?.get('variant')).toBe('relax');
   await expect.poll(() => state.scoreQueries.at(-1)?.get('mode')).toBe('1');
   await expect(page.locator('.back-link')).toHaveAttribute('href', returnTo);
   await expect(selector.locator('.set-difficulty-row')).toHaveCount(24);
   await selector.locator('.set-difficulty-strip .difficulty-chip').nth(3).click();
-  await expect(page).toHaveURL(/mode=3&variant=vanilla/);
+  await expect(page).toHaveURL(/#mania\/2020000003$/);
   await expect.poll(() => state.scoreQueries.at(-1)?.get('variant')).toBe('vanilla');
   await expect(page.getByRole('button', { name: 'Relax (RX)', exact: true })).toBeDisabled();
   await page.locator('.back-link').click();
   await expect(page).toHaveURL(`${catalogue.origin}${returnTo}`);
-  await expect(page.getByLabel('Source', { exact: true })).toHaveAttribute(
-    'data-value',
-    'official',
-  );
+  await expect(page.getByLabel('Source', { exact: true })).toHaveCount(0);
   await expect(page.locator('.discovery-results')).toHaveClass(/view-list/);
-  await expect(page.locator('.discovery-set')).toHaveCount(15);
+  await expect(page.locator('.discovery-set')).toHaveCount(24);
 });
 
 test('catalogue back links reject external, protocol-relative, other-path and oversized returns', async ({
@@ -1164,8 +1222,10 @@ test('selector clears rows on page errors and withdrawn maps hide public known d
 }) => {
   const state = await fixture(page);
   state.staff = true;
-  await page.goto('/beatmaps/980000');
+  await page.goto('/beatmapsets/local-2010000000#osu/2020000000');
+  await expect(page).toHaveURL(/\/beatmapsets\/local-2010000000#osu\/2020000000$/);
   const selector = page.locator('.set-difficulty-selector');
+  await expect(selector).toHaveAttribute('aria-busy', 'false');
   await expect(selector.locator('.set-difficulty-row')).toHaveCount(24);
   state.failSelector = 410;
   await selector.getByRole('button', { name: 'Next', exact: true }).click();
@@ -1184,20 +1244,18 @@ test('selector clears rows on page errors and withdrawn maps hide public known d
   await expect(page.locator('.set-difficulty-selector')).toHaveCount(0);
 });
 
-test('official cover failures and local namespace fallbacks stay readable with long strings', async ({
+test('uploaded local artwork fallbacks stay readable with long strings and never fetch upstream covers', async ({
   page,
 }) => {
   const state = await fixture(page, 'en', 'light');
   state.maps[0].title = 'UnbrokenFixtureTitle'.repeat(20);
   state.maps[0].creator = 'LongMapperName'.repeat(20);
   state.maps[0].version = 'UnbrokenDifficultyName'.repeat(15);
-  // An official source with an invalid/local native set ID must never request upstream art.
-  state.maps.find((map) => map.native_set_id === 1030380)!.native_set_id = 2_100_000_000;
   await page.setViewportSize({ width: 320, height: 800 });
   await page.goto('/beatmaps?catalogue=server');
   await expect(page.locator('.discovery-set')).toHaveCount(24);
   await expect(page.locator('.map-artwork-fallback').first()).toBeVisible();
-  expect(state.coverRequests.every((url) => !url.includes('/2100000000/'))).toBe(true);
+  expect(state.coverRequests).toEqual([]);
   await noOverflow(page);
   await page.getByRole('button', { name: 'List', exact: true }).click();
   await noOverflow(page);
@@ -1344,7 +1402,8 @@ for (const { locale, theme, width, height, view, name, popup = false } of denseM
     const state = await fixture(page, locale, theme);
     state.maps = state.maps.filter(
       (map) =>
-        [2588526, 2_010_000_001, 2_010_000_005].includes(map.native_set_id) || map.id === 980300,
+        [2_010_000_000, 2_010_000_001, 2_010_000_005].includes(map.native_set_id) ||
+        map.id === 980300,
     );
     state.maps[0].title = 'A long catalogue title 圖譜タイトル with a second song name';
     state.maps[0].artist = 'Synthetic catalogue artist with a long recorded artist credit';

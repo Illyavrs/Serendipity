@@ -321,6 +321,33 @@ async function fixture(page: Page, permissions = ['beatmaps.rank.request'], loca
       return route.fulfill({ status: 204 });
     }
     if (routePath === `/beatmaps/${localMapId}`) return route.fulfill({ json: state.map });
+    if (method === 'GET' && routePath === `/beatmapsets/${localSetId}`) {
+      const rawDifficulty = url.searchParams.get('difficulty');
+      const rawMode = url.searchParams.get('mode');
+      const difficulty = rawDifficulty === null ? null : Number(rawDifficulty);
+      const mode = rawMode === null ? null : Number(rawMode);
+      if (
+        (rawDifficulty !== null &&
+          (!/^[1-9]\d*$/.test(rawDifficulty) ||
+            !Number.isSafeInteger(difficulty) ||
+            Number(difficulty) < 1_000_000_000 ||
+            Number(difficulty) > 2_147_483_647)) ||
+        (rawMode !== null && !/^[0-3]$/.test(rawMode))
+      )
+        return fail(400, 'invalid_request');
+      const map = [state.map, ...state.localDifficulties.filter((item) => item.id !== state.map.id)]
+        .filter(
+          (item) =>
+            item.source === 'local' &&
+            item.native_set_id === localSetId &&
+            (difficulty === null || item.native_id === difficulty) &&
+            (mode === null || item.mode === mode),
+        )
+        .sort((left, right) => left.id - right.id)[0];
+      if (!map) return fail(404, 'not_found');
+      if (map.availability.withdrawn) return fail(410, 'beatmapset_withdrawn');
+      return route.fulfill({ json: map });
+    }
     if (routePath === `/beatmaps/${localMapId}/set/difficulties`) {
       const pageNumber = Number(url.searchParams.get('page') ?? 1);
       const pageSize = Number(url.searchParams.get('page_size') ?? 24);

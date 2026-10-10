@@ -547,7 +547,7 @@
     "backgroundUploading": "背景をアップロード中…",
     "backgroundUploadError": "背景をアップロードできませんでした。設定は保持されています。再試行してください。",
     "bio": "自己紹介",
-    "country": "国コード",
+    "country": "国・地域",
     "banner": "バナー",
     "avatar": "アバター",
     "removeAvatar": "アバターを削除",
@@ -582,7 +582,15 @@
     "currentPassword": "現在のパスワード",
     "newPassword": "新しいパスワード",
     "passwordHint": "12 文字以上。変更後、他の端末とゲームのセッションはログアウトされます。",
-    "passwordChanged": "変更しました。ゲームクライアントで再ログインしてください。"
+    "passwordChanged": "変更しました。ゲームクライアントで再ログインしてください。",
+    "backgroundMode": "背景",
+    "backgroundDefault": "テーマの背景",
+    "backgroundImage": "画像",
+    "backgroundColor": "単色",
+    "backgroundColorHint": "単色の背景を選択します。保存済みの画像は引き続き使えます。",
+    "colorPicker": "{label}：色を選択",
+    "colorHex": "{label}：HEX",
+    "invalidColor": "#F28EB6 のような6桁の HEX カラーを入力してください。"
   },
   "chat": {
     "title": "チャット",
@@ -999,7 +1007,7 @@
     "clearUploadedOnly": "保存済みの譜面をすべて表示",
     "difficultyStatusFact": "Illyaverse のステータス: {status}",
     "setStatusFact": "セットのステータス: {status}",
-    "serverDescription": "アップロードされたビートマップと、サーバーで難易度のステータスを変更した公式ビートマップを検索。",
+    "serverDescription": "このサーバーにアップロードされたビートマップを検索。",
     "serverMetadataOnly": "情報のみ",
     "serverMetadataOnlyHint": "このセットにはサーバーで設定した難易度のステータスがありますが、プレイ可能なパッケージは保存されていません。"
   },
@@ -1161,5 +1169,11 @@
     "selectionPages": "難易度のページを切り替えても選択は保持されます。選択した難易度だけを申請します。",
     "noEligibleDifficulties": "申請可能な難易度が表示されていません。Ranked、Loved、WIPの難易度は申請できません。",
     "createSelectedCount": "{selected} 選択 · {total} 申請可能な難易度を表示"
+  },
+  "countries": {
+    "all": "すべての国・地域",
+    "search": "国・地域を検索",
+    "empty": "国・地域が見つかりません",
+    "choose": "国・地域を選択"
   }
 }

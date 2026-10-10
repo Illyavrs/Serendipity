@@ -307,7 +307,9 @@ for (const [country, code, present] of [
       await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     await page.goto(`/players/${playerId}`);
     const flag = page.locator('.profile-player-name .country-flag');
-    await expect(flag).toHaveText(code);
+    await expect(flag).toHaveText(
+      present ? new Intl.DisplayNames(['en'], { type: 'region' }).of(code)! : code,
+    );
     const image = flag.locator('img');
     if (present) {
       await expect(image).toHaveAttribute('src', `/flags/twemoji/${code}.svg`);
@@ -318,10 +320,8 @@ for (const [country, code, present] of [
           ),
         )
         .toBe(true);
-      await expect(image).toHaveAttribute(
-        'alt',
-        new Intl.DisplayNames(['en'], { type: 'region' }).of(code)!,
-      );
+      // The adjacent full name labels identity; the flag avoids repeating it.
+      await expect(image).toHaveAttribute('alt', '');
       await expect(image).toHaveCSS('width', '24px');
       await expect(image).toHaveCSS('height', '18px');
       expect(state.flagRequests).toContain(`/flags/twemoji/${code}.svg`);
@@ -344,7 +344,7 @@ test('rankings reuse the same country presentation and profile flags survive an 
   await page.route('**/flags/twemoji/TW.svg', (route) => route.abort());
   await page.goto(`/players/${playerId}`);
   const flag = page.locator('.profile-player-name .country-flag');
-  await expect(flag).toHaveText('TW');
+  await expect(flag).toHaveText('Taiwan');
   await expect(flag.locator('img')).toHaveCount(0);
   assertClean(state);
 });

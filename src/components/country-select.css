@@ -1,0 +1,101 @@
+.country-select-trigger {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+  background: var(--surface-subtle);
+  border-color: var(--input);
+  padding: 6px 12px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 700;
+}
+.country-select-trigger > span,
+.country-select-option > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.country-select-trigger .country-flag,
+.country-select-option .country-flag {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.country-select-trigger .country-flag > span,
+.country-select-option .country-flag > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.country-select-trigger > svg {
+  color: var(--secondary-text);
+}
+.country-select-menu {
+  z-index: 60;
+  width: max(260px, var(--radix-popover-trigger-width));
+  max-width: calc(100vw - 24px);
+  max-height: var(--radix-popover-content-available-height);
+  overflow: hidden;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.65);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font-size: 13px;
+  outline: none;
+}
+.country-select-search {
+  position: relative;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.country-select-search > svg {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  pointer-events: none;
+  color: var(--secondary-text);
+}
+.country-select-search [data-slot='input'] {
+  height: 36px;
+  padding-left: 34px;
+  background: var(--surface-subtle);
+  font-size: 13px;
+}
+.country-select-options {
+  max-height: min(280px, calc(var(--radix-popover-content-available-height) - 60px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-top: 4px;
+}
+.country-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 36px;
+  padding: 6px 8px;
+  cursor: default;
+  border-radius: calc(var(--radius) * 0.45);
+  user-select: none;
+}
+.country-select-option[data-highlighted] {
+  background: var(--selection-fill);
+  color: var(--readable-accent);
+}
+.country-select-option > svg {
+  flex-shrink: 0;
+  color: var(--readable-accent);
+}
+.country-select-empty {
+  padding: 12px 8px;
+  color: var(--secondary-text);
+  margin: 0;
+}
+@media (max-width: 600px), (pointer: coarse) {
+  .country-select-trigger,
+  .country-select-option {
+    min-height: 44px;
+  }
+}

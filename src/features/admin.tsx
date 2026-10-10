@@ -7,6 +7,7 @@ import { Dialog } from 'radix-ui';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { LoaderCircle, ShieldCheck, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -207,15 +208,16 @@ function UserRoles({
           return (
             <label
               key={role.id}
+              htmlFor={`user-role-${player.id}-${role.id}`}
               aria-disabled={!enabled}
               title={!enabled ? t('roleLocked') : undefined}
             >
-              <input
-                type="checkbox"
+              <Checkbox
+                id={`user-role-${player.id}-${role.id}`}
                 checked={chosen.includes(role.id)}
-                disabled={!enabled}
-                onChange={(event) =>
-                  setChanges((old) => ({ ...old, [role.id]: event.target.checked }))
+                disabled={busy || stale || !enabled}
+                onCheckedChange={(checked) =>
+                  setChanges((old) => ({ ...old, [role.id]: checked === true }))
                 }
               />
               {role.name}
@@ -563,14 +565,18 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
         >
           <legend>{t('permissions')}</legend>
           {permissionChoices.map((permission) => (
-            <label key={permission} aria-disabled={!hasPermission(permissions, permission)}>
-              <input
-                type="checkbox"
+            <label
+              key={permission}
+              htmlFor={`role-permission-${permission}`}
+              aria-disabled={!hasPermission(permissions, permission)}
+            >
+              <Checkbox
+                id={`role-permission-${permission}`}
                 checked={chosen.includes(permission)}
-                disabled={!hasPermission(permissions, permission)}
-                onChange={(event) =>
+                disabled={busy || stale || !editable || !hasPermission(permissions, permission)}
+                onCheckedChange={(checked) =>
                   setChosen((old) =>
-                    event.target.checked
+                    checked === true
                       ? [...old, permission]
                       : old.filter((value) => value !== permission),
                   )

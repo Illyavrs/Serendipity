@@ -216,6 +216,8 @@ function preferences(locale: string, theme: 'dark' | 'light'): Preferences {
     mode: theme,
     accent_color: '#f28eb6',
     background_url: null,
+    background_mode: 'default',
+    background_color: '#000000',
     background_blur: 0,
     background_dim: 0.76,
     panel_blur: 8,
@@ -1013,6 +1015,7 @@ for (const scenario of [
       {
         accent_color: scenario.accent,
         background_url: '/media/home-hover-material-fixture.png',
+        background_mode: 'image',
         background_blur: scenario.sceneBlur,
         panel_blur: scenario.panelBlur,
         panel_opacity: scenario.opacity,

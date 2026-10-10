@@ -100,7 +100,12 @@ test('cached light material restores without overwriting the cache with initial 
       .evaluate((html) => getComputedStyle(html).getPropertyValue('--panel-blur').trim()),
   ).toBe('23px');
   const restored = await page.evaluate(() => JSON.parse(localStorage.getItem('illya_appearance')!));
-  expect(restored).toEqual({ ...cached, locale: 'en' });
+  expect(restored).toEqual({
+    ...cached,
+    locale: 'en',
+    background_mode: 'image',
+    background_color: '#000000',
+  });
   const writes = await page.evaluate(
     () => (window as unknown as { appearanceWrites: (typeof cached)[] }).appearanceWrites,
   );

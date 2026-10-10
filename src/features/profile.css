@@ -18,8 +18,9 @@
   margin: 0;
   font-size: 12px;
 }
-.rankings-toolbar .country-input {
-  width: 78px;
+.rankings-toolbar .ranking-country-select {
+  width: 220px;
+  max-width: 100%;
   min-width: 0;
   margin-left: auto;
   font-weight: 700;
@@ -721,7 +722,7 @@
     padding: 16px;
     gap: 10px;
   }
-  .rankings-toolbar .country-input {
+  .rankings-toolbar .ranking-country-select {
     margin-left: 0;
   }
   .rankings-page .rankings-table th,

@@ -16,6 +16,8 @@ import { isLocale } from '@/i18n/config';
 import { RelationshipList } from './social';
 import { EmailVerificationControls } from './recovery';
 import { AccountSessionControls } from './account-sessions';
+import { ColorPicker } from '@/components/color-picker';
+import { CountrySelect } from '@/components/country-select';
 
 export function AppearanceControls({ compact = false }: { compact?: boolean }) {
   const t = useTranslations('settings');
@@ -58,29 +60,14 @@ export function AppearanceControls({ compact = false }: { compact?: boolean }) {
       </div>
       <div className="field">
         <label htmlFor={compact ? 'quick-accent' : 'accent'}>{t('accent')}</label>
-        <div className="colour-field">
-          <input
-            type="color"
-            id={compact ? 'quick-accent' : 'accent'}
-            value={p.accent_color}
-            disabled={busy}
-            onChange={(e) => update({ accent_color: e.target.value })}
-          />
-          <span>{p.accent_color.toUpperCase()}</span>
-          <div className="swatches">
-            {['#f28eb6', '#a8a2f2', '#7dd8c5', '#f6c889'].map((color) => (
-              <button
-                key={color}
-                type="button"
-                style={{ background: color }}
-                aria-label={color}
-                aria-pressed={p.accent_color === color}
-                disabled={busy}
-                onClick={() => update({ accent_color: color })}
-              />
-            ))}
-          </div>
-        </div>
+        <ColorPicker
+          id={compact ? 'quick-accent' : 'accent'}
+          label={t('accent')}
+          value={p.accent_color}
+          disabled={busy}
+          onValueChange={(color) => update({ accent_color: color })}
+          swatches={['#f28eb6', '#a8a2f2', '#7dd8c5', '#f6c889']}
+        />
       </div>
       <div className="field slider-field glass-coverage-field">
         <div>
@@ -121,39 +108,79 @@ export function AppearanceControls({ compact = false }: { compact?: boolean }) {
       <div className="field">
         <label>{t('background')}</label>
         <div
+          className="segmented background-mode-control"
+          role="group"
+          aria-label={t('backgroundMode')}
+        >
+          {(
+            [
+              ['default', 'backgroundDefault'],
+              ['image', 'backgroundImage'],
+              ['color', 'backgroundColor'],
+            ] as const
+          ).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              disabled={busy}
+              aria-pressed={p.background_mode === mode}
+              onClick={() => update({ background_mode: mode })}
+            >
+              {t(label)}
+            </button>
+          ))}
+        </div>
+        {p.background_mode === 'color' && (
+          <ColorPicker
+            id={compact ? 'quick-background-color' : 'background-color'}
+            label={t('backgroundColor')}
+            value={p.background_color}
+            disabled={busy}
+            describedBy={`${compact ? 'quick-' : ''}background-color-hint`}
+            onValueChange={(color) => update({ background_color: color })}
+          />
+        )}
+        <div
           className="background-preview"
+          data-background-mode={p.background_mode}
           style={{
-            backgroundImage: p.background_url
-              ? `url(${JSON.stringify(p.background_url)})`
-              : undefined,
+            backgroundColor: p.background_mode === 'color' ? p.background_color : undefined,
+            backgroundImage:
+              p.background_mode === 'image' && p.background_url
+                ? `url(${JSON.stringify(p.background_url)})`
+                : undefined,
           }}
         />
-        <p className="hint">{t('backgroundHint')}</p>
-        <div className="actions">
-          <label className={`upload-button ${!user || busy ? 'disabled' : ''}`}>
-            <ImagePlus />
-            {t(operation === 'upload' ? 'backgroundUploading' : 'uploadImage')}
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              disabled={!user || busy}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = '';
-                if (file) void upload(file);
-              }}
-            />
-          </label>
-          {p.background_url && (
-            <Button
-              variant="ghost"
-              disabled={busy}
-              onClick={() => update({ background_url: null })}
-            >
-              {t('removeBackground')}
-            </Button>
-          )}
-        </div>
+        <p className="hint" id={`${compact ? 'quick-' : ''}background-color-hint`}>
+          {t(p.background_mode === 'color' ? 'backgroundColorHint' : 'backgroundHint')}
+        </p>
+        {p.background_mode !== 'color' && (
+          <div className="actions">
+            <label className={`upload-button ${!user || busy ? 'disabled' : ''}`}>
+              <ImagePlus />
+              {t(operation === 'upload' ? 'backgroundUploading' : 'uploadImage')}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={!user || busy}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (file) void upload(file);
+                }}
+              />
+            </label>
+            {p.background_url && (
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={() => update({ background_url: null, background_mode: 'default' })}
+              >
+                {t('removeBackground')}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       {(
         [
@@ -178,7 +205,7 @@ export function AppearanceControls({ compact = false }: { compact?: boolean }) {
             max={max}
             step={1}
             value={[unit === '%' ? Math.round(p[key] * 100) : p[key]]}
-            disabled={busy}
+            disabled={busy || (key.startsWith('background_') && p.background_mode !== 'image')}
             onValueChange={([value]) => update({ [key]: unit === '%' ? value / 100 : value })}
             aria-label={t(label)}
             aria-valuetext={`${unit === '%' ? Math.round(p[key] * 100) : p[key]}${unit}`}
@@ -330,20 +357,17 @@ function ProfileControls() {
       <p className="hint">{t('profileHint')}</p>
       <div className="field profile-accent-field">
         <label htmlFor="profile-accent">{t('profileAccent')}</label>
-        <div className="colour-field">
-          <input
-            type="color"
-            id="profile-accent"
-            value={accent}
-            disabled={busy}
-            aria-describedby="profile-accent-hint"
-            onChange={(e) => {
-              setAccent(e.target.value);
-              setFeedback('');
-            }}
-          />
-          <span>{accent.toUpperCase()}</span>
-        </div>
+        <ColorPicker
+          id="profile-accent"
+          label={t('profileAccent')}
+          value={accent}
+          disabled={busy}
+          describedBy="profile-accent-hint"
+          onValueChange={(color) => {
+            setAccent(color);
+            setFeedback('');
+          }}
+        />
         <p className="hint" id="profile-accent-hint">
           {t('profileAccentHint')}
         </p>
@@ -479,15 +503,13 @@ function ProfileControls() {
       </div>
       <div className="field">
         <label htmlFor="country">{t('country')}</label>
-        <Input
+        <CountrySelect
           id="country"
+          name="country"
           disabled={pending === 'save'}
           value={country}
-          pattern="[A-Z]{2}"
-          minLength={2}
-          maxLength={2}
-          onChange={(e) => {
-            setCountry(e.target.value.toUpperCase());
+          onValueChange={(value) => {
+            setCountry(value);
             setFeedback('');
           }}
           className="country-input"

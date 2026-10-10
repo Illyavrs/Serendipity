@@ -2,7 +2,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import useSWR, { unstable_serialize, useSWRConfig } from 'swr';
 import { ArrowUpRight, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,8 @@ import { RelationshipActions } from './social';
 import { ScoreVariantControl } from '@/components/score-selection';
 import { RankHistoryPanel } from './rank-history';
 import { CountryFlag } from '@/components/country-flag';
+import { CountrySelect } from '@/components/country-select';
+import { countryName } from '@/lib/countries';
 import {
   correctRankingLocation,
   readRankingSelection,
@@ -82,8 +84,6 @@ export function RankingsPage() {
   const pathname = usePathname();
   const search = useSearchParams();
   const { mode, variant, country, page } = readRankingSelection(search, { country: true });
-  const [countryDraft, setCountryDraft] = useState({ country, value: country });
-  if (countryDraft.country !== country) setCountryDraft({ country, value: country });
   const selection = new URLSearchParams({ mode, variant });
   const query = new URLSearchParams({ mode, variant, page: String(page), page_size: '24' });
   if (country) query.set('country', country);
@@ -121,22 +121,14 @@ export function RankingsPage() {
               updateRankingSelection({ variant: nextVariant }, { country: true })
             }
           />
-          <input
-            className="native-select country-input"
-            placeholder="TW"
-            maxLength={2}
+          <CountrySelect
+            className="ranking-country-select"
+            allowAll
             aria-label={t('country')}
-            value={countryDraft.value}
-            onChange={(e) => {
-              const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-              setCountryDraft({ country, value });
-              // Keep an incomplete two-letter draft without sending an invalid country filter.
-              if (value.length !== 1) updateRankingSelection({ country: value }, { country: true });
-            }}
-            onBlur={() => setCountryDraft({ country, value: country })}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur();
-            }}
+            value={country}
+            onValueChange={(nextCountry) =>
+              updateRankingSelection({ country: nextCountry }, { country: true })
+            }
           />
           <p className="hint">{t('modeNotice')}</p>
         </div>
@@ -270,6 +262,7 @@ function isProfileAccessError(error: unknown): error is ApiError {
 }
 
 export function PlayerPage({ id }: { id: number }) {
+  const locale = useLocale();
   const t = useTranslations('profile');
   const rankHistory = useTranslations('rankHistory');
   const c = useTranslations('common');
@@ -434,8 +427,9 @@ export function PlayerPage({ id }: { id: number }) {
                 <div className="profile-player-name">
                   <h1>{player.username}</h1>
                   <p>
-                    <CountryFlag country={player.country} /> <span className="dot">·</span>{' '}
-                    {t('joined')} {f.dateTime(new Date(player.joined_at), { dateStyle: 'medium' })}
+                    <CountryFlag country={player.country} display="name" />{' '}
+                    <span className="dot">·</span> {t('joined')}{' '}
+                    {f.dateTime(new Date(player.joined_at), { dateStyle: 'medium' })}
                   </p>
                   {player.roles.length > 0 && (
                     <div className="map-tags">
@@ -498,7 +492,7 @@ export function PlayerPage({ id }: { id: number }) {
                     className="profile-placement"
                     data-rank-tier={profileRankTier(player.statistics?.country_rank, player.pp)}
                   >
-                    <dt>{t('countryRank', { country: player.country })}</dt>
+                    <dt>{t('countryRank', { country: countryName(player.country, locale) })}</dt>
                     <dd>
                       {profileRankTier(player.statistics?.country_rank, player.pp) !==
                       'unranked' ? (

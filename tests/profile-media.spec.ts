@@ -104,14 +104,16 @@ test('removing profile images clears only the selected image and preserves unsav
   await expect(page.getByRole('button', { name: '移除頭像', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '移除橫幅', exact: true })).toBeVisible();
   await page.getByLabel('自我介紹', { exact: true }).fill('Unsaved profile draft');
-  await page.getByLabel('國家代碼', { exact: true }).fill('JP');
+  await page.locator('#country').click();
+  await page.getByRole('combobox', { name: '搜尋國家／地區', exact: true }).fill('JP');
+  await page.getByRole('option', { name: '日本', exact: true }).click();
   await capture(page, 'profile-media-desktop-zhTW');
   await page.getByRole('button', { name: '移除頭像', exact: true }).click();
   await expect(page.locator('.form-success')).toHaveText('圖片已移除');
   await expect(page.getByRole('button', { name: '移除頭像', exact: true })).toHaveCount(0);
   await expect(page.locator('.profile-banner-preview')).toBeVisible();
   await expect(page.getByLabel('自我介紹', { exact: true })).toHaveValue('Unsaved profile draft');
-  await expect(page.getByLabel('國家代碼', { exact: true })).toHaveValue('JP');
+  await expect(page.locator('#country')).toHaveAttribute('data-value', 'JP');
   expect(state.writes).toEqual([{ method: 'DELETE', body: { kind: 'avatar' } }]);
   await page.getByRole('button', { name: '移除橫幅', exact: true }).click();
   await expect(page.locator('.profile-banner-preview')).toHaveCount(0);

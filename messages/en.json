@@ -547,7 +547,7 @@
     "backgroundUploading": "Uploading background…",
     "backgroundUploadError": "Could not upload your background. Your settings are kept. Try again.",
     "bio": "About you",
-    "country": "Country code",
+    "country": "Country",
     "banner": "Banner",
     "avatar": "Avatar",
     "removeAvatar": "Remove avatar",
@@ -582,7 +582,15 @@
     "currentPassword": "Current password",
     "newPassword": "New password",
     "passwordHint": "At least 12 characters. Other devices and game sessions will be signed out.",
-    "passwordChanged": "Password changed. Sign in again in your game client."
+    "passwordChanged": "Password changed. Sign in again in your game client.",
+    "backgroundMode": "Background",
+    "backgroundDefault": "Theme background",
+    "backgroundImage": "Image",
+    "backgroundColor": "Solid color",
+    "backgroundColorHint": "Choose a solid background color. Your saved image stays available.",
+    "colorPicker": "{label}: choose color",
+    "colorHex": "{label}: HEX",
+    "invalidColor": "Enter a six-digit HEX color, for example #F28EB6."
   },
   "chat": {
     "title": "Chat",
@@ -999,7 +1007,7 @@
     "clearUploadedOnly": "Show all stored beatmaps",
     "difficultyStatusFact": "Status on Illyaverse: {status}",
     "setStatusFact": "Set status: {status}",
-    "serverDescription": "Search uploaded beatmaps and official beatmaps with server difficulty decisions.",
+    "serverDescription": "Search beatmaps uploaded to this server.",
     "serverMetadataOnly": "Metadata only",
     "serverMetadataOnlyHint": "This set has server difficulty decisions; no playable package is stored here."
   },
@@ -1161,5 +1169,11 @@
     "selectionPages": "Selections are kept when changing difficulty pages. Only checked difficulties are submitted.",
     "noEligibleDifficulties": "No eligible difficulties are shown. Ranked, Loved and WIP difficulties cannot be requested.",
     "createSelectedCount": "{selected} selected · {total} eligible shown"
+  },
+  "countries": {
+    "all": "All countries",
+    "search": "Search countries",
+    "empty": "No countries found",
+    "choose": "Choose a country"
   }
 }

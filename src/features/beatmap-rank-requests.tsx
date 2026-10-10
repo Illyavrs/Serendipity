@@ -5,12 +5,12 @@ import { useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
 import useSWR, { unstable_serialize, useSWRConfig } from 'swr';
 import { ArrowLeft, ArrowRight, Check, LoaderCircle, RefreshCw } from 'lucide-react';
-import { Checkbox } from 'radix-ui';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { Avatar, Empty, Loading, PageHeading, Pagination, Protected } from '@/components/common';
 import { useSession } from '@/components/providers';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { FieldSelect } from '@/components/ui/field-select';
 import { Textarea } from '@/components/ui/textarea';
 import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
@@ -224,7 +224,7 @@ export function RankDifficultySelection({
             className={styles.difficulty}
             htmlFor={`${id}-${difficulty.native_id}`}
           >
-            <Checkbox.Root
+            <Checkbox
               id={`${id}-${difficulty.native_id}`}
               aria-label={difficulty.version}
               className={styles.checkbox}
@@ -232,16 +232,12 @@ export function RankDifficultySelection({
               disabled={disabled}
               onCheckedChange={(checked) =>
                 onChange(
-                  checked
+                  checked === true
                     ? Array.from(new Set([...selected, difficulty.native_id]))
                     : selected.filter((value) => value !== difficulty.native_id),
                 )
               }
-            >
-              <Checkbox.Indicator>
-                <Check aria-hidden="true" />
-              </Checkbox.Indicator>
-            </Checkbox.Root>
+            />
             <span>
               <strong>{difficulty.version}</strong>
               <small>

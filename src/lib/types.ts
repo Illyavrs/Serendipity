@@ -63,6 +63,8 @@ export type Preferences = {
   mode: 'dark' | 'light' | 'system';
   accent_color: string;
   background_url: string | null;
+  background_mode: 'default' | 'image' | 'color';
+  background_color: string;
   background_blur: number;
   background_dim: number;
   panel_blur: number;

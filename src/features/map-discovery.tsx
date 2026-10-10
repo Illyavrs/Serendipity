@@ -5,7 +5,6 @@ import { NavigationLink as Link, useNavigationProgress } from '@/components/navi
 import Image from 'next/image';
 import { MapCardPreview } from './map-card-preview';
 import { OfficialMapDiscoveryPage } from './public-official-maps';
-import { ServerOfficialSetCard } from './server-effective-catalogue';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -54,7 +53,6 @@ export type DiscoverySet = {
 
 const modes = ['osu!', 'taiko', 'catch', 'mania'] as const;
 const statuses = ['ranked', 'loved', 'pending', 'wip', 'graveyard', 'unranked'] as const;
-const sources = ['official', 'local'] as const;
 const sorts = ['recent', 'title', 'stars', 'length'] as const;
 const filterKeys = [
   'q',
@@ -472,39 +470,41 @@ function ServerMapDiscoveryPage() {
   const status = statuses.includes(params.get('status') as (typeof statuses)[number])
     ? params.get('status')!
     : 'all';
-  const source = sources.includes(params.get('source') as (typeof sources)[number])
-    ? params.get('source')!
-    : 'all';
   const sort = sorts.includes(params.get('sort') as (typeof sorts)[number])
     ? params.get('sort')!
     : 'recent';
   const page = positiveInteger(params.get('page')) ?? 1;
   const uploader = positiveInteger(params.get('uploaded_by'));
-  // Only the explicit public filter enables this scope; false and unknown
-  // values do not accidentally restrict the stored catalogue.
-  const uploadedOnly = params.get('uploaded_only') === 'true';
   const view = params.get('view') === 'list' ? 'list' : 'grid';
   const returnParams = new URLSearchParams(params);
   returnParams.set('catalogue', 'server');
+  returnParams.delete('source');
+  returnParams.delete('uploaded_only');
   const returnTo = safeCatalogueReturn(`/beatmaps?${returnParams}`) ?? '/beatmaps?catalogue=server';
-  const query = new URLSearchParams({ page: String(page), page_size: '24', sort });
+  // This player-facing tab is the uploaded library. The broader effective
+  // catalogue remains available to moderation through its API.
+  const query = new URLSearchParams({
+    page: String(page),
+    page_size: '24',
+    sort,
+    source: 'local',
+    uploaded_only: 'true',
+  });
   if (search) query.set('q', search);
   if (mode !== 'all') query.set('mode', mode);
   if (status !== 'all') query.set('status', status);
-  if (source !== 'all') query.set('source', source);
   if (uploader) query.set('uploaded_by', String(uploader));
-  if (uploadedOnly) query.set('uploaded_only', 'true');
   const { data, error, loading, retry } = usePublicData<ServerCataloguePage>(
     `/server/beatmapsets?${query}`,
   );
   function update(key: string, value: string | null, resetPage = true) {
     const next = new URLSearchParams(window.location.search);
     next.set('catalogue', 'server');
+    next.delete('source');
+    next.delete('uploaded_only');
     if (resetPage) next.delete('page');
     if (value === null || value === '' || value === 'all') next.delete(key);
     else next.set(key, value);
-    // Choosing a broader source explicitly leaves the community-upload scope.
-    if (key === 'source' && value !== 'local') next.delete('uploaded_only');
     window.history.pushState(
       null,
       '',
@@ -522,17 +522,10 @@ function ServerMapDiscoveryPage() {
     );
   }
   const filtered =
-    !!search ||
-    mode !== 'all' ||
-    status !== 'all' ||
-    source !== 'all' ||
-    !!uploader ||
-    uploadedOnly ||
-    sort !== 'recent' ||
-    page !== 1;
+    !!search || mode !== 'all' || status !== 'all' || !!uploader || sort !== 'recent' || page !== 1;
   const outOfRange = data && page > Math.max(1, Math.ceil(data.total / data.page_size));
   return (
-    <div className="page-container map-discovery">
+    <div className="page-container map-discovery server-map-discovery">
       <div className="discovery-reading-ground" data-material="section">
         <CatalogueSource value="server" />
         <PageHeading title={maps('title')} description={t('serverDescription')}>
@@ -580,19 +573,6 @@ function ServerMapDiscoveryPage() {
               />
             </div>
             <div className="field">
-              <label htmlFor="discovery-source">{t('sourceLabel')}</label>
-              <FieldSelect
-                id="discovery-source"
-                className="native-select"
-                value={source}
-                onValueChange={(value) => update('source', value)}
-                options={[
-                  { value: 'all', label: t('allSources') },
-                  ...sources.map((value) => ({ value, label: t(`source.${value}`) })),
-                ]}
-              />
-            </div>
-            <div className="field">
               <label htmlFor="discovery-sort">{t('sortLabel')}</label>
               <FieldSelect
                 id="discovery-sort"
@@ -603,15 +583,6 @@ function ServerMapDiscoveryPage() {
               />
             </div>
           </div>
-          {uploadedOnly && (
-            <div className="discovery-uploader">
-              <span>{t('uploadedOnlyFilter')}</span>
-              <Button variant="ghost" type="button" onClick={() => update('uploaded_only', null)}>
-                <X aria-hidden="true" />
-                {t('clearUploadedOnly')}
-              </Button>
-            </div>
-          )}
           {uploader && (
             <div className="discovery-uploader">
               <span>{t('uploaderFilter', { id: uploader })}</span>
@@ -692,14 +663,7 @@ function ServerMapDiscoveryPage() {
           data.items.map((set) =>
             set.kind === 'stored' ? (
               <MapSetCard set={set.stored} key={serverCatalogueSetKey(set)} returnTo={returnTo} />
-            ) : (
-              <ServerOfficialSetCard
-                set={set.official}
-                key={serverCatalogueSetKey(set)}
-                returnTo={returnTo}
-                matchingStatus={status === 'all' ? undefined : status}
-              />
-            ),
+            ) : null,
           )
         )}
       </section>
