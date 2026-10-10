@@ -1,5 +1,6 @@
 'use client';
 
+import { difficultyStyle } from '@/lib/difficulty-color';
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, Clock, ExternalLink, LoaderCircle, Music2, Search, Star } from 'lucide-react';
@@ -8,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { FieldSelect } from '@/components/ui/field-select';
 import { useNavigationLoading } from '@/components/navigation-motion';
 import { api, ApiError } from '@/lib/api';
-import { difficultyLevel } from './map-discovery';
 
 type OfficialStatus =
   'ranked' | 'approved' | 'qualified' | 'loved' | 'pending' | 'wip' | 'graveyard';
@@ -135,7 +135,7 @@ function SearchSet({
                 className="official-search-difficulty-facts"
                 style={
                   {
-                    '--difficulty-color': `var(--difficulty-${difficultyLevel(chosen.stars)})`,
+                    ...difficultyStyle(chosen.stars),
                   } as CSSProperties
                 }
               >

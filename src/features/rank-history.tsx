@@ -186,6 +186,7 @@ function RankHistoryContent({
   const [verified, setVerified] = useState(false);
   const [accessFailure, setAccessFailure] = useState<ApiError | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [hovering, setHovering] = useState(false);
   const { data, error, isLoading, isValidating, mutate } = useSWR<RankHistoryResponse>(
     [path, viewer],
     async (key: readonly [string, number | string]) => {
@@ -300,14 +301,21 @@ function RankHistoryContent({
     event.preventDefault();
     setSelectedDate(data!.points[next].date);
   }
-  function handlePointer(event: PointerEvent<SVGSVGElement>) {
+  function nearestPoint(event: PointerEvent<SVGSVGElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const coordinate = ((event.clientX - bounds.left) / bounds.width) * 1000;
-    const nearest = data!.points.reduce((closest, point) =>
+    return data!.points.reduce((closest, point) =>
       Math.abs(x(point) - coordinate) < Math.abs(x(closest) - coordinate) ? point : closest,
     );
-    setSelectedDate(nearest.date);
+  }
+  function handlePointer(event: PointerEvent<SVGSVGElement>) {
+    setSelectedDate(nearestPoint(event).date);
     event.currentTarget.parentElement?.focus({ preventScroll: true });
+  }
+  function handleHover(event: PointerEvent<SVGSVGElement>) {
+    if (event.pointerType !== 'mouse') return;
+    setHovering(true);
+    setSelectedDate(nearestPoint(event).date);
   }
   return (
     <>
@@ -362,6 +370,8 @@ function RankHistoryContent({
             preserveAspectRatio="none"
             aria-hidden="true"
             onPointerDown={handlePointer}
+            onPointerMove={handleHover}
+            onPointerLeave={() => setHovering(false)}
           >
             {ticks.map((rank) => (
               <line
@@ -450,6 +460,20 @@ function RankHistoryContent({
               );
             })}
           </svg>
+          {hovering && placement(selected, metric) !== null && (
+            <div
+              className="rank-history-tip"
+              aria-hidden="true"
+              style={{
+                left: `calc(var(--rank-axis-width) + (100% - var(--rank-axis-width)) * ${x(selected) / 1000})`,
+                top: `${(y(placement(selected, metric)!) / 220) * 100}%`,
+              }}
+            >
+              <strong>{rankText(placement(selected, metric))}</strong>
+              <span>{formatDate(selected.date)}</span>
+              <span>{f.number(selected.pp, { maximumFractionDigits: 2 })} pp</span>
+            </div>
+          )}
         </div>
         <div className="rank-history-dates" aria-hidden="true">
           <time dateTime={observedStart}>{formatDate(observedStart)}</time>

@@ -1,5 +1,6 @@
 'use client';
 
+import { difficultyStyle } from '@/lib/difficulty-color';
 import { useEffect, useId, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import { NavigationLink as Link, useNavigationProgress } from '@/components/navigation-motion';
 import Image from 'next/image';
@@ -171,20 +172,6 @@ export function MapMetadata({ map }: { map: Beatmap }) {
   );
 }
 
-export function difficultyLevel(stars: number) {
-  return stars < 2
-    ? 'easy'
-    : stars < 2.7
-      ? 'normal'
-      : stars < 4
-        ? 'hard'
-        : stars < 5.3
-          ? 'insane'
-          : stars < 6.5
-            ? 'expert'
-            : 'extreme';
-}
-
 export function DifficultyChip({
   map,
   current = false,
@@ -199,7 +186,7 @@ export function DifficultyChip({
   const t = useTranslations('mapDiscovery');
   const mode = modes[map.mode] ?? t('unknownMode');
   const style = {
-    '--difficulty-color': `var(--difficulty-${difficultyLevel(map.stars)})`,
+    ...difficultyStyle(map.stars),
   } as CSSProperties;
   return (
     <Link
@@ -772,7 +759,7 @@ function SetDifficultySelectorContent({
                   aria-current={map.id === mapId ? 'page' : undefined}
                   style={
                     {
-                      '--difficulty-color': `var(--difficulty-${difficultyLevel(map.stars)})`,
+                      ...difficultyStyle(map.stars),
                     } as CSSProperties
                   }
                 >

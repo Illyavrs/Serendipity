@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import useSWR, { useSWRConfig } from 'swr';
+import Image from 'next/image';
 import { useFormatter, useTranslations } from 'next-intl';
 import { ArrowLeft, ArrowUpRight, Download, LoaderCircle, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,40 @@ type ReplayAttachmentResult = {
   verification: string;
   idempotent?: boolean;
 };
+
+const gradeLabels: Record<string, string> = {
+  SSH: 'SS+',
+  SS: 'SS',
+  SH: 'S+',
+  S: 'S',
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  D: 'D',
+  F: 'F',
+};
+
+function ScoreCover({ setId }: { setId?: number | null }) {
+  const src =
+    Number.isSafeInteger(setId) && setId! > 0 && setId! < 2_000_000_000
+      ? `https://assets.ppy.sh/beatmaps/${setId}/covers/cover.jpg`
+      : null;
+  const [failed, setFailed] = useState<string | null>(null);
+  if (!src || failed === src) return null;
+  return (
+    <span className="score-detail-cover" aria-hidden="true">
+      <Image
+        src={src}
+        alt=""
+        width={900}
+        height={250}
+        unoptimized
+        priority
+        onError={() => setFailed(src)}
+      />
+    </span>
+  );
+}
 
 function isScoreAccessError(error: unknown): error is ApiError {
   return error instanceof ApiError && [401, 403, 404].includes(error.status);
@@ -337,6 +372,18 @@ export function ScorePage({ id }: { id: number }) {
       ...(mods.unknownBits ? [t('modsUnknown', { bits: mods.unknownBits })] : []),
     ].join(' ') || 'NM';
   const verificationKey = scoreVerificationKey(score.verification);
+  const primaryKeys =
+    score.mode === 3
+      ? ['geki', 'n300', 'katu', 'n100', 'n50', 'misses', 'nmiss', 'miss']
+      : ['n300', 'n100', 'n50', 'misses', 'nmiss', 'miss'];
+  const hitEntries = Object.entries(score.hit_counts);
+  const judgementGroups = {
+    primary: primaryKeys.flatMap((key) => hitEntries.filter(([name]) => name === key)),
+    secondary: hitEntries.filter(([name]) => !primaryKeys.includes(name)),
+  };
+  const grade = score.grade ? gradeLabels[score.grade] : null;
+  const showScales =
+    Boolean(score.score_scale_status) && score.score_scale_status !== 'unavailable';
   const modSettings = (score.api_mods ?? []).flatMap((mod) =>
     Object.entries(mod.settings ?? {})
       .filter(([, value]) => value !== null)
@@ -350,6 +397,16 @@ export function ScorePage({ id }: { id: number }) {
       </Link>
       <section className="score-detail-record glass" aria-labelledby="score-record-title">
         <header className="score-detail-header">
+          <ScoreCover setId={score.beatmap.native_set_id ?? score.native_beatmapset_id} />
+          {grade && (
+            <span
+              className="score-detail-grade"
+              data-grade={score.grade!.toLowerCase()}
+              aria-label={t('gradeLabel', { grade })}
+            >
+              {grade}
+            </span>
+          )}
           <div className="score-detail-identity">
             <Link
               className="score-detail-map-link"
@@ -437,46 +494,62 @@ export function ScorePage({ id }: { id: number }) {
         />
       )}
       <div
-        className={`score-detail-analysis glass${score.score_scale_status || modSettings.length > 0 ? ' has-supporting-details' : ''}`}
+        className={`score-detail-analysis glass${showScales || modSettings.length > 0 ? ' has-supporting-details' : ''}`}
       >
         <section
           className="score-judgements score-detail-judgements"
           aria-labelledby="score-judgements-title"
         >
           <h2 id="score-judgements-title">{c('judgements')}</h2>
-          <dl>
-            {Object.entries(score.hit_counts).map(([key, value]) => (
-              <div className="score-detail-judgement" key={key} data-judgement={key}>
-                <dt>{key.replace(/^n/, '').replaceAll('_', ' ')}</dt>
-                <dd>{f.number(value)}</dd>
-              </div>
-            ))}
-          </dl>
+          {[judgementGroups.primary, judgementGroups.secondary].map(
+            (entries, group) =>
+              entries.length > 0 && (
+                <dl key={group} className={group === 0 ? undefined : 'score-detail-secondary'}>
+                  {entries.map(([key, value]) => (
+                    <div className="score-detail-judgement" key={key} data-judgement={key}>
+                      <dt>
+                        {score.mode === 3 && key === 'geki'
+                          ? '320'
+                          : score.mode === 3 && key === 'katu'
+                            ? '200'
+                            : c.has(`judgementLabels.${key}`)
+                              ? c(`judgementLabels.${key}`)
+                              : key.replace(/^n/, '').replaceAll('_', ' ')}
+                      </dt>
+                      <dd>{f.number(value)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ),
+          )}
           <div className="score-detail-verification-copy" data-verification={score.verification}>
-            <p className="hint">
-              {score.verification === 'rejected'
-                ? t('rejectedHint')
-                : score.verification === 'verified'
-                  ? p('scoreVerified')
+            {score.verification !== 'verified' && (
+              <p className="hint">
+                {score.verification === 'rejected'
+                  ? t('rejectedHint')
                   : score.verification === 'pending'
                     ? p('scorePending')
                     : score.verification}
-            </p>
+              </p>
+            )}
+            {score.score_scale_status === 'unavailable' && (
+              <p className="hint">{p('scoreScaleUnavailable')}</p>
+            )}
             {score.pp_eligible === false && <p className="hint">{p('scorePpExcluded')}</p>}
             {score.has_replay && score.replay_complete === false && (
               <p className="hint">{p('scoreReplayIncomplete')}</p>
             )}
           </div>
         </section>
-        {(score.score_scale_status || modSettings.length > 0) && (
+        {(showScales || modSettings.length > 0) && (
           <aside className="score-detail-supporting">
-            {score.score_scale_status && (
+            {showScales && (
               <section
                 className="score-detail-support-section"
                 aria-labelledby="score-scales-title"
               >
                 <h2 id="score-scales-title">{p('scoreScales')}</h2>
-                {score.score_scale_status !== 'unavailable' && (
+                {
                   <dl>
                     {[
                       [p('scoreStandardised'), score.standardised_score],
@@ -488,7 +561,7 @@ export function ScorePage({ id }: { id: number }) {
                       </div>
                     ))}
                   </dl>
-                )}
+                }
                 <p className="hint">
                   {p(
                     {
@@ -496,7 +569,7 @@ export function ScorePage({ id }: { id: number }) {
                       legacy_estimated: 'scoreLegacyEstimated',
                       legacy_scorev2: 'scoreLegacyScoreV2',
                       unavailable: 'scoreScaleUnavailable',
-                    }[score.score_scale_status],
+                    }[score.score_scale_status!],
                   )}
                 </p>
               </section>

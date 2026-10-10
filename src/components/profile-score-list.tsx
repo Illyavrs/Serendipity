@@ -1,4 +1,5 @@
 'use client';
+import { difficultyStyle } from '@/lib/difficulty-color';
 import { useState } from 'react';
 import Image from 'next/image';
 import { NavigationLink as Link } from './navigation-motion';
@@ -179,19 +180,7 @@ export function ProfileScoreList({ scores, best }: { scores: Score[]; best: bool
                 {stars && (
                   <span
                     className="profile-score-stars"
-                    data-tier={
-                      score.stars! < 2
-                        ? 'easy'
-                        : score.stars! < 3
-                          ? 'normal'
-                          : score.stars! < 4
-                            ? 'hard'
-                            : score.stars! < 5
-                              ? 'insane'
-                              : score.stars! < 6
-                                ? 'expert'
-                                : 'extreme'
-                    }
+                    style={difficultyStyle(score.stars!)}
                     aria-label={p('scoreDifficulty', { stars })}
                   >
                     <Star aria-hidden="true" />

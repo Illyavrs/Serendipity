@@ -1,5 +1,6 @@
 'use client';
 
+import { difficultyStyle } from '@/lib/difficulty-color';
 import { useEffect, useId, useState, type CSSProperties, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -32,7 +33,6 @@ import { OfficialArchiveDownload } from './official-archive-download';
 import {
   CatalogueSource,
   MapArtwork,
-  difficultyLevel,
   mapDuration,
   mapStarRange,
   usePublicData,
@@ -524,7 +524,10 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
               <h2 id="official-difficulties-title">{c('difficultyPreview')}</h2>
               <span>{c('fullPreviewCount', { count: data.difficulties.length })}</span>
             </div>
-            <div className="public-official-difficulty-layout">
+            <div
+              className="public-official-difficulty-layout"
+              data-single={data.difficulties.length === 1 ? true : undefined}
+            >
               <div
                 className="public-official-difficulty-list"
                 role="group"
@@ -539,7 +542,7 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
                     onClick={() => choose(map.official_id)}
                     style={
                       {
-                        '--difficulty-color': `var(--difficulty-${difficultyLevel(map.stars)})`,
+                        ...difficultyStyle(map.stars),
                       } as CSSProperties
                     }
                   >
@@ -582,6 +585,8 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
                 </dl>
                 {selected.local_id !== undefined ? (
                   <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() =>
                       document.getElementById('server-scores')?.scrollIntoView({ block: 'start' })
                     }

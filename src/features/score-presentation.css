@@ -1270,3 +1270,168 @@ html.light .profile-page .profile-score-artwork img {
     margin: 0;
   }
 }
+
+/* Score detail: cover banner, grade and compact judgement grid */
+.score-detail-page .score-detail-header {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.score-detail-page .score-detail-header > :not(.score-detail-cover) {
+  position: relative;
+  z-index: 1;
+}
+
+.score-detail-page .score-detail-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.score-detail-page .score-detail-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.38;
+}
+
+.score-detail-page .score-detail-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--surface-strong) 8%,
+    color-mix(in srgb, var(--surface-strong) 55%, transparent) 60%,
+    color-mix(in srgb, var(--surface-strong) 80%, transparent)
+  );
+}
+
+.score-detail-page .score-detail-header:has(.score-detail-grade) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.score-detail-page .score-detail-grade {
+  display: grid;
+  place-items: center;
+  min-width: 84px;
+  height: 84px;
+  padding-inline: 12px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--status-info) 16%, var(--solid-surface));
+  color: var(--status-info);
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.score-detail-page .score-detail-grade:is([data-grade='ss'], [data-grade='s']) {
+  background: color-mix(in srgb, var(--grade-gold) 16%, var(--solid-surface));
+  color: var(--grade-gold);
+}
+
+.score-detail-page .score-detail-grade:is([data-grade='ssh'], [data-grade='sh']) {
+  background: color-mix(in srgb, var(--grade-silver) 16%, var(--solid-surface));
+  color: var(--grade-silver);
+}
+
+.score-detail-page .score-detail-grade[data-grade='a'] {
+  background: color-mix(in srgb, var(--status-success) 16%, var(--solid-surface));
+  color: var(--status-success);
+}
+
+.score-detail-page .score-detail-grade[data-grade='f'] {
+  background: color-mix(in srgb, var(--destructive) 16%, var(--solid-surface));
+  color: var(--destructive);
+}
+
+.score-detail-page .score-detail-judgement[data-judgement='misses'] dd {
+  color: var(--destructive);
+}
+
+.score-detail-page .score-detail-values > div:first-child dd {
+  font-size: 28px;
+}
+
+@media (max-width: 720px) {
+  .score-detail-page .score-detail-header:has(.score-detail-grade) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .score-detail-page .score-detail-header:has(.score-detail-grade) .score-performance {
+    grid-column: 1 / -1;
+  }
+  .score-detail-page .score-detail-grade {
+    min-width: 64px;
+    height: 64px;
+    font-size: 30px;
+  }
+}
+
+/* The header already blurs the page; a second blur would smear the cover behind the identity block. */
+.score-detail-page .score-detail-identity {
+  backdrop-filter: none;
+}
+
+/* Mod labels wrap only between mods, never inside an acronym. */
+.score-record-table .score-record-mods {
+  max-width: none;
+  min-width: 128px;
+}
+.score-record-table .score-mod-summary {
+  flex-wrap: wrap;
+}
+.score-record-table .score-mod-labels {
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+/* Map leaderboards already show the map, so each row is player + details. */
+.score-record-table .score-table-leaderboard .score-record-identity {
+  min-width: 220px;
+}
+.score-record-table .score-table-leaderboard .score-record-player {
+  align-items: center;
+  margin-bottom: 0;
+}
+.score-record-table .score-table-leaderboard .score-record-meta {
+  margin-top: 6px;
+  padding-inline-start: 40px;
+}
+.score-record-table .score-record-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: inherit;
+}
+.score-record-table .score-record-detail-link svg {
+  width: 11px;
+  height: 11px;
+}
+.score-record-table .score-record-detail-link:hover {
+  color: var(--readable-accent);
+}
+
+/* Primary judgements get a fixed four-column row; the rest sit quieter beneath. */
+.score-detail-page .score-detail-judgements dl:first-of-type {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.score-detail-page .score-detail-judgements dl.score-detail-secondary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: -6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.score-detail-page .score-detail-secondary .score-detail-judgement dd {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--secondary-text);
+}
+@media (max-width: 560px) {
+  .score-detail-page .score-detail-judgements dl:first-of-type,
+  .score-detail-page .score-detail-judgements dl.score-detail-secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

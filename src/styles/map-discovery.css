@@ -1682,3 +1682,115 @@
     animation: none;
   }
 }
+
+/* Detail pages: inline back link and wide cover banner */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.back-link svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.public-official-header {
+  grid-template-columns: minmax(0, 1fr);
+}
+.public-official-header > .map-artwork {
+  width: 100%;
+  height: clamp(130px, 17vw, 210px);
+  border-radius: 0;
+}
+.public-official-title {
+  padding: 20px 24px 22px;
+}
+
+/* Star colours follow the osu-web difficulty spectrum; lift/sink keep text readable per theme. */
+.difficulty-rating,
+.discovery-detail-metadata > div:first-child dd,
+.map-record-list .map-numbers strong,
+.official-search-difficulty-facts > span:first-child,
+.profile-score-stars {
+  color: color-mix(in oklab, var(--difficulty-color), white var(--difficulty-lift, 0%));
+}
+.light .difficulty-rating,
+.light .discovery-detail-metadata > div:first-child dd,
+.light .map-record-list .map-numbers strong,
+.light .official-search-difficulty-facts > span:first-child,
+.light .profile-score-stars {
+  color: color-mix(in oklab, var(--difficulty-color), black var(--difficulty-sink, 0%));
+}
+.difficulty-marker {
+  background: color-mix(in oklab, var(--difficulty-color), white var(--difficulty-lift, 0%));
+}
+.light .difficulty-marker {
+  background: color-mix(in oklab, var(--difficulty-color), black var(--difficulty-sink, 0%));
+}
+
+/* Skeletons mirror the real card: cover block plus three text lines. */
+.discovery-skeleton:not(.difficulty-loading) span {
+  background:
+    linear-gradient(var(--surface-raised), var(--surface-raised)) 0 0 / 104px 100% no-repeat,
+    linear-gradient(var(--surface-raised), var(--surface-raised)) 124px 26px / 46% 14px no-repeat,
+    linear-gradient(var(--surface-raised), var(--surface-raised)) 124px 52px / 30% 10px no-repeat,
+    linear-gradient(var(--surface-raised), var(--surface-raised)) 124px 74px / 22% 10px no-repeat,
+    var(--surface-strong);
+}
+@media (prefers-reduced-motion: reduce) {
+  .discovery-skeleton span {
+    animation: none;
+  }
+}
+
+/* A single difficulty needs no picker column. */
+.public-official-difficulty-layout[data-single] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.public-official-difficulty-layout[data-single] .public-official-difficulty-list {
+  display: none;
+}
+
+/* Interaction feedback: cards lift slightly, chips and rows respond to the pointer. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .discovery-set {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .discovery-set:hover,
+  .discovery-set:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgb(0 0 0 / 0.28);
+  }
+  .difficulty-chip {
+    transition:
+      background-color 140ms ease-out,
+      border-color 140ms ease-out;
+  }
+}
+
+/* Star ratings are badges filled with the osu-web spectrum colour. */
+.difficulty-rating,
+.light .difficulty-rating,
+.map-record-list .map-numbers strong,
+.light .map-record-list .map-numbers strong {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--difficulty-color);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
+  color: var(--difficulty-text, #000);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.difficulty-rating svg,
+.map-record-list .map-numbers strong svg {
+  width: 10px;
+  height: 10px;
+  fill: currentColor;
+}
+
+/* Roomier hit area; hover feedback comes from the shared compact-record-action layer. */
+.discovery-difficulty-trigger {
+  padding-inline: 12px;
+}

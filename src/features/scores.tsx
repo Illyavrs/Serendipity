@@ -31,7 +31,9 @@ export function ScoreTable({
       role="region"
       aria-label={profileBest ? p('best') : c('tableScroll')}
     >
-      <table className={`data-table score-table${profileBest ? ' profile-best-score-table' : ''}`}>
+      <table
+        className={`data-table score-table${leaderboard && !profileBest ? ' score-table-leaderboard' : ''}${profileBest ? ' profile-best-score-table' : ''}`}
+      >
         <thead>
           <tr>
             {(leaderboard || profileBest) && (
@@ -107,20 +109,31 @@ export function ScoreTable({
                       <span>{score.username}</span>
                     </Link>
                   )}
-                  <Link href={`/scores/${score.id}`} className="score-title">
-                    <span className="score-record-title-line">
-                      {score.title}
-                      <ArrowUpRight aria-hidden="true" />
-                    </span>
-                    <span className="score-record-version">{score.version}</span>
-                  </Link>
+                  {!leaderboard && (
+                    <Link href={`/scores/${score.id}`} className="score-title">
+                      <span className="score-record-title-line">
+                        {score.title}
+                        <ArrowUpRight aria-hidden="true" />
+                      </span>
+                      <span className="score-record-version">{score.version}</span>
+                    </Link>
+                  )}
                   <div className="score-record-meta">
                     {score.score_variant === 'relax' && (
                       <Badge variant="secondary">{c('relax')}</Badge>
                     )}
-                    <time dateTime={score.created_at}>
-                      {f.dateTime(new Date(score.created_at), { dateStyle: 'medium' })}
-                    </time>
+                    {leaderboard ? (
+                      <Link href={`/scores/${score.id}`} className="score-record-detail-link">
+                        <time dateTime={score.created_at}>
+                          {f.dateTime(new Date(score.created_at), { dateStyle: 'medium' })}
+                        </time>
+                        <ArrowUpRight aria-hidden="true" />
+                      </Link>
+                    ) : (
+                      <time dateTime={score.created_at}>
+                        {f.dateTime(new Date(score.created_at), { dateStyle: 'medium' })}
+                      </time>
+                    )}
                     {(leaderboard || profileBest) && (
                       <span title={p('scoreRaw')}>{f.number(score.score)}</span>
                     )}

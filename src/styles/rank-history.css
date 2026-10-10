@@ -328,3 +328,34 @@
     gap: 8px;
   }
 }
+
+/* Hover readout that follows the nearest observation. */
+.rank-history-tip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 1px;
+  min-width: 96px;
+  padding: 7px 10px;
+  border: 1px solid var(--divider-strong);
+  border-radius: calc(var(--radius) * 0.5);
+  background: var(--solid-surface-raised);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.35);
+  font-size: 11px;
+  color: var(--secondary-text);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+  white-space: nowrap;
+}
+.rank-history-tip strong {
+  color: var(--foreground);
+  font-size: 14px;
+}
+.rank-history-point {
+  transition: r 120ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rank-history-point {
+    transition: none;
+  }
+}

@@ -1,5 +1,6 @@
 'use client';
 
+import { difficultyStyle } from '@/lib/difficulty-color';
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Popover } from 'radix-ui';
 import { useTranslations } from 'next-intl';
@@ -7,7 +8,7 @@ import { Star, RefreshCw } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { useNavigationProgress } from '@/components/navigation-motion';
 import { Button } from '@/components/ui/button';
-import { difficultyLevel, type DiscoverySet } from './map-discovery';
+import { type DiscoverySet } from './map-discovery';
 import type { OfficialBeatmapset } from '@/lib/types';
 import { MapStatus } from './map-status';
 
@@ -119,7 +120,7 @@ export function MapCardPreview(
                 key={map.official_id ?? map.id ?? index}
                 style={
                   {
-                    '--difficulty-color': `var(--difficulty-${difficultyLevel(map.stars)})`,
+                    ...difficultyStyle(map.stars),
                   } as CSSProperties
                 }
               />
@@ -182,7 +183,7 @@ export function MapCardPreview(
                 key={map.official_id ?? map.id ?? index}
                 style={
                   {
-                    '--difficulty-color': `var(--difficulty-${difficultyLevel(map.stars)})`,
+                    ...difficultyStyle(map.stars),
                   } as CSSProperties
                 }
               >
