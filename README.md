@@ -24,7 +24,7 @@ Parent: [Illyavrs/Illyaverse](https://github.com/Illyavrs/Illyaverse).
   glass surfaces and self-hosted Nunito, TaiwanPearl and Zen Maru Gothic fonts.
 
 Client verification and deployment status are tracked in the parent's
-[current integration record](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/reference/release-readiness.md).
+[current integration record](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/status.md).
 
 ## Develop
 
@@ -39,7 +39,7 @@ npm run dev --workspace @illyaverse/serendipity
 Open [http://localhost:3000](http://localhost:3000). The website forwards
 `/api/v1` and `/media` to Sanctuary through `API_INTERNAL_URL`, which defaults
 to `http://127.0.0.1:8080`. Start the backend and database using the parent's
-[architecture guide](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/deploy/architecture.md).
+[architecture guide](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/architecture.md).
 
 ```sh
 npm run typecheck --workspace @illyaverse/serendipity
@@ -55,15 +55,15 @@ configuration and integration tooling. Docker builds use its root as their conte
 and include its documentation. A standalone clone does not include those
 shared inputs or a complete server environment.
 
-Follow the parent's [deployment guide](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/deploy/deployment.md) for a complete
-local or public server. See the [repository guide](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/deploy/repository-layout.md)
+Follow the parent's [deployment guide](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/deployment.md) for a complete
+local or public server. See the [repository guide](https://github.com/Illyavrs/Illyaverse/blob/main/apps/docs/content/docs/architecture.md)
 for submodule workflows and [DESIGN.md](https://github.com/Illyavrs/Illyaverse/blob/main/DESIGN.md) for the product design.
 
 ## License and contributions
 
 Serendipity is licensed under the [MIT License](LICENSE). Fonts and other
 bundled assets retain their own licenses and notices; preserve their files
-and attribution as described in the parent's [font guide](https://github.com/Illyavrs/Illyaverse/blob/main/docs/fonts.md).
+and attribution as described in the parent's font guide.
 
 Implementations are original. Follow [AGENTS.md](AGENTS.md) and use scoped
 Conventional Commits, such as `feat(serendipity): add profile editor`.

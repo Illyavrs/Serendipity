@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Illyaverse development
 
-All implementation is original. Reference projects may inform protocol behavior and architecture; do not copy their source. Prefer primary upstream documentation and record important protocol assumptions in apps/docs/content/docs/reference/protocol-compatibility.md.
+All implementation is original. Reference projects may inform protocol behavior and architecture; do not copy their source. Prefer primary upstream documentation and record important protocol assumptions in apps/docs/content/docs/status.md.
 
 Keep honest capability states: implemented, integration-tested, client-tested, and pending are different. Never mark stock stable/lazer connectivity complete without real client verification. Do not render invented activity as live server data.
 
