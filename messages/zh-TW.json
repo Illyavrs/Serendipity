@@ -811,7 +811,7 @@
       "按「啟動」，遊戲開啟後使用本站的帳號密碼登入。",
       "遊戲關閉後，Kaleidoscope 會自動清理連線用的檔案。"
     ],
-    "lazerNote": "你的圖譜庫與遊戲設定會沿用原本的；只有帳號登入資訊會分開保存。",
+    "lazerNote": "你的圖譜庫與遊戲設定會沿用原本的；只有帳號登入資訊會分開保存。Linux 目前支援 lazer（選擇 osu.AppImage），仍在實驗階段。",
     "download": "下載 Kaleidoscope",
     "downloadUnavailable": "下載連結尚未公開，請向伺服器管理員索取。",
     "command": "-devserver {domain}",

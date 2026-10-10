@@ -811,7 +811,7 @@
       "Press Launch, then sign in with your account from this site.",
       "When you close the game, Kaleidoscope cleans up the connection files automatically."
     ],
-    "lazerNote": "Your beatmap library and game settings are reused. Only the account sign-in data is kept separate.",
+    "lazerNote": "Your beatmap library and game settings are reused. Only the account sign-in data is kept separate. Linux supports lazer (choose osu.AppImage) and is still experimental.",
     "download": "Download Kaleidoscope",
     "downloadUnavailable": "The download link is not public yet. Ask the server administrator.",
     "command": "-devserver {domain}",
