@@ -92,6 +92,7 @@ export type Preferences = {
   border_radius: number;
   locale?: string;
   pm_friends_only?: boolean;
+  bancho_rank?: boolean;
 };
 export type BeatmapDifficulty = {
   id: number;

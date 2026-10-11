@@ -305,7 +305,7 @@ export function ResetPasswordPage() {
               name="password"
               type="password"
               autoComplete="new-password"
-              minLength={12}
+              minLength={8}
               maxLength={128}
               required
               disabled={busy}
@@ -322,7 +322,7 @@ export function ResetPasswordPage() {
               name="confirm_password"
               type="password"
               autoComplete="new-password"
-              minLength={12}
+              minLength={8}
               maxLength={128}
               required
               disabled={busy}

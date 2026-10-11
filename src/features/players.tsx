@@ -7,6 +7,7 @@ import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import useSWR, { unstable_serialize, useSWRConfig } from 'swr';
 import { ArrowUpRight, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { RoleBadge } from '@/components/role-badge';
 import {
@@ -19,8 +20,17 @@ import {
   Avatar,
 } from '@/components/common';
 import { useSession } from '@/components/providers';
-import { ApiError, fetcher } from '@/lib/api';
-import type { Beatmap, BestScorePage, Leader, Page, User, Score, ScoreVariant } from '@/lib/types';
+import { api, ApiError, fetcher } from '@/lib/api';
+import type {
+  Beatmap,
+  BestScorePage,
+  Leader,
+  Page,
+  Preferences,
+  User,
+  Score,
+  ScoreVariant,
+} from '@/lib/types';
 import { ProfileScoreList } from '@/components/profile-score-list';
 import { MapRows } from './beatmaps';
 import { RelationshipActions } from './social';
@@ -261,6 +271,58 @@ export function ProfileScoreCollectionControl({
 
 function isProfileAccessError(error: unknown): error is ApiError {
   return error instanceof ApiError && [401, 403, 404].includes(error.status);
+}
+
+function BanchoRankToggle({
+  variant,
+  onChanged,
+}: {
+  variant: ScoreVariant;
+  onChanged: () => void;
+}) {
+  const t = useTranslations('profile');
+  const { data, mutate } = useSWR<Preferences>('/me/preferences', fetcher);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  async function save(checked: boolean) {
+    setBusy(true);
+    setFailed(false);
+    try {
+      await api('/me/preferences', {
+        method: 'PATCH',
+        body: JSON.stringify({ bancho_rank: checked }),
+      });
+      await mutate();
+      onChanged();
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="profile-bancho-rank">
+      <label htmlFor="bancho_rank">
+        <Checkbox
+          id="bancho_rank"
+          className="mt-0.5"
+          checked={data?.bancho_rank === true}
+          disabled={!data || busy}
+          aria-describedby="bancho-rank-hint"
+          onCheckedChange={(checked) => void save(checked === true)}
+        />
+        <span>{t('banchoRank')}</span>
+      </label>
+      <p id="bancho-rank-hint" className="hint">
+        {variant === 'relax' ? t('banchoRankRelax') : t('banchoRankHint')}
+      </p>
+      {failed ? (
+        <p className="form-error" role="alert">
+          {t('banchoRankError')}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 export function PlayerPage({ id }: { id: number }) {
@@ -510,6 +572,9 @@ export function PlayerPage({ id }: { id: number }) {
                     </dd>
                   </div>
                 </dl>
+                {user?.id === id && (
+                  <BanchoRankToggle variant={variant} onChanged={() => void mutate()} />
+                )}
               </div>
             </section>
             <nav

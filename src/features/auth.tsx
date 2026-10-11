@@ -78,7 +78,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
               name="password"
               type="password"
               autoComplete={register ? 'new-password' : 'current-password'}
-              minLength={register ? 12 : undefined}
+              minLength={register ? 8 : undefined}
               maxLength={128}
               required
             />

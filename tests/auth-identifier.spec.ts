@@ -172,7 +172,7 @@ test('registration retains the 24-character username boundary and separate email
   await expect(email).toHaveAttribute('autocomplete', 'email');
   await expect(email).toHaveAttribute('maxlength', '254');
   await expect(password).toHaveAttribute('autocomplete', 'new-password');
-  await expect(password).toHaveAttribute('minlength', '12');
+  await expect(password).toHaveAttribute('minlength', '8');
   await expect(password).toHaveAttribute('maxlength', '128');
   await username.fill('r'.repeat(25));
   await expect(username).toHaveValue('r'.repeat(24));
