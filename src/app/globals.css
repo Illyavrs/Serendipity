@@ -3825,3 +3825,14 @@ input[type='checkbox'] {
   margin-left: auto;
   height: 32px;
 }
+.admin-rename {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.admin-rename .hint {
+  flex-basis: 100%;
+  margin: 0;
+}

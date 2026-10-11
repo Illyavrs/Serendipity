@@ -11,7 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppearance, useSession } from '@/components/providers';
 import { PageHeading, Protected, Avatar, Loading, LoadError } from '@/components/common';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { isLocale } from '@/i18n/config';
 import { RelationshipList } from './social';
 import { EmailVerificationControls } from './recovery';
@@ -561,6 +561,85 @@ function ProfileControls() {
     </form>
   );
 }
+function UsernameControls() {
+  const t = useTranslations('settings');
+  const c = useTranslations('common');
+  const { user, refresh } = useSession();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    setBusy(true);
+    setError('');
+    setSaved(false);
+    try {
+      await api('/me/username', { method: 'POST', body: JSON.stringify(Object.fromEntries(data)) });
+      form.reset();
+      setSaved(true);
+      await refresh();
+    } catch (failure) {
+      const known = ['username_taken', 'username_reserved', 'invalid_password'];
+      setError(
+        failure instanceof ApiError && failure.code === 'username_cooldown'
+          ? failure.message
+          : failure instanceof ApiError && known.includes(failure.code ?? '')
+            ? t(`usernameError_${failure.code}`)
+            : failure instanceof ApiError && failure.status === 400
+              ? t('usernameInvalid')
+              : c('serviceError'),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <form className="password-form" onSubmit={submit}>
+      <h2>{t('username')}</h2>
+      <p className="hint">{t('usernameCurrent', { name: user?.username ?? '' })}</p>
+      <div className="field">
+        <label htmlFor="new_username">{t('newUsername')}</label>
+        <Input
+          name="username"
+          id="new_username"
+          autoComplete="username"
+          minLength={3}
+          maxLength={24}
+          pattern="[A-Za-z0-9_\- ]{3,24}"
+          required
+        />
+        <p className="hint">{t('usernameHint')}</p>
+      </div>
+      <div className="field">
+        <label htmlFor="username_password">{t('currentPassword')}</label>
+        <Input
+          name="current_password"
+          id="username_password"
+          type="password"
+          autoComplete="current-password"
+          maxLength={128}
+          required
+        />
+      </div>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      {saved && (
+        <p className="form-success" role="status">
+          {t('usernameChanged')}
+        </p>
+      )}
+      <Button disabled={busy}>
+        {busy && <LoaderCircle className="spin" />}
+        {t('username')}
+      </Button>
+    </form>
+  );
+}
 function PasswordControls() {
   const t = useTranslations('settings');
   const c = useTranslations('common');
@@ -725,6 +804,7 @@ function SettingsContent() {
               )}
             </div>
             <Protected>
+              <UsernameControls />
               <PasswordControls />
               <AccountSessionControls key={user?.id} />
             </Protected>

@@ -682,7 +682,16 @@
     "backgroundColorHint": "単色の背景を選択します。保存済みの画像は引き続き使えます。",
     "colorPicker": "{label}：色を選択",
     "colorHex": "{label}：HEX",
-    "invalidColor": "#F28EB6 のような6桁の HEX カラーを入力してください。"
+    "invalidColor": "#F28EB6 のような6桁の HEX カラーを入力してください。",
+    "username": "ユーザー名の変更",
+    "usernameCurrent": "現在の名前:{name}",
+    "newUsername": "新しいユーザー名",
+    "usernameHint": "英数字、スペース、アンダースコア、ハイフンで3〜24文字。30日に1回変更できます。古い名前は90日間あなた用に確保されます。接続中のstableはログアウトされ、再ログインが必要です。",
+    "usernameChanged": "ユーザー名を更新しました。",
+    "usernameInvalid": "この形式の名前は使えません。",
+    "usernameError_username_taken": "このユーザー名は既に使われています。",
+    "usernameError_username_reserved": "この名前は解放されたばかりで、元の使用者のために確保されています。",
+    "usernameError_invalid_password": "パスワードが正しくありません。"
   },
   "chat": {
     "title": "チャット",
@@ -837,7 +846,10 @@
     "locale_en": "English",
     "locale_ja": "日本語",
     "badgeIcon": "バッジアイコン",
-    "badgeIconDefault": "既定"
+    "badgeIconDefault": "既定",
+    "rename": "名前変更",
+    "renamed": "ユーザー名を更新しました。",
+    "renameHint": "スタッフによる変更はクールダウンの対象外です。古い名前は90日間確保され、そのプレイヤーのstableはログアウトされます。"
   },
   "connect": {
     "title": "接続ガイド",

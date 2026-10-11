@@ -296,12 +296,34 @@ function UserActions({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [stale, setStale] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [newName, setNewName] = useState('');
   const revokeButton = useRef<HTMLButtonElement>(null);
   const moderate = hasPermission(permissions, 'users.moderate') && player.can_moderate;
   const revoke = hasPermission(permissions, 'users.sessions.revoke') && player.can_revoke_sessions;
   function cancel() {
     setConfirm(false);
     queueMicrotask(() => revokeButton.current?.focus());
+  }
+  async function rename() {
+    if (busy || stale || !newName.trim()) return;
+    setBusy(true);
+    setError('');
+    setSuccess('');
+    try {
+      await api(`/admin/users/${player.id}/username`, {
+        method: 'POST',
+        body: JSON.stringify({ username: newName.trim() }),
+      });
+      setSuccess(t('renamed'));
+      setRenaming(false);
+      setNewName('');
+      setStale(!(await changed()));
+    } catch (error) {
+      setError(describeError(error));
+    } finally {
+      setBusy(false);
+    }
   }
   async function write(revoking = false) {
     if (busy || stale) return;
@@ -339,6 +361,21 @@ function UserActions({
             {t(player.is_restricted ? 'unrestrict' : 'restrict')}
           </Button>
         )}
+        {moderate && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy || stale}
+            aria-expanded={renaming}
+            onClick={() => {
+              setRenaming((open) => !open);
+              setError('');
+              setSuccess('');
+            }}
+          >
+            {t('rename')}
+          </Button>
+        )}
         {revoke && (
           <Button
             ref={revokeButton}
@@ -357,6 +394,28 @@ function UserActions({
           </Button>
         )}
       </div>
+      {renaming && (
+        <form
+          className="admin-rename"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void rename();
+          }}
+        >
+          <Input
+            aria-label={t('rename')}
+            value={newName}
+            minLength={3}
+            maxLength={24}
+            placeholder={player.username}
+            onChange={(event) => setNewName(event.target.value)}
+          />
+          <Button size="sm" disabled={busy || stale || newName.trim().length < 3}>
+            {t('rename')}
+          </Button>
+          <p className="hint">{t('renameHint')}</p>
+        </form>
+      )}
       {!moderate && !revoke && <p className="hint admin-access-hint">{t('actionsReadOnly')}</p>}
       {confirm && (
         <InlineConfirm

@@ -682,7 +682,16 @@
     "backgroundColorHint": "Choose a solid background color. Your saved image stays available.",
     "colorPicker": "{label}: choose color",
     "colorHex": "{label}: HEX",
-    "invalidColor": "Enter a six-digit HEX color, for example #F28EB6."
+    "invalidColor": "Enter a six-digit HEX color, for example #F28EB6.",
+    "username": "Change username",
+    "usernameCurrent": "Current name: {name}",
+    "newUsername": "New username",
+    "usernameHint": "3–24 letters, numbers, spaces, underscores or hyphens. You can change it once every 30 days; your old name is reserved for you for 90 days. Connected stable clients are signed out and must sign in again.",
+    "usernameChanged": "Username updated.",
+    "usernameInvalid": "That name format is not allowed.",
+    "usernameError_username_taken": "That username is already taken.",
+    "usernameError_username_reserved": "That name was just released and is reserved for its previous owner.",
+    "usernameError_invalid_password": "The password is incorrect."
   },
   "chat": {
     "title": "Chat",
@@ -837,7 +846,10 @@
     "locale_en": "English",
     "locale_ja": "日本語",
     "badgeIcon": "Badge icon",
-    "badgeIconDefault": "Default"
+    "badgeIconDefault": "Default",
+    "rename": "Rename",
+    "renamed": "Username updated.",
+    "renameHint": "Staff renames skip the cooldown; the old name is reserved for 90 days and the player's stable client is signed out."
   },
   "connect": {
     "title": "How to connect",

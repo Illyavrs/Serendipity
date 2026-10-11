@@ -682,7 +682,16 @@
     "backgroundColorHint": "選擇純色背景；已儲存的圖片仍可切換使用。",
     "colorPicker": "{label}：選擇顏色",
     "colorHex": "{label}：HEX 色碼",
-    "invalidColor": "請輸入六位 HEX 色碼，例如 #F28EB6。"
+    "invalidColor": "請輸入六位 HEX 色碼，例如 #F28EB6。",
+    "username": "變更用戶名稱",
+    "usernameCurrent": "目前名稱:{name}",
+    "newUsername": "新的用戶名稱",
+    "usernameHint": "3–24 個英數字、空格、底線或連字號。每 30 天可變更一次;舊名稱會替你保留 90 天。已連線的 stable 會被登出,需要重新登入。",
+    "usernameChanged": "用戶名稱已更新。",
+    "usernameInvalid": "名稱格式不符。",
+    "usernameError_username_taken": "這個名稱已被使用。",
+    "usernameError_username_reserved": "這個名稱剛被釋出,暫時保留給原本的使用者。",
+    "usernameError_invalid_password": "密碼不正確。"
   },
   "chat": {
     "title": "聊天",
@@ -837,7 +846,10 @@
     "locale_en": "English",
     "locale_ja": "日本語",
     "badgeIcon": "徽章圖示",
-    "badgeIconDefault": "預設"
+    "badgeIconDefault": "預設",
+    "rename": "改名",
+    "renamed": "已更新用戶名稱。",
+    "renameHint": "管理員改名不受冷卻限制;舊名稱會保留 90 天,該玩家的 stable 連線會被登出。"
   },
   "connect": {
     "title": "連線教學",
