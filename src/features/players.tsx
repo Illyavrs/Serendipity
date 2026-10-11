@@ -33,6 +33,7 @@ import type {
 } from '@/lib/types';
 import { ProfileScoreList } from '@/components/profile-score-list';
 import { MapRows } from './beatmaps';
+import { RankingsTabs } from './top-plays';
 import { RelationshipActions } from './social';
 import { ScoreVariantControl } from '@/components/score-selection';
 import { RankHistoryPanel } from './rank-history';
@@ -120,6 +121,7 @@ export function RankingsPage() {
   return (
     <div className="page-container rankings-page">
       <PageHeading title={t('title')} description={t('subtitle')} />
+      <RankingsTabs active="players" />
       <section className="rankings-records glass" aria-label={t('title')}>
         <div className="filter-bar rankings-toolbar">
           <GameMode

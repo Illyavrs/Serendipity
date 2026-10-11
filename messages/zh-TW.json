@@ -503,7 +503,16 @@
     "playCount": "遊玩次數",
     "emptyTitle": "目前沒有排名玩家",
     "emptyDescription": "玩家的排名成績經核准並計入統計後，會出現在排行榜。",
-    "modeNotice": "pp、排名與統計依遊戲模式和一般／RX 分區計算。"
+    "modeNotice": "pp、排名與統計依遊戲模式和一般／RX 分區計算。",
+    "playersTab": "玩家排名",
+    "topPlaysTab": "Top Play",
+    "topPlaysTitle": "Top Play 排行榜",
+    "topPlaysSubtitle": "依遊戲模式與一般／RX 分區，查看全伺服器 pp 最高的單筆成績（每位玩家每張圖只計最高一筆）。",
+    "beatmap": "圖譜",
+    "mods": "Mods",
+    "playedAt": "遊玩時間",
+    "topPlaysEmptyTitle": "目前沒有 Top Play",
+    "topPlaysEmptyDescription": "已驗證並計入排名的成績會出現在這裡。"
   },
   "profile": {
     "banchoRank": "與 Bancho 比較排名",

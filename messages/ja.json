@@ -503,7 +503,16 @@
     "playCount": "プレイ回数",
     "emptyTitle": "ランキング対象のプレイヤーはいません",
     "emptyDescription": "ランキング対象のスコアが承認され、統計に集計されるとプレイヤーが表示されます。",
-    "modeNotice": "pp・順位・統計は、ルールセットと通常／RX の区分ごとに集計されます。"
+    "modeNotice": "pp・順位・統計は、ルールセットと通常／RX の区分ごとに集計されます。",
+    "playersTab": "プレイヤー",
+    "topPlaysTab": "トッププレイ",
+    "topPlaysTitle": "トッププレイ",
+    "topPlaysSubtitle": "ルールセットと通常／RX別に、サーバー全体でpp上位の単一スコアを表示します（プレイヤーごと・譜面ごとの最高記録）。",
+    "beatmap": "譜面",
+    "mods": "Mods",
+    "playedAt": "プレイ日時",
+    "topPlaysEmptyTitle": "トッププレイはまだありません",
+    "topPlaysEmptyDescription": "検証済みでランキング対象のスコアがここに表示されます。"
   },
   "profile": {
     "banchoRank": "Bancho と比較する",

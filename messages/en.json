@@ -503,7 +503,16 @@
     "playCount": "Play count",
     "emptyTitle": "No ranked players yet",
     "emptyDescription": "Players appear here after an approved ranked score is included in their statistics.",
-    "modeNotice": "PP, ranks and statistics are separate for each ruleset and Normal/RX category."
+    "modeNotice": "PP, ranks and statistics are separate for each ruleset and Normal/RX category.",
+    "playersTab": "Players",
+    "topPlaysTab": "Top plays",
+    "topPlaysTitle": "Top plays",
+    "topPlaysSubtitle": "The highest-pp individual scores on the server, by ruleset and Vanilla/RX (best score per player and map).",
+    "beatmap": "Beatmap",
+    "mods": "Mods",
+    "playedAt": "Played",
+    "topPlaysEmptyTitle": "No top plays yet",
+    "topPlaysEmptyDescription": "Verified, ranked scores appear here."
   },
   "profile": {
     "banchoRank": "Compare me with Bancho",
