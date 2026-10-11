@@ -384,7 +384,7 @@
 .home-community .home-score-meta,
 .home-community .home-score-secondary {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 4px 10px;
   margin-top: 5px;
@@ -396,10 +396,18 @@
   color: var(--foreground);
   font-weight: 800;
 }
+/* Same mod summary as the best-performance tables; centred so the origin icon never lifts the text. */
 .home-community .home-score-mods {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+}
+.home-community .home-score-mods .score-mod-labels {
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.6;
+  white-space: nowrap;
 }
 .home-community .home-score-secondary {
   margin-top: 3px;

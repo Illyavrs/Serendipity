@@ -919,3 +919,15 @@
   gap: 0.5rem;
   font-weight: 600;
 }
+
+/* Top plays list the map, player and every score detail, so they get more width than player rankings. */
+.page-container.top-plays-page {
+  max-width: 1480px;
+}
+.top-plays-page .rankings-tabs {
+  margin-bottom: 4px;
+}
+.top-plays-score-table .score-record-meta .score-record-player {
+  color: var(--foreground);
+  font-weight: 800;
+}

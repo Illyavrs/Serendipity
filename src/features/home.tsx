@@ -226,9 +226,9 @@ export function HomePage() {
                               {modes[score.mode]} ·{' '}
                               {c(score.score_variant === 'relax' ? 'relax' : 'vanilla')}
                             </span>
-                            <span className="home-score-mods">
+                            <span className="home-score-mods score-mod-summary">
                               <ScoreOrigin client={score.client} />
-                              <span>
+                              <span className="score-mod-labels">
                                 {mods.labels.join(' ') || 'NM'}
                                 {mods.unknownBits ? ` + ${mods.unknownBits}` : ''}
                               </span>

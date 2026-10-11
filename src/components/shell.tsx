@@ -297,6 +297,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
             {t('settings')}
             <ArrowUpRight />
           </Link>
+          <a href="https://github.com/Illyavrs/Illyaverse" target="_blank" rel="noreferrer">
+            GitHub
+            <ArrowUpRight />
+          </a>
           <a href="https://github.com/ppy/osu" target="_blank" rel="noreferrer">
             osu!
             <ArrowUpRight />

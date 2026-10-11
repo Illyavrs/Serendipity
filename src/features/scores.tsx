@@ -14,29 +14,34 @@ export function ScoreTable({
   leaderboard = false,
   orderedBy,
   profileBest = false,
+  topPlays = false,
 }: {
   scores: Score[];
   leaderboard?: boolean;
   orderedBy?: ScoreBoardOrder;
   profileBest?: boolean;
+  /** Server-wide best plays: map first, with the player on the detail line. */
+  topPlays?: boolean;
 }) {
   const c = useTranslations('common');
   const p = useTranslations('profile');
   const t = useTranslations('scores');
   const f = useFormatter();
+  // Both best-play lists share the profile "best performance" number formatting.
+  const bestList = profileBest || topPlays;
   return (
     <div
       className="table-scroll score-record-table"
       tabIndex={0}
       role="region"
-      aria-label={profileBest ? p('best') : c('tableScroll')}
+      aria-label={bestList ? p('best') : c('tableScroll')}
     >
       <table
-        className={`data-table score-table${leaderboard && !profileBest ? ' score-table-leaderboard' : ''}${profileBest ? ' profile-best-score-table' : ''}`}
+        className={`data-table score-table${leaderboard && !profileBest ? ' score-table-leaderboard' : ''}${profileBest ? ' profile-best-score-table' : ''}${topPlays ? ' top-plays-score-table' : ''}`}
       >
         <thead>
           <tr>
-            {(leaderboard || profileBest) && (
+            {(leaderboard || bestList) && (
               <th scope="col" className="score-record-number">
                 {t('rankPosition')}
               </th>
@@ -45,7 +50,7 @@ export function ScoreTable({
               {leaderboard ? c('username') : c('score')}
             </th>
             <th scope="col" className="score-record-primary-heading">
-              {profileBest
+              {bestList
                 ? c('pp')
                 : leaderboard
                   ? orderedBy === 'pp'
@@ -70,12 +75,12 @@ export function ScoreTable({
             <th scope="col" className="score-record-number">
               {c('combo')}
             </th>
-            {!profileBest && (!leaderboard || orderedBy !== 'pp') && (
+            {!bestList && (!leaderboard || orderedBy !== 'pp') && (
               <th scope="col" className="score-record-number">
                 pp
               </th>
             )}
-            <th scope="col">{p('verification')}</th>
+            {!topPlays && <th scope="col">{p('verification')}</th>}
             <th scope="col" className="score-record-replay">
               {c('replay')}
             </th>
@@ -92,7 +97,7 @@ export function ScoreTable({
             const verificationKey = scoreVerificationKey(score.verification);
             return (
               <tr key={score.id} data-verification={score.verification}>
-                {(leaderboard || profileBest) && (
+                {(leaderboard || bestList) && (
                   <td className="score-board-position">
                     {typeof score.position === 'number' ? f.number(score.position) : '—'}
                   </td>
@@ -134,7 +139,15 @@ export function ScoreTable({
                         {f.dateTime(new Date(score.created_at), { dateStyle: 'medium' })}
                       </time>
                     )}
-                    {(leaderboard || profileBest) && (
+                    {topPlays && (
+                      <Link
+                        className="score-record-player"
+                        href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
+                      >
+                        {score.username}
+                      </Link>
+                    )}
+                    {(leaderboard || bestList) && (
                       <span title={p('scoreRaw')}>{f.number(score.score)}</span>
                     )}
                   </div>
@@ -142,7 +155,7 @@ export function ScoreTable({
                 <td
                   className={`score-record-primary${leaderboard ? ' score-board-comparison' : ' pp-value'}`}
                 >
-                  {profileBest
+                  {bestList
                     ? f.number(score.pp, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     : leaderboard
                       ? orderedBy === 'pp'
@@ -180,7 +193,7 @@ export function ScoreTable({
                   </span>
                 </td>
                 <td className="score-record-number">
-                  {profileBest
+                  {bestList
                     ? f.number(score.accuracy / 100, {
                         style: 'percent',
                         minimumFractionDigits: 2,
@@ -189,20 +202,22 @@ export function ScoreTable({
                     : `${score.accuracy.toFixed(2)}%`}
                 </td>
                 <td className="score-record-number">
-                  {profileBest ? f.number(score.max_combo) : score.max_combo}x
+                  {bestList ? f.number(score.max_combo) : score.max_combo}x
                 </td>
-                {!profileBest && (!leaderboard || orderedBy !== 'pp') && (
+                {!bestList && (!leaderboard || orderedBy !== 'pp') && (
                   <td className="pp-value score-record-number">{score.pp.toFixed(2)}</td>
                 )}
-                <td>
-                  <Badge
-                    variant="secondary"
-                    className="score-record-verification"
-                    data-verification={score.verification}
-                  >
-                    {verificationKey ? t(verificationKey) : score.verification}
-                  </Badge>
-                </td>
+                {!topPlays && (
+                  <td>
+                    <Badge
+                      variant="secondary"
+                      className="score-record-verification"
+                      data-verification={score.verification}
+                    >
+                      {verificationKey ? t(verificationKey) : score.verification}
+                    </Badge>
+                  </td>
+                )}
                 <td className="score-record-replay">
                   {score.has_replay ? (
                     <Button
