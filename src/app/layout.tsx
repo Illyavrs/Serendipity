@@ -12,6 +12,7 @@ import '@/features/announcements.css';
 import '@/styles/map-discovery.css';
 import '@/styles/controls.css';
 import '@/styles/navigation-motion.css';
+import { BrowserTimeZone } from '@/components/browser-time-zone';
 import { Providers } from '@/components/providers';
 import { Shell } from '@/components/shell';
 export const metadata: Metadata = {
@@ -25,9 +26,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} suppressHydrationWarning>
       <body>
         <NextIntlClientProvider>
-          <Providers>
-            <Shell>{children}</Shell>
-          </Providers>
+          <BrowserTimeZone>
+            <Providers>
+              <Shell>{children}</Shell>
+            </Providers>
+          </BrowserTimeZone>
         </NextIntlClientProvider>
       </body>
     </html>
