@@ -49,7 +49,7 @@
   max-height: min(440px, calc(100dvh - 180px));
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
 }
 .notification-rows {
   margin: 0;

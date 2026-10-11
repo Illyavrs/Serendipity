@@ -1,10 +1,15 @@
 export type Page<T> = { items: T[]; total: number; page: number; page_size: number };
 export type Notification = {
   id: number;
-  kind: 'rank_request_approved' | 'rank_request_rejected' | 'announcement_published';
+  kind:
+    | 'rank_request_approved'
+    | 'rank_request_rejected'
+    | 'announcement_published'
+    | 'private_message'
+    | 'broadcast';
   title: string;
   message: string | null;
-  href: string;
+  href: string | null;
   created_at: string;
   read_at: string | null;
 };

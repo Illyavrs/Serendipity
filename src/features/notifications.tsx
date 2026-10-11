@@ -9,6 +9,8 @@ import {
   Check,
   CheckCheck,
   LoaderCircle,
+  Megaphone,
+  MessageSquare,
   Newspaper,
   RefreshCw,
   Trophy,
@@ -39,11 +41,11 @@ function useNotifications(userId: number, page: number, poll = false) {
     ['notifications', userId, page, PAGE_SIZE],
     () => api<NotificationPage>(`/me/notifications?page=${page}&page_size=${PAGE_SIZE}`),
     {
-      refreshInterval: poll ? 30000 : 0,
+      refreshInterval: poll ? 10000 : 0,
       refreshWhenHidden: false,
       refreshWhenOffline: false,
       revalidateOnFocus: true,
-      focusThrottleInterval: 30000,
+      focusThrottleInterval: 5000,
       shouldRetryOnError: false,
       keepPreviousData: false,
     },
@@ -158,52 +160,70 @@ function NotificationRows({
   const f = useFormatter();
   return (
     <ul className="notification-rows">
-      {items.map((item) => (
-        <li key={item.id} data-unread={!item.read_at}>
-          <span className="notification-kind-icon" aria-hidden="true">
-            {item.kind === 'announcement_published' ? <Newspaper /> : <Trophy />}
-          </span>
-          <div className="notification-record">
-            <Link href={item.href} className="notification-title" onNavigate={close}>
-              {item.title}
-            </Link>
-            {item.message && <p className="notification-message">{item.message}</p>}
-            <div className="notification-meta">
-              <span>{t(item.kind)}</span>
-              <time
-                dateTime={item.created_at}
-                title={f.dateTime(new Date(item.created_at), {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })}
-              >
-                {f.dateTime(new Date(item.created_at), { dateStyle: 'medium' })}
-              </time>
-              {!item.read_at && <span className="notification-unread-label">{t('unread')}</span>}
-            </div>
-          </div>
-          {!item.read_at ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="notification-read-button"
-              aria-label={t('markOne', { title: item.title })}
-              title={t('markRead')}
-              disabled={pending !== null}
-              onClick={() => void markRead(item.id)}
-            >
-              {pending === item.id || pending === 'all' ? (
-                <LoaderCircle className="spin" aria-hidden="true" />
+      {items.map((item) => {
+        const heading =
+          item.kind === 'private_message'
+            ? t('privateMessageTitle', { name: item.title })
+            : item.title;
+        return (
+          <li key={item.id} data-unread={!item.read_at}>
+            <span className="notification-kind-icon" aria-hidden="true">
+              {item.kind === 'announcement_published' ? (
+                <Newspaper />
+              ) : item.kind === 'private_message' ? (
+                <MessageSquare />
+              ) : item.kind === 'broadcast' ? (
+                <Megaphone />
               ) : (
-                <Check aria-hidden="true" />
+                <Trophy />
               )}
-            </Button>
-          ) : (
-            <span className="notification-read-space" aria-hidden="true" />
-          )}
-        </li>
-      ))}
+            </span>
+            <div className="notification-record">
+              {item.href ? (
+                <Link href={item.href} className="notification-title" onNavigate={close}>
+                  {heading}
+                </Link>
+              ) : (
+                <span className="notification-title">{heading}</span>
+              )}
+              {item.message && <p className="notification-message">{item.message}</p>}
+              <div className="notification-meta">
+                <span>{t(item.kind)}</span>
+                <time
+                  dateTime={item.created_at}
+                  title={f.dateTime(new Date(item.created_at), {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })}
+                >
+                  {f.dateTime(new Date(item.created_at), { dateStyle: 'medium' })}
+                </time>
+                {!item.read_at && <span className="notification-unread-label">{t('unread')}</span>}
+              </div>
+            </div>
+            {!item.read_at ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="notification-read-button"
+                aria-label={t('markOne', { title: item.title })}
+                title={t('markRead')}
+                disabled={pending !== null}
+                onClick={() => void markRead(item.id)}
+              >
+                {pending === item.id || pending === 'all' ? (
+                  <LoaderCircle className="spin" aria-hidden="true" />
+                ) : (
+                  <Check aria-hidden="true" />
+                )}
+              </Button>
+            ) : (
+              <span className="notification-read-space" aria-hidden="true" />
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

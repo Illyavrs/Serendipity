@@ -19,10 +19,10 @@
   },
   "notifications": {
     "title": "Notifications",
-    "subtitle": "Ranking request decisions and server announcements.",
+    "subtitle": "Ranking request results, private messages and server announcements.",
     "open": "Notifications, {count} unread",
     "empty": "No notifications",
-    "emptyDescription": "New ranking request decisions and server announcements will appear here.",
+    "emptyDescription": "New ranking request results, private messages and server announcements appear here.",
     "markAll": "Mark all read",
     "markBatch": "Mark {count, number} as read",
     "markRead": "Mark as read",
@@ -33,6 +33,9 @@
     "rank_request_approved": "Ranking request approved",
     "rank_request_rejected": "Ranking request rejected",
     "announcement_published": "Server announcement",
+    "private_message": "Private message",
+    "broadcast": "Server broadcast",
+    "privateMessageTitle": "{name} sent you a private message",
     "markedRead": "Notifications marked as read.",
     "readMore": "More unread notifications remain.",
     "lastPage": "Go to last page"
@@ -758,6 +761,7 @@
     "reject": "Reject",
     "sections": "Administration sections",
     "announcements": "Announcements",
+    "broadcast": "Broadcast",
     "rolesFor": "Roles for {name}",
     "roleLocked": "Unavailable roles and roles outside your access are read only. Existing memberships stay selected.",
     "actionsReadOnly": "No account actions available with your access.",
@@ -1406,5 +1410,28 @@
         "description": "Review ranking requests and nominate beatmaps."
       }
     }
+  },
+  "broadcast": {
+    "title": "Server broadcast",
+    "description": "Send a custom message to every player: as a website notification, in the game chat, or both.",
+    "fieldTitle": "Title",
+    "fieldMessage": "Message",
+    "destinations": "Send to",
+    "toWeb": "Website notification",
+    "toWebHint": "Every unrestricted player receives a notification in the bell menu.",
+    "toGame": "In game",
+    "toGameHint": "Posted to the #announce chat channel that every stable and lazer player can read.",
+    "send": "Send broadcast",
+    "confirm": "Confirm: send to all players",
+    "cancel": "Cancel",
+    "sent": "Sent. {count} players will see the website notification.",
+    "cooldown": "Wait 30 seconds before sending another broadcast.",
+    "forbidden": "You do not have permission to send broadcasts.",
+    "failed": "The broadcast could not be sent. Try again.",
+    "history": "Recent broadcasts",
+    "historyEmpty": "No broadcasts sent yet.",
+    "badgeWeb": "Website",
+    "badgeGame": "In game",
+    "recipients": "{count} recipients"
   }
 }

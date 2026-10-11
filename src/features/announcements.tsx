@@ -1,5 +1,6 @@
 'use client';
 
+import { excerpt, markdownToPlainText } from '@/lib/plain-text';
 import { Markdown } from '@/components/markdown';
 import { Suspense, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
@@ -102,8 +103,7 @@ function AnnouncementRows({
             <AnnouncementMeta announcement={announcement} />
             {!compact && (
               <p className="announcement-excerpt">
-                {announcement.body.replace(/\s+/g, ' ').slice(0, 200)}
-                {announcement.body.length > 200 ? '…' : ''}
+                {excerpt(markdownToPlainText(announcement.body), 200)}
               </p>
             )}
           </li>

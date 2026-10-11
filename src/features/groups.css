@@ -34,7 +34,13 @@
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
-  padding: 6px 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+  transition: background-color 0.15s ease;
+}
+.groups-page .groups-members li:hover {
+  background: color-mix(in srgb, var(--background) 70%, transparent);
 }
 .groups-page .groups-members .player-cell {
   min-width: 0;

@@ -19,10 +19,10 @@
   },
   "notifications": {
     "title": "通知",
-    "subtitle": "ランキング申請の結果とサーバーからのお知らせ。",
+    "subtitle": "ランク申請の結果、プライベートメッセージ、サーバーのお知らせ。",
     "open": "通知、未読 {count} 件",
     "empty": "通知はありません",
-    "emptyDescription": "新しいランキング申請の結果やサーバーからのお知らせがここに表示されます。",
+    "emptyDescription": "ランク申請の結果、プライベートメッセージ、お知らせがここに表示されます。",
     "markAll": "すべて既読にする",
     "markBatch": "{count, number} 件を既読にする",
     "markRead": "既読にする",
@@ -33,6 +33,9 @@
     "rank_request_approved": "ランキング申請が承認されました",
     "rank_request_rejected": "ランキング申請が却下されました",
     "announcement_published": "サーバーからのお知らせ",
+    "private_message": "プライベートメッセージ",
+    "broadcast": "サーバー全体への通知",
+    "privateMessageTitle": "{name}さんからプライベートメッセージが届きました",
     "markedRead": "通知を既読にしました。",
     "readMore": "未読の通知がまだ残っています。",
     "lastPage": "最後のページへ"
@@ -758,6 +761,7 @@
     "reject": "拒否",
     "sections": "管理項目",
     "announcements": "お知らせ",
+    "broadcast": "一斉送信",
     "rolesFor": "{name} のロール",
     "roleLocked": "利用できないロールや権限の範囲外のロールは閲覧のみです。既存の割り当ては維持されます。",
     "actionsReadOnly": "現在の権限で利用できるアカウント操作はありません。",
@@ -1406,5 +1410,28 @@
         "description": "ランク申請を審査し、譜面をノミネートします。"
       }
     }
+  },
+  "broadcast": {
+    "title": "サーバー全体への一斉送信",
+    "description": "すべてのプレイヤーにメッセージを送ります。ウェブ通知のみ、ゲーム内チャットのみ、または両方を選べます。",
+    "fieldTitle": "タイトル",
+    "fieldMessage": "本文",
+    "destinations": "送信先",
+    "toWeb": "ウェブ通知",
+    "toWebHint": "制限されていないすべてのプレイヤーの通知ベルに表示されます。",
+    "toGame": "ゲーム内",
+    "toGameHint": "誰でも読める #announce チャンネルに投稿され、stable と lazer の両方で表示されます。",
+    "send": "一斉送信",
+    "confirm": "確認：全員に送信",
+    "cancel": "キャンセル",
+    "sent": "送信しました。{count}人にウェブ通知が届きます。",
+    "cooldown": "次の送信まで30秒お待ちください。",
+    "forbidden": "一斉送信の権限がありません。",
+    "failed": "送信できませんでした。もう一度お試しください。",
+    "history": "最近の送信",
+    "historyEmpty": "まだ送信していません。",
+    "badgeWeb": "ウェブ",
+    "badgeGame": "ゲーム内",
+    "recipients": "{count}人"
   }
 }

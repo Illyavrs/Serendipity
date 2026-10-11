@@ -3,7 +3,6 @@ import { useFormatter, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import {
   ArrowRight,
-  Download,
   RefreshCw,
   Disc3,
   Trophy,
@@ -16,17 +15,14 @@ import { Button } from '@/components/ui/button';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { useSession } from '@/components/providers';
 import { Avatar, Loading, LoadError } from '@/components/common';
-import { ScoreOrigin } from '@/components/score-origin';
+import { ProfileScoreList } from '@/components/profile-score-list';
 import { fetcher, hasPermission } from '@/lib/api';
-import { scoreMods } from '@/lib/score-display';
 import type { Status, Leader, Score, Page } from '@/lib/types';
 import { MapRows } from './beatmaps';
 import { AnnouncementsPreview } from './announcements';
 import type { DiscoverySet } from './map-discovery';
 import { HomeCharacter } from './home-character';
-import { canonicalScoreBeatmapHref } from '@/lib/beatmap-routes';
 
-const modes = ['osu!', 'taiko', 'catch', 'mania'];
 const localCatalogueHref = '/beatmaps?catalogue=server&source=local&uploaded_only=true&sort=recent';
 
 export function HomePage() {
@@ -208,69 +204,9 @@ export function HomePage() {
               ) : scores.error ? (
                 <LoadError retry={() => scores.mutate()} />
               ) : publicScores.length ? (
-                <ol className="home-score-list">
-                  {publicScores.map((score) => {
-                    const mods = scoreMods(score);
-                    return (
-                      <li key={score.id}>
-                        <div className="home-score-details">
-                          <Link href={`/scores/${score.id}`} className="home-score-title">
-                            {score.title}
-                            <span>{score.version}</span>
-                          </Link>
-                          <div className="home-score-meta">
-                            <Link
-                              href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
-                            >
-                              {score.username}
-                            </Link>
-                            <span>
-                              {modes[score.mode]} ·{' '}
-                              {c(score.score_variant === 'relax' ? 'relax' : 'vanilla')}
-                            </span>
-                            <span className="home-score-mods score-mod-summary">
-                              <ScoreOrigin client={score.client} />
-                              <span className="score-mod-labels">
-                                {mods.labels.join(' ') || 'NM'}
-                                {mods.unknownBits ? ` + ${mods.unknownBits}` : ''}
-                              </span>
-                            </span>
-                            {!score.passed && <span>{t('failedScore')}</span>}
-                          </div>
-                          <div className="home-score-secondary">
-                            <Link href={canonicalScoreBeatmapHref(score)}>{t('viewBeatmap')}</Link>
-                            <time dateTime={score.created_at}>
-                              {f.dateTime(new Date(score.created_at), { dateStyle: 'medium' })}
-                            </time>
-                          </div>
-                        </div>
-                        <div className="home-score-values">
-                          <strong>{f.number(score.pp, { maximumFractionDigits: 2 })} pp</strong>
-                          <span>
-                            {f.number(score.accuracy / 100, {
-                              style: 'percent',
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </span>
-                          {score.has_replay && (
-                            <a
-                              className="home-replay-link"
-                              href={`/api/v1/scores/${score.id}/replay`}
-                              aria-label={t('downloadReplay', {
-                                title: score.title,
-                                username: score.username,
-                              })}
-                            >
-                              <Download aria-hidden="true" />
-                              {c('replay')}
-                            </a>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
+                <div className="profile-page home-profile-scores">
+                  <ProfileScoreList scores={publicScores} best={false} showPlayer />
+                </div>
               ) : (
                 <div className="home-empty">
                   <h3>{t('noRecentScores')}</h3>

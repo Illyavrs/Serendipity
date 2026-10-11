@@ -924,10 +924,32 @@
 .page-container.top-plays-page {
   max-width: 1480px;
 }
-.top-plays-page .rankings-tabs {
-  margin-bottom: 4px;
-}
 .top-plays-score-table .score-record-meta .score-record-player {
   color: var(--foreground);
   font-weight: 800;
+}
+
+.profile-score-meta .profile-score-player {
+  color: var(--foreground);
+  font-weight: 800;
+}
+
+/* Route-backed segmented switch: the global .segmented rules only style buttons. */
+.rankings-tabs {
+  width: fit-content;
+  margin-bottom: 16px;
+}
+.rankings-tabs a {
+  padding: 5px 14px;
+  border-radius: calc(var(--radius) * 0.45);
+  color: var(--secondary-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.rankings-tabs a:hover {
+  color: var(--foreground);
+}
+.rankings-tabs a[aria-current='page'] {
+  background: var(--selection-fill);
+  color: var(--readable-accent);
 }

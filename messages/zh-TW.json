@@ -19,10 +19,10 @@
   },
   "notifications": {
     "title": "通知",
-    "subtitle": "圖譜排名申請結果與伺服器公告。",
+    "subtitle": "圖譜排名申請結果、私訊與伺服器公告。",
     "open": "通知，{count} 則未讀",
     "empty": "目前沒有通知",
-    "emptyDescription": "新的圖譜排名申請結果與伺服器公告會顯示在這裡。",
+    "emptyDescription": "新的圖譜排名申請結果、私訊與伺服器公告會顯示在這裡。",
     "markAll": "全部標為已讀",
     "markBatch": "將 {count, number} 則標為已讀",
     "markRead": "標為已讀",
@@ -33,6 +33,9 @@
     "rank_request_approved": "排名申請已核准",
     "rank_request_rejected": "排名申請已拒絕",
     "announcement_published": "伺服器公告",
+    "private_message": "私訊",
+    "broadcast": "全服廣播",
+    "privateMessageTitle": "{name} 傳了私訊給你",
     "markedRead": "已將通知標為已讀。",
     "readMore": "仍有未讀通知。",
     "lastPage": "前往最後一頁"
@@ -758,6 +761,7 @@
     "reject": "拒絕",
     "sections": "管理項目",
     "announcements": "公告",
+    "broadcast": "廣播",
     "rolesFor": "{name} 的角色",
     "roleLocked": "無法載入或超出你權限的角色僅供查看。現有角色會保持選取。",
     "actionsReadOnly": "你的權限沒有可用的帳號操作。",
@@ -1406,5 +1410,28 @@
         "description": "審查圖譜排名申請並提名圖譜。"
       }
     }
+  },
+  "broadcast": {
+    "title": "全服廣播",
+    "description": "向所有玩家發送自訂訊息。可以只出現在網站通知、只出現在遊戲內聊天，或兩邊都送。",
+    "fieldTitle": "標題",
+    "fieldMessage": "內容",
+    "destinations": "發送位置",
+    "toWeb": "網站通知",
+    "toWebHint": "每位未被停權的玩家都會收到一則通知，在通知鈴鐺中顯示。",
+    "toGame": "遊戲內",
+    "toGameHint": "發到所有人都能看到的 #announce 聊天頻道，stable 與 lazer 玩家在遊戲內都能讀取。",
+    "send": "發送廣播",
+    "confirm": "確認發送給所有玩家",
+    "cancel": "取消",
+    "sent": "已發送，{count} 位玩家會收到網站通知。",
+    "cooldown": "請等 30 秒後再發送下一則廣播。",
+    "forbidden": "你沒有發送廣播的權限。",
+    "failed": "無法發送廣播，請再試一次。",
+    "history": "最近的廣播",
+    "historyEmpty": "還沒有發送過廣播。",
+    "badgeWeb": "網站",
+    "badgeGame": "遊戲內",
+    "recipients": "{count} 位收件人"
   }
 }

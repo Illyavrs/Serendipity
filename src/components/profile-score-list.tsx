@@ -108,17 +108,31 @@ function hitJudgements(score: Score) {
   });
 }
 
-export function ProfileScoreList({ scores, best }: { scores: Score[]; best: boolean }) {
+export function ProfileScoreList({
+  scores,
+  best,
+  ranked = false,
+  showPlayer = false,
+}: {
+  scores: Score[];
+  /** Personal best list: numbered, with the pp weighting columns. */
+  best: boolean;
+  /** Numbered list without weighting, used by server-wide rankings. */
+  ranked?: boolean;
+  /** Name the player on each row; needed when the list mixes several players. */
+  showPlayer?: boolean;
+}) {
   const c = useTranslations('common');
   const p = useTranslations('profile');
   const t = useTranslations('scores');
   const h = useTranslations('home');
   const f = useFormatter();
+  const numbered = best || ranked;
   const decimal = (value: number) =>
     f.number(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return (
     <ol
-      className={`profile-score-list score-table${best ? ' profile-best-score-list' : ''}`}
+      className={`profile-score-list score-table${numbered ? ' profile-best-score-list' : ''}`}
       aria-label={p(best ? 'best' : 'scores')}
     >
       {scores.map((score) => {
@@ -152,7 +166,7 @@ export function ProfileScoreList({ scores, best }: { scores: Score[]; best: bool
           >
             <ScoreArtwork setId={score.beatmapset_id} />
             <div className="profile-score-leading">
-              {best && (
+              {numbered && (
                 <span className="profile-score-position" aria-label={t('rankPosition')}>
                   {typeof score.position === 'number' ? f.number(score.position) : '—'}
                 </span>
@@ -177,6 +191,14 @@ export function ProfileScoreList({ scores, best }: { scores: Score[]; best: bool
                 </strong>
               </Link>
               <div className="profile-score-meta">
+                {showPlayer && (
+                  <Link
+                    className="profile-score-player"
+                    href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
+                  >
+                    {score.username}
+                  </Link>
+                )}
                 {stars && (
                   <span
                     className="profile-score-stars"

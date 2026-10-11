@@ -1,6 +1,5 @@
 'use client';
 import { NavigationLink as Link } from '@/components/navigation-motion';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
@@ -9,7 +8,7 @@ import { ScoreVariantControl } from '@/components/score-selection';
 import { CountrySelect } from '@/components/country-select';
 import { fetcher } from '@/lib/api';
 import type { Page, Score } from '@/lib/types';
-import { ScoreTable } from './scores';
+import { ProfileScoreList } from '@/components/profile-score-list';
 import { readRankingSelection, updateRankingSelection } from '@/lib/ranking-url-state';
 
 export function RankingsTabs({ active }: { active: 'players' | 'top-plays' }) {
@@ -21,18 +20,19 @@ export function RankingsTabs({ active }: { active: 'players' | 'top-plays' }) {
     if (value) query.set(key, value);
   }
   const suffix = query.toString() ? `?${query}` : '';
-  // Route-backed tabs: each trigger is a real link, so activation never needs client state.
+  // Same segmented look as the other two-way switches; each option is a real link.
   return (
-    <Tabs value={active} activationMode="manual" className="rankings-tabs">
-      <TabsList variant="line" aria-label={t('title')}>
-        <TabsTrigger value="players" asChild>
-          <Link href={`/rankings${suffix}`}>{t('playersTab')}</Link>
-        </TabsTrigger>
-        <TabsTrigger value="top-plays" asChild>
-          <Link href={`/rankings/top-plays${suffix}`}>{t('topPlaysTab')}</Link>
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
+    <nav className="segmented rankings-tabs" aria-label={t('title')}>
+      <Link href={`/rankings${suffix}`} aria-current={active === 'players' ? 'page' : undefined}>
+        {t('playersTab')}
+      </Link>
+      <Link
+        href={`/rankings/top-plays${suffix}`}
+        aria-current={active === 'top-plays' ? 'page' : undefined}
+      >
+        {t('topPlaysTab')}
+      </Link>
+    </nav>
   );
 }
 
@@ -50,7 +50,7 @@ export function TopPlaysPage() {
     { keepPreviousData: false, dedupingInterval: 0 },
   );
   return (
-    <div className="page-container rankings-page top-plays-page">
+    <div className="page-container rankings-page top-plays-page profile-page">
       <PageHeading title={t('topPlaysTitle')} description={t('topPlaysSubtitle')} />
       <RankingsTabs active="top-plays" />
       <section className="rankings-records glass" aria-label={t('topPlaysTitle')}>
@@ -82,7 +82,7 @@ export function TopPlaysPage() {
           ) : !data?.items.length ? (
             <Empty title={t('topPlaysEmptyTitle')} description={t('topPlaysEmptyDescription')} />
           ) : (
-            <ScoreTable scores={data.items} topPlays />
+            <ProfileScoreList scores={data.items} best={false} ranked showPlayer />
           )}
         </div>
       </section>

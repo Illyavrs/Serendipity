@@ -28,6 +28,7 @@ import type { Page, AdminUser, Role, Beatmap, BeatmapAvailability, Audit } from 
 import { AdminAnnouncements, type AnnouncementNavigationGuard } from './announcements';
 import { AuditDisclosure, ChatModeration, ScoreModeration } from './admin-moderation';
 import { ScoreRecalculation } from './admin-recalculation';
+import { AdminBroadcast } from './admin-broadcast';
 import { AdminRankRequests } from './beatmap-rank-requests';
 import { LocalBeatmapAdminCatalogue } from './beatmap-admin-view';
 import moderationStyles from './admin-moderation.module.css';
@@ -48,9 +49,18 @@ const grants = [
   'scores.moderate',
   'admin.view',
   'announcements.manage',
+  'broadcast.send',
 ];
 type Section =
-  'users' | 'roles' | 'beatmaps' | 'scores' | 'recalculation' | 'chat' | 'audit' | 'announcements';
+  | 'users'
+  | 'roles'
+  | 'beatmaps'
+  | 'scores'
+  | 'recalculation'
+  | 'chat'
+  | 'audit'
+  | 'announcements'
+  | 'broadcast';
 type RefreshAdmin = () => Promise<boolean>;
 const errorKeys = {
   builtin_role: 'errorBuiltinRole',
@@ -961,6 +971,7 @@ function AdminContents() {
   if (allowed('chat.moderate')) sections.push('chat');
   if (allowed('audit.read')) sections.push('audit');
   if (allowed('announcements.manage')) sections.push('announcements');
+  if (allowed('broadcast.send')) sections.push('broadcast');
   const requestedSection = query.get('tab') as Section | null;
   const section =
     requestedSection && sections.includes(requestedSection) ? requestedSection : sections[0];
@@ -985,7 +996,9 @@ function AdminContents() {
     isLoading,
     mutate,
   } = useSWR<Page<AdminUser | Audit>>(
-    ['roles', 'beatmaps', 'announcements', 'scores', 'recalculation', 'chat'].includes(section) ||
+    ['roles', 'beatmaps', 'announcements', 'scores', 'recalculation', 'chat', 'broadcast'].includes(
+      section,
+    ) ||
       !key ||
       !user
       ? null
@@ -1117,6 +1130,8 @@ function AdminContents() {
         <ScoreRecalculation key={user?.id} />
       ) : section === 'chat' ? (
         <ChatModeration key={user?.id} />
+      ) : section === 'broadcast' ? (
+        <AdminBroadcast key={user?.id} />
       ) : (
         <section className="glass content-panel">
           {section === 'users' && (

@@ -1,0 +1,73 @@
+.broadcast-panel {
+  display: grid;
+  gap: 16px;
+}
+.broadcast-form {
+  display: grid;
+  gap: 16px;
+}
+.broadcast-form h2,
+.broadcast-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 18px;
+}
+.broadcast-form h2 svg {
+  width: 18px;
+  height: 18px;
+  color: var(--readable-accent);
+}
+.broadcast-targets {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.broadcast-targets legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.broadcast-targets label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.broadcast-targets small {
+  display: block;
+}
+.broadcast-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.broadcast-history {
+  display: grid;
+  gap: 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.broadcast-history li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+}
+.broadcast-history p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.broadcast-history-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}

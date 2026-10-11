@@ -811,3 +811,15 @@
     top: -35px;
   }
 }
+
+/* The recent-scores panel is narrower than a profile, so drop the per-judgement counts. */
+.home-community .home-profile-scores .profile-score-hits {
+  display: none;
+}
+.home-community .home-profile-scores .profile-score-version {
+  min-width: 9ch;
+}
+/* The F grade and 0 pp already say "failed"; the extra label would overflow the narrow title column. */
+.home-community .home-profile-scores .profile-score-failed {
+  display: none;
+}
