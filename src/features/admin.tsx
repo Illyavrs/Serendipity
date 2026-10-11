@@ -218,7 +218,11 @@ function UserRoles({
         disabled={busy || stale}
       >
         {available.map((role) => {
-          const enabled = 'permissions' in role && canDelegate(role as Role, permissions);
+          // super_user only moves through the transfer command, never the checkbox list.
+          const enabled =
+            'permissions' in role &&
+            role.name !== 'super_user' &&
+            canDelegate(role as Role, permissions);
           return (
             <label
               key={role.id}
