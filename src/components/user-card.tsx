@@ -70,6 +70,8 @@ export function UserCard({ user }: { user: CardUser }) {
               name={group.name}
               colour={group.colour}
               icon={group.icon}
+              compact
+              iconOnly={(user.groups?.length ?? 0) > 1}
             />
           ))}
         </div>

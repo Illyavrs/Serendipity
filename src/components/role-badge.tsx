@@ -38,6 +38,9 @@ type RoleBadgeProps = {
   id?: number;
   /** Icon key from `roleIcons`; absent falls back to the default for the role name. */
   icon?: string | null;
+  /** Smaller pill for dense cards; `iconOnly` also drops the label (it stays as the tooltip). */
+  compact?: boolean;
+  iconOnly?: boolean;
 };
 
 const hex = /^#[0-9a-f]{6}$/i;
@@ -79,21 +82,22 @@ const icons: Record<string, LucideIcon> = {
 };
 
 /** osu-web style group badge: a tinted pill whose text and outline use the role colour. */
-export function RoleBadge({ label, name, colour, id, icon }: RoleBadgeProps) {
+export function RoleBadge({ label, name, colour, id, icon, compact, iconOnly }: RoleBadgeProps) {
   const style = hex.test(colour ?? '') ? ({ '--role-colour': colour } as CSSProperties) : undefined;
   const Icon = (icon ? roleIcons[icon] : undefined) ?? icons[name] ?? Tag;
   const content = (
     <>
       <Icon aria-hidden="true" className="role-badge-icon" />
-      {label}
+      {!iconOnly && label}
     </>
   );
   if (id === undefined)
     return (
       <span
-        className="role-badge"
+        className={`role-badge${compact ? ' role-badge-compact' : ''}`}
         style={style}
-        title={name}
+        title={iconOnly ? `${label} · ${name}` : name}
+        aria-label={iconOnly ? label : undefined}
         data-coloured={style ? '' : undefined}
       >
         {content}
@@ -102,9 +106,10 @@ export function RoleBadge({ label, name, colour, id, icon }: RoleBadgeProps) {
   return (
     <Link
       href={`/groups#group-${id}`}
-      className="role-badge role-badge-link"
+      className={`role-badge role-badge-link${compact ? ' role-badge-compact' : ''}`}
       style={style}
-      title={name}
+      title={iconOnly ? `${label} · ${name}` : name}
+      aria-label={iconOnly ? label : undefined}
       data-coloured={style ? '' : undefined}
     >
       {content}

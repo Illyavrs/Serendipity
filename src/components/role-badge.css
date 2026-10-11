@@ -79,3 +79,19 @@
   background: var(--selection-fill);
   color: var(--readable-accent);
 }
+.role-badge-compact {
+  padding: 1px 7px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.role-badge-compact .role-badge-icon {
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+}
+.role-badge-compact:has(.role-badge-icon:only-child) {
+  padding-inline: 5px;
+}
+.role-badge-compact .role-badge-icon:only-child {
+  margin-right: 0;
+}
