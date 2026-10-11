@@ -295,7 +295,8 @@
       "slider_tail_hit": "Slider tail hit",
       "combo_break": "Combo break"
     },
-    "preferred": "Main mode"
+    "preferred": "Main mode",
+    "grade": "Grade"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -498,7 +499,9 @@
     "archiveDownloadLimited": "Downloads are busy. Wait a moment, then retry.",
     "archiveDownloadTooLarge": "This package exceeds the 64 MiB download limit. Use the official beatmapset page.",
     "archiveDownloadTimeout": "The download timed out. Retry or use the official beatmapset page.",
-    "archiveDownloadInvalid": "The provider returned an invalid or incomplete .osz. Retry or use the official beatmapset page."
+    "archiveDownloadInvalid": "The provider returned an invalid or incomplete .osz. Retry or use the official beatmapset page.",
+    "noScoresTitle": "No scores yet",
+    "noScoresHint": "Nobody has set a score on this difficulty yet. Be the first!"
   },
   "rankings": {
     "title": "Rankings",

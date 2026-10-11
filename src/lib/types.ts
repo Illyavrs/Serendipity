@@ -159,6 +159,9 @@ export type Score = {
   client?: string | null;
   user_id: number;
   username: string;
+  /** Present on map leaderboards, which also carry the player's flag and avatar. */
+  country?: string | null;
+  avatar_url?: string | null;
   beatmap_id: number;
   title: string;
   version: string;

@@ -295,7 +295,8 @@
       "slider_tail_hit": "スライダー終端命中",
       "combo_break": "コンボ切れ"
     },
-    "preferred": "メインモード"
+    "preferred": "メインモード",
+    "grade": "グレード"
   },
   "auth": {
     "loginTitle": "ログイン",
@@ -498,7 +499,9 @@
     "archiveDownloadLimited": "ダウンロードが混み合っています。少し待ってから再試行してください。",
     "archiveDownloadTooLarge": "このパッケージは 64 MiB の上限を超えています。公式セットのページをご利用ください。",
     "archiveDownloadTimeout": "ダウンロードがタイムアウトしました。再試行するか、公式セットのページをご利用ください。",
-    "archiveDownloadInvalid": "取得先が無効または不完全な .osz を返しました。再試行するか、公式セットのページをご利用ください。"
+    "archiveDownloadInvalid": "取得先が無効または不完全な .osz を返しました。再試行するか、公式セットのページをご利用ください。",
+    "noScoresTitle": "スコアはまだありません",
+    "noScoresHint": "この難度にはまだスコアがありません。最初の1人になりましょう!"
   },
   "rankings": {
     "title": "ランキング",

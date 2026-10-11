@@ -2,12 +2,24 @@
 import { NavigationLink as Link } from './navigation-motion';
 import { useTranslations } from 'next-intl';
 import type { CSSProperties, ReactNode } from 'react';
-import { Clock, Music2, Star, Target } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Circle,
+  Clock,
+  Columns3,
+  Drum,
+  Music2,
+  Star,
+  Target,
+  Citrus,
+  type LucideIcon,
+} from 'lucide-react';
 import { MapArtwork } from '@/features/map-discovery';
 import { difficultyStyle } from '@/lib/difficulty-color';
 import './beatmap-hero.css';
 
 const MODES = ['osu!', 'taiko', 'catch', 'mania'];
+const MODE_ICONS: LucideIcon[] = [Circle, Drum, Citrus, Columns3];
 
 export type HeroDifficulty = {
   key: string | number;
@@ -83,6 +95,12 @@ export function BeatmapHero({
 }) {
   const t = useTranslations('maps');
   const c = useTranslations('common');
+  // Hovering or focusing a chip previews that difficulty's name in the line below the chips.
+  const [previewKey, setPreviewKey] = useState<string | number | null>(null);
+  const preview = difficulties.find((item) => item.key === previewKey);
+  const shown = preview
+    ? { version: preview.version, mode: preview.mode, stars: preview.stars }
+    : { version: selectedVersion, mode: selectedMode, stars: stats.stars };
   const bars: [string, number | null | undefined][] = [
     ['CS', stats.cs],
     ['HP', stats.hp],
@@ -97,18 +115,18 @@ export function BeatmapHero({
         {difficulties.length > 0 && (
           <div className="bm-diffs" role="group" aria-label={t('currentDifficulty')}>
             {difficulties.map((item) => {
-              const content = (
-                <>
-                  <span className="bm-diff-dot" aria-hidden="true" />
-                  <span className="bm-diff-stars">{item.stars.toFixed(2)}</span>
-                </>
-              );
+              const Icon = MODE_ICONS[item.mode] ?? Circle;
+              const content = <Icon aria-hidden="true" />;
               const props = {
                 className: 'bm-diff',
                 style: difficultyStyle(item.stars) as CSSProperties,
                 title: `${item.version} · ${MODES[item.mode] ?? ''} · ${item.stars.toFixed(2)} ★`,
                 'aria-label': `${item.version}, ${MODES[item.mode] ?? ''}, ${item.stars.toFixed(2)} ★`,
                 'aria-current': item.current ? ('true' as const) : undefined,
+                onMouseEnter: () => setPreviewKey(item.key),
+                onMouseLeave: () => setPreviewKey(null),
+                onFocus: () => setPreviewKey(item.key),
+                onBlur: () => setPreviewKey(null),
               };
               return item.href ? (
                 <Link key={item.key} href={item.href} {...props}>
@@ -122,13 +140,13 @@ export function BeatmapHero({
             })}
           </div>
         )}
-        <div className="bm-selected" style={difficultyStyle(stats.stars)}>
+        <div className="bm-selected" style={difficultyStyle(shown.stars)}>
           <span className="bm-star-pill">
             <Star aria-hidden="true" />
-            {stats.stars.toFixed(2)}
+            {shown.stars.toFixed(2)}
           </span>
-          <strong>{selectedVersion}</strong>
-          <span className="bm-mode">{MODES[selectedMode]}</span>
+          <strong>{shown.version}</strong>
+          <span className="bm-mode">{MODES[shown.mode]}</span>
         </div>
         <h1>{title}</h1>
         <p className="bm-artist">{artist}</p>

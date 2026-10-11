@@ -295,7 +295,8 @@
       "slider_tail_hit": "滑條尾端命中",
       "combo_break": "斷 Combo"
     },
-    "preferred": "主要遊戲模式"
+    "preferred": "主要遊戲模式",
+    "grade": "評級"
   },
   "auth": {
     "loginTitle": "登入",
@@ -498,7 +499,9 @@
     "archiveDownloadLimited": "下載服務忙碌中。請稍候再試。",
     "archiveDownloadTooLarge": "此圖包超過 64 MiB 下載限制。請使用官方圖譜集頁面。",
     "archiveDownloadTimeout": "下載逾時。請重試或使用官方圖譜集頁面。",
-    "archiveDownloadInvalid": "下載來源回傳了無效或不完整的 .osz。請重試或使用官方圖譜集頁面。"
+    "archiveDownloadInvalid": "下載來源回傳了無效或不完整的 .osz。請重試或使用官方圖譜集頁面。",
+    "noScoresTitle": "還沒有成績",
+    "noScoresHint": "還沒有人在這個難度留下成績。成為第一個吧!"
   },
   "rankings": {
     "title": "排行榜",

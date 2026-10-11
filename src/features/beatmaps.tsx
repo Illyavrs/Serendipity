@@ -48,7 +48,6 @@ import type {
   ScoreBoard,
   ScoreVariant,
 } from '@/lib/types';
-import { ScoreTable } from './scores';
 import { ScoreVariantControl } from '@/components/score-selection';
 import {
   correctRankingLocation,
@@ -60,6 +59,7 @@ import { OfficialMapSearch } from './official-map-search';
 import { BeatmapRankRequestAction } from './beatmap-rank-requests';
 import { MapArtwork, beatmapDifficultyHref, usePublicData } from './map-discovery';
 import { BeatmapHero } from '@/components/beatmap-hero';
+import { BeatmapLeaderboard } from '@/components/beatmap-leaderboard';
 import { OfficialArchiveDownload } from './official-archive-download';
 import { canonicalBeatmapHref, type BeatmapNavigation } from '@/lib/beatmap-routes';
 import { useCatalogueReturn } from './beatmap-route-state';
@@ -665,7 +665,11 @@ export function BeatmapPage({ id }: { id: number }) {
                 ) : !scores ? (
                   <Loading />
                 ) : scores.items.length ? (
-                  <ScoreTable scores={scores.items} leaderboard orderedBy={scores.ordered_by} />
+                  <BeatmapLeaderboard
+                    scores={scores.items}
+                    orderedBy={scores.ordered_by}
+                    mode={Number(mode)}
+                  />
                 ) : (
                   <Empty title={c('empty')} />
                 )}

@@ -1,0 +1,226 @@
+/* Map leaderboard: feature card for the best play, dense rows below. */
+.lb {
+  display: grid;
+  gap: 12px;
+}
+.lb-top {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 2.4fr);
+  gap: 20px;
+  align-items: center;
+  padding: 16px 20px;
+  border: 1px solid rgb(245 197 66 / 0.35);
+  border-radius: 14px;
+  background: linear-gradient(110deg, rgb(245 197 66 / 0.12), rgb(255 255 255 / 0.03) 60%);
+}
+.lb-top[data-self],
+.lb-table tr[data-self] {
+  box-shadow: inset 3px 0 0 var(--readable-accent);
+}
+.lb-top-link {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.lb-top-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.lb-top-player .avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  flex: none;
+}
+.lb-top-position {
+  color: #f5c542;
+  font-size: 22px;
+  font-weight: 900;
+}
+.lb-top-name {
+  position: relative;
+  z-index: 1;
+  display: block;
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb-top-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: var(--secondary-text);
+  font-size: 12px;
+}
+.lb-top-sub .country-flag-image {
+  display: block;
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+.lb-top-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  margin: 0;
+}
+.lb-top-stats dt {
+  color: var(--secondary-text);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.lb-top-stats dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.lb-top-stats .lb-top-score {
+  font-size: 24px;
+}
+.lb-scroll {
+  overflow-x: auto;
+}
+.lb-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 3px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.lb-table th {
+  padding: 4px 10px;
+  color: var(--secondary-text);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.lb-table td {
+  padding: 9px 10px;
+  background: var(--surface);
+  text-align: right;
+  white-space: nowrap;
+}
+.lb-table td:first-child {
+  border-radius: 8px 0 0 8px;
+}
+.lb-table td:last-child {
+  border-radius: 0 8px 8px 0;
+}
+.lb-table tr:hover td {
+  background: var(--surface-raised);
+}
+.lb-table .lb-left {
+  text-align: left;
+}
+.lb-rank {
+  color: var(--secondary-text);
+  font-weight: 800;
+}
+.lb-strong {
+  font-weight: 800;
+}
+.lb-player {
+  font-weight: 800;
+}
+.lb-player:hover {
+  color: var(--readable-accent);
+}
+.lb-when {
+  color: var(--secondary-text);
+}
+.lb-table [data-perfect],
+.lb-top-stats [data-perfect] {
+  color: #f5c542;
+}
+.lb-table [data-zero],
+.lb-top-stats [data-zero] {
+  color: var(--secondary-text);
+  opacity: 0.55;
+}
+.lb-table .country-flag-image {
+  display: inline-block;
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+  object-fit: cover;
+  vertical-align: middle;
+}
+.lb-grade {
+  display: inline-flex;
+  min-width: 34px;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.08);
+  font-size: 12px;
+  font-weight: 900;
+}
+.lb-grade[data-grade='ss'],
+.lb-grade[data-grade='x'],
+.lb-grade[data-grade='ssh'],
+.lb-grade[data-grade='xh'],
+.lb-grade[data-grade='s'],
+.lb-grade[data-grade='sh'] {
+  color: #f5c542;
+  background: rgb(245 197 66 / 0.16);
+}
+.lb-grade[data-grade='a'] {
+  color: #7ee08a;
+  background: rgb(126 224 138 / 0.14);
+}
+.lb-grade[data-grade='b'] {
+  color: #6aa9ff;
+  background: rgb(106 169 255 / 0.14);
+}
+.lb-grade[data-grade='c'] {
+  color: #c08bff;
+  background: rgb(192 139 255 / 0.14);
+}
+.lb-grade[data-grade='d'],
+.lb-grade[data-grade='f'] {
+  color: #ff6b81;
+  background: rgb(255 107 129 / 0.14);
+}
+.lb-mods {
+  display: inline-flex;
+  gap: 4px;
+}
+.lb-mod {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 0.1);
+  font-size: 11px;
+  font-weight: 800;
+}
+.lb-none {
+  color: var(--secondary-text);
+}
+.lb-replay {
+  display: inline-flex;
+  color: var(--secondary-text);
+}
+.lb-replay:hover {
+  color: var(--readable-accent);
+}
+.lb-replay svg {
+  width: 15px;
+  height: 15px;
+}
+@media (max-width: 800px) {
+  .lb-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

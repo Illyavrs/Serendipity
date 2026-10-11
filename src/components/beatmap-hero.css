@@ -44,34 +44,33 @@
   margin-bottom: 8px;
 }
 .bm-diff {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px 4px 8px;
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background: rgb(8 8 10 / 0.55);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  backdrop-filter: blur(6px);
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--difficulty-color);
+  border-radius: 50%;
+  background: rgb(8 8 10 / 0.7);
+  color: var(--difficulty-color);
   transition:
     background-color 0.15s ease,
-    border-color 0.15s ease;
+    transform 0.15s ease;
 }
-.bm-diff:hover {
-  background: rgb(8 8 10 / 0.8);
+.bm-diff svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.6;
 }
+.bm-diff:hover,
+.bm-diff:focus-visible {
+  transform: translateY(-1px);
+  background: rgb(8 8 10 / 0.95);
+}
+/* The chosen difficulty is a filled disc in its colour, like a pressed button. */
 .bm-diff[aria-current='true'] {
-  border-color: var(--difficulty-color);
-  background: rgb(8 8 10 / 0.85);
-}
-.bm-diff-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
   background: var(--difficulty-color);
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.25);
+  color: #0a0a0c;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.55);
 }
 .bm-selected {
   display: flex;

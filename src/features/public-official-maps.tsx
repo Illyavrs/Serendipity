@@ -28,6 +28,7 @@ import { MapCardPreview } from './map-card-preview';
 import { MapAudioPreview } from './map-audio-preview';
 import { MapStatus } from './map-status';
 import { BeatmapHero } from '@/components/beatmap-hero';
+import { BeatmapLeaderboard } from '@/components/beatmap-leaderboard';
 import { BeatmapRankRequestAction } from './beatmap-rank-requests';
 import { OfficialArchiveDownload } from './official-archive-download';
 import {
@@ -54,7 +55,6 @@ import {
   correctRankingLocation,
 } from '@/lib/ranking-url-state';
 import { ScoreVariantControl } from '@/components/score-selection';
-import { ScoreTable } from './scores';
 
 const modes = ['osu!', 'taiko', 'catch', 'mania'];
 const statuses = ['ranked', 'qualified', 'loved', 'pending', 'graveyard', 'any'];
@@ -560,12 +560,20 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
               />
             </section>
           )}
-          {selected.local_id !== undefined && (
+          {selected.local_id !== undefined ? (
             <OfficialDifficultyScores
               key={selected.official_id}
               mapId={selected.local_id}
               mapMode={selected.mode}
             />
+          ) : (
+            // A difficulty nobody has played is not stored yet; the board is simply empty.
+            <section id="server-scores" className="glass content-panel beatmap-leaderboard">
+              <header className="section-heading">
+                <h2>{t('leaderboard')}</h2>
+              </header>
+              <Empty title={t('noScoresTitle')} description={t('noScoresHint')} />
+            </section>
           )}
         </>
       )}
@@ -623,7 +631,7 @@ function OfficialDifficultyScores({ mapId, mapMode }: { mapId: number; mapMode: 
       ) : loading || !data ? (
         <Loading />
       ) : data.items.length ? (
-        <ScoreTable scores={data.items} leaderboard orderedBy={data.ordered_by} />
+        <BeatmapLeaderboard scores={data.items} orderedBy={data.ordered_by} mode={Number(mode)} />
       ) : (
         <Empty title={c('empty')} />
       )}
