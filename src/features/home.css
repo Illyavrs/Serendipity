@@ -823,3 +823,26 @@
 .home-community .home-profile-scores .profile-score-failed {
   display: none;
 }
+
+/* Fixed score-row columns are sized for a full-width profile; fit them to this narrower panel so the
+   mods column cannot spill over the title and date. */
+.home-community .home-profile-scores .profile-score-row {
+  grid-template-columns: 34px minmax(0, 1fr) 76px 112px 88px 36px;
+  gap: 8px;
+  padding-inline: 10px;
+}
+.home-community .home-profile-scores .profile-score-mods {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.home-community .home-profile-scores .profile-score-meta > * {
+  min-width: 0;
+}
+.home-community .home-profile-scores .profile-score-version {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-community .home-profile-scores .profile-score-details {
+  gap: 10px;
+}

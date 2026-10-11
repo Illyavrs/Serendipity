@@ -407,6 +407,12 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
         body: JSON.stringify({
           name: values.get('name'),
           description: values.get('description') ?? '',
+          description_i18n: Object.fromEntries(
+            ['zh-TW', 'en', 'ja'].map((locale) => [
+              locale,
+              String(values.get(`i18n-${locale}`) ?? ''),
+            ]),
+          ),
           permissions: chosen,
           short_name: badge.short.trim(),
           colour: badge.colour,
@@ -592,6 +598,22 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
             disabled={busy || stale || !editable}
           />
         </div>
+        <fieldset className="field" disabled={busy || stale || !editable}>
+          <legend>{t('i18nTitle')}</legend>
+          <p className="hint">{t('i18nHint')}</p>
+          {(['zh-TW', 'en', 'ja'] as const).map((locale) => (
+            <div className="field" key={locale}>
+              <label htmlFor={`roleDescription-${locale}`}>{t(`locale_${locale}`)}</label>
+              <Textarea
+                id={`roleDescription-${locale}`}
+                name={`i18n-${locale}`}
+                lang={locale}
+                maxLength={500}
+                defaultValue={edit?.description_i18n?.[locale] ?? ''}
+              />
+            </div>
+          ))}
+        </fieldset>
         <fieldset
           className="field permission-checkboxes"
           disabled={busy || stale || !editable}

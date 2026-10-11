@@ -11,6 +11,11 @@ import {
   Globe2,
   ChevronDown,
   Check,
+  User,
+  Users,
+  Radio,
+  Settings as SettingsIcon,
+  ShieldCheck,
 } from 'lucide-react';
 import { LayoutGroup } from 'motion/react';
 import * as m from 'motion/react-m';
@@ -73,17 +78,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
       setError(common('serviceError'));
     }
   }
-  const links = [
-    ['/', 'home'],
-    ['/news', 'news'],
-    ['/beatmaps', 'beatmaps'],
-    ['/rankings', 'rankings'],
-    ['/chat', 'community'],
-    ['/connect', 'connect'],
-    ['/settings', 'settings'],
-  ];
-  if (
-    user &&
+  const isStaff =
+    !!user &&
     [
       'users.moderate',
       'roles.manage',
@@ -94,9 +90,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
       'chat.moderate',
       'audit.read',
       'announcements.manage',
-    ].some((permission) => hasPermission(user.permissions, permission))
-  )
-    links.push(['/admin', 'admin']);
+    ].some((permission) => hasPermission(user.permissions, permission));
+  const links = [
+    ['/', 'home'],
+    ['/news', 'news'],
+    ['/beatmaps', 'beatmaps'],
+    ['/rankings', 'rankings'],
+    ['/chat', 'community'],
+    ['/connect', 'connect'],
+    ['/settings', 'settings'],
+  ];
+  if (isStaff) links.push(['/admin', 'admin']);
   const navigation = () =>
     links.map(([href, key]) => (
       <Link
@@ -207,18 +211,58 @@ export function Shell({ children }: { children: React.ReactNode }) {
             {user ? (
               <>
                 <NotificationBell key={user.id} userId={user.id} />
-                <Link href={`/users/${user.id}`} className="user-link" aria-label={t('profile')}>
-                  <Avatar name={user.username} url={user.avatar_url} />
-                  <span>{user.username}</span>
-                </Link>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={t('signOut')}
-                  onClick={() => logout().catch(() => setError(common('serviceError')))}
-                >
-                  <LogOut />
-                </Button>
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="user-link" aria-label={t('account')}>
+                      <Avatar name={user.username} url={user.avatar_url} />
+                      <span>{user.username}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="user-menu-content">
+                    <div className="user-menu-heading">
+                      <Avatar name={user.username} url={user.avatar_url} />
+                      <strong>{user.username}</strong>
+                    </div>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/users/${user.id}`}>
+                        <User aria-hidden="true" />
+                        {t('profile')}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/friends">
+                        <Users aria-hidden="true" />
+                        {t('friends')}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/online">
+                        <Radio aria-hidden="true" />
+                        {t('online')}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings">
+                        <SettingsIcon aria-hidden="true" />
+                        {t('settings')}
+                      </Link>
+                    </DropdownMenuItem>
+                    {isStaff && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin">
+                          <ShieldCheck aria-hidden="true" />
+                          {t('admin')}
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onSelect={() => logout().catch(() => setError(common('serviceError')))}
+                    >
+                      <LogOut aria-hidden="true" />
+                      {t('signOut')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <Button asChild variant="outline" className="sign-in">
@@ -246,6 +290,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
                         </Link>
                         <Link href={`/users/${user.id}`} onNavigate={() => setNavOpen(false)}>
                           {t('profile')}
+                        </Link>
+                        <Link href="/friends" onNavigate={() => setNavOpen(false)}>
+                          {t('friends')}
+                        </Link>
+                        <Link href="/online" onNavigate={() => setNavOpen(false)}>
+                          {t('online')}
                         </Link>
                       </>
                     ) : (
@@ -295,6 +345,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Link>
           <Link href="/settings">
             {t('settings')}
+            <ArrowUpRight />
+          </Link>
+          <Link href="/online">
+            {t('online')}
             <ArrowUpRight />
           </Link>
           <a href="https://github.com/Illyavrs/Illyaverse" target="_blank" rel="noreferrer">

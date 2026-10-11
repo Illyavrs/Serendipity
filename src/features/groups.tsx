@@ -1,18 +1,18 @@
 'use client';
-import { NavigationLink as Link } from '@/components/navigation-motion';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
-import { PageHeading, Loading, LoadError, Empty, Avatar } from '@/components/common';
-import { CountryFlag } from '@/components/country-flag';
+import { PageHeading, Loading, LoadError, Empty } from '@/components/common';
+import { UserCard, type CardUser } from '@/components/user-card';
 import { RoleBadge } from '@/components/role-badge';
 import { fetcher } from '@/lib/api';
 import './groups.css';
 
-type Member = { id: number; username: string; country: string; avatar_url: string | null };
+type Member = CardUser;
 type Group = {
   id: number;
   name: string;
   description: string;
+  description_i18n?: Record<string, string>;
   short_name: string;
   colour: string | null;
   rank: number;
@@ -22,6 +22,7 @@ type Group = {
 /** Public directory of the badge-bearing roles so players know who to ask for help. */
 export function GroupsPage() {
   const t = useTranslations('groups');
+  const locale = useLocale();
   const { data, error, isLoading, mutate } = useSWR<{ items: Group[] }>('/groups', fetcher);
   return (
     <div className="page-container groups-page">
@@ -37,14 +38,18 @@ export function GroupsPage() {
           {data.items.map((group) => {
             const known = t.has(`roles.${group.name}.title`);
             const title = known ? t(`roles.${group.name}.title`) : group.name;
-            const blurb = t.has(`roles.${group.name}.description`)
-              ? t(`roles.${group.name}.description`)
-              : group.description;
+            // Staff-written text for this locale wins, then the shipped copy for built-in groups.
+            const blurb =
+              group.description_i18n?.[locale] ||
+              (t.has(`roles.${group.name}.description`)
+                ? t(`roles.${group.name}.description`)
+                : group.description);
             return (
               <section
                 key={group.id}
+                id={`group-${group.id}`}
                 className="groups-section glass"
-                aria-labelledby={`group-${group.id}`}
+                aria-label={title}
               >
                 <header className="groups-heading">
                   <div className="groups-title-line">
@@ -53,7 +58,7 @@ export function GroupsPage() {
                       name={group.name}
                       colour={group.colour}
                     />
-                    <h2 id={`group-${group.id}`}>{title}</h2>
+                    <h2>{title}</h2>
                     <span className="hint">
                       {t('memberCount', { count: group.members.length })}
                     </span>
@@ -64,11 +69,7 @@ export function GroupsPage() {
                   <ul className="groups-members">
                     {group.members.map((member) => (
                       <li key={member.id}>
-                        <Link href={`/users/${member.id}`} className="player-cell">
-                          <Avatar name={member.username} url={member.avatar_url} />
-                          <span>{member.username}</span>
-                        </Link>
-                        <CountryFlag country={member.country} />
+                        <UserCard user={member} />
                       </li>
                     ))}
                   </ul>

@@ -953,3 +953,50 @@
   background: var(--selection-fill);
   color: var(--readable-accent);
 }
+
+/* Top plays are the showcase list, so each row is taller with a larger title and score figures. */
+.profile-page.top-plays-page .profile-score-list {
+  gap: 8px;
+  padding: 12px 14px 16px;
+}
+.profile-page.top-plays-page .profile-score-row {
+  min-height: 88px;
+  padding: 10px 18px;
+  grid-template-columns: 78px minmax(220px, 1fr) 120px 240px 150px 44px;
+  gap: 14px;
+}
+.profile-page.top-plays-page .profile-score-main .score-title strong {
+  font-size: 16px;
+}
+.profile-page.top-plays-page .profile-score-meta {
+  gap: 9px;
+  margin-top: 5px;
+  font-size: 12px;
+}
+.profile-page.top-plays-page .profile-score-grade {
+  font-size: 22px;
+}
+.profile-page.top-plays-page .profile-score-details {
+  font-size: 15px;
+}
+.profile-page.top-plays-page .profile-score-hits {
+  margin-top: 4px;
+  font-size: 11px;
+}
+.profile-page.top-plays-page .profile-score-performance .pp-value {
+  font-size: 28px;
+}
+.profile-page.top-plays-page .profile-score-mods > .profile-score-mod {
+  font-size: 12px;
+}
+@media (max-width: 1050px) {
+  .profile-page.top-plays-page .profile-score-row {
+    grid-template-columns: 70px minmax(0, 1fr) 80px 180px 120px 44px;
+  }
+}
+@media (max-width: 800px) {
+  .profile-page.top-plays-page .profile-score-row {
+    grid-template-columns: 38px minmax(0, 1fr) 44px;
+    min-height: 0;
+  }
+}

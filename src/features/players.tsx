@@ -502,6 +502,7 @@ export function PlayerPage({ id }: { id: number }) {
                       {player.groups.map((group) => (
                         <RoleBadge
                           key={group.id}
+                          id={group.id}
                           label={group.short_name}
                           name={group.name}
                           colour={group.colour}

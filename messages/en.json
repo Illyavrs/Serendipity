@@ -15,7 +15,10 @@
     "profile": "My profile",
     "notifications": "Notifications",
     "language": "Language",
-    "menu": "Open navigation"
+    "menu": "Open navigation",
+    "account": "Account menu",
+    "friends": "Friends",
+    "online": "Online players"
   },
   "notifications": {
     "title": "Notifications",
@@ -805,7 +808,12 @@
     "scrollUsers": "Scroll horizontally to view roles and account actions.",
     "chat": "Chat moderation",
     "auditDetails": "Details",
-    "rankRequests": "Ranking requests"
+    "rankRequests": "Ranking requests",
+    "i18nTitle": "Translated introductions",
+    "i18nHint": "Shown on the groups page in the visitor language; leave blank to use the default introduction above.",
+    "locale_zh-TW": "繁體中文",
+    "locale_en": "English",
+    "locale_ja": "日本語"
   },
   "connect": {
     "title": "How to connect",
@@ -1433,5 +1441,18 @@
     "badgeWeb": "Website",
     "badgeGame": "In game",
     "recipients": "{count} recipients"
+  },
+  "people": {
+    "online": "Online",
+    "offline": "Offline",
+    "onlineTitle": "Online players",
+    "onlineSubtitle": "Players with a game client connected right now. Refreshes every 30 seconds.",
+    "onlineCount": "{count, plural, one {# player online} other {# players online}}",
+    "onlineEmptyTitle": "Nobody is online",
+    "onlineEmptyDescription": "Players appear here while connected through stable or lazer.",
+    "friendsTitle": "Friends",
+    "friendsSubtitle": "Players you added as friends, with anyone online first.",
+    "friendsEmptyTitle": "No friends yet",
+    "friendsEmptyDescription": "Open a player profile and choose Add friend."
   }
 }

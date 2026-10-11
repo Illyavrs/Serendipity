@@ -43,3 +43,11 @@
   margin-right: 5px;
   flex: none;
 }
+.role-badge-link {
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+.role-badge-link:hover,
+.role-badge-link:focus-visible {
+  background: hsl(260 8% 16% / 0.9);
+}

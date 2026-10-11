@@ -3783,3 +3783,25 @@ input[type='checkbox'] {
   color: var(--secondary-text);
   font-size: 13px;
 }
+.user-link.user-link {
+  height: auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.user-menu-content {
+  min-width: 14rem;
+}
+.user-menu-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -6px -6px 6px;
+  padding: 12px 14px;
+  border-radius: 6px 6px 0 0;
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+.user-menu-heading strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

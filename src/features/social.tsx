@@ -7,16 +7,17 @@ import { UserPlus, UserMinus, Ban, LoaderCircle, MessageCircle } from 'lucide-re
 import { useSession } from '@/components/providers';
 import { Button } from '@/components/ui/button';
 import { Avatar, Loading, LoadError, Empty } from '@/components/common';
+import type { CardUser } from '@/components/user-card';
 import { api, ApiError, hasPermission } from '@/lib/api';
 
 type Relationship = {
   target_id: number;
   relation_type: 'friend' | 'block';
   mutual: boolean;
-  target: { id: number; username: string; avatar_url: string | null; country: string };
+  target: CardUser;
 };
 type Relationships = { friends: Relationship[]; blocks: Relationship[] };
-function useRelationships() {
+export function useRelationships() {
   const { user } = useSession();
   return useSWR<Relationships>(user ? ['relationships', user.id] : null, () =>
     api('/me/relationships'),

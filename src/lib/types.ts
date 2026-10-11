@@ -302,6 +302,7 @@ export type Role = {
   name: string;
   permissions: string[];
   description: string;
+  description_i18n?: Record<string, string>;
   short_name: string;
   colour: string | null;
   display_badge: boolean;

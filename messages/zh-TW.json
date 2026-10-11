@@ -15,7 +15,10 @@
     "profile": "我的個人頁",
     "notifications": "通知",
     "language": "語言",
-    "menu": "開啟導覽"
+    "menu": "開啟導覽",
+    "account": "帳號選單",
+    "friends": "朋友",
+    "online": "線上玩家"
   },
   "notifications": {
     "title": "通知",
@@ -805,7 +808,12 @@
     "scrollUsers": "左右捲動可查看角色與帳號操作。",
     "chat": "聊天管理",
     "auditDetails": "詳情",
-    "rankRequests": "圖譜排名申請"
+    "rankRequests": "圖譜排名申請",
+    "i18nTitle": "多語言介紹",
+    "i18nHint": "在群組頁依訪客語言顯示;留空則使用上面的預設介紹。",
+    "locale_zh-TW": "繁體中文",
+    "locale_en": "English",
+    "locale_ja": "日本語"
   },
   "connect": {
     "title": "連線教學",
@@ -1433,5 +1441,18 @@
     "badgeWeb": "網站",
     "badgeGame": "遊戲內",
     "recipients": "{count} 位收件人"
+  },
+  "people": {
+    "online": "線上",
+    "offline": "離線",
+    "onlineTitle": "線上玩家",
+    "onlineSubtitle": "目前有遊戲客戶端連線的玩家,每 30 秒自動更新。",
+    "onlineCount": "目前 {count} 人在線上",
+    "onlineEmptyTitle": "目前沒有人在線上",
+    "onlineEmptyDescription": "有玩家透過 stable 或 lazer 連線後會出現在這裡。",
+    "friendsTitle": "朋友",
+    "friendsSubtitle": "你加入的朋友,線上的會排在前面。",
+    "friendsEmptyTitle": "還沒有朋友",
+    "friendsEmptyDescription": "到玩家的個人頁面按「加為朋友」。"
   }
 }

@@ -15,7 +15,10 @@
     "profile": "プロフィール",
     "notifications": "通知",
     "language": "言語",
-    "menu": "ナビゲーション"
+    "menu": "ナビゲーション",
+    "account": "アカウントメニュー",
+    "friends": "フレンド",
+    "online": "オンラインのプレイヤー"
   },
   "notifications": {
     "title": "通知",
@@ -805,7 +808,12 @@
     "scrollUsers": "左右にスクロールすると、ロールやアカウント操作を表示できます。",
     "chat": "チャット管理",
     "auditDetails": "詳細",
-    "rankRequests": "譜面のランク申請"
+    "rankRequests": "譜面のランク申請",
+    "i18nTitle": "多言語の紹介文",
+    "i18nHint": "グループページで閲覧者の言語に合わせて表示されます。空欄なら上の既定の紹介文を使います。",
+    "locale_zh-TW": "繁體中文",
+    "locale_en": "English",
+    "locale_ja": "日本語"
   },
   "connect": {
     "title": "接続ガイド",
@@ -1433,5 +1441,18 @@
     "badgeWeb": "ウェブ",
     "badgeGame": "ゲーム内",
     "recipients": "{count}人"
+  },
+  "people": {
+    "online": "オンライン",
+    "offline": "オフライン",
+    "onlineTitle": "オンラインのプレイヤー",
+    "onlineSubtitle": "現在ゲームクライアントで接続中のプレイヤーです。30秒ごとに更新されます。",
+    "onlineCount": "現在 {count} 人がオンライン",
+    "onlineEmptyTitle": "オンラインのプレイヤーはいません",
+    "onlineEmptyDescription": "stable または lazer で接続すると、ここに表示されます。",
+    "friendsTitle": "フレンド",
+    "friendsSubtitle": "追加したフレンドです。オンラインの人が先に表示されます。",
+    "friendsEmptyTitle": "フレンドはまだいません",
+    "friendsEmptyDescription": "プレイヤーのプロフィールで「フレンドに追加」を押してください。"
   }
 }
