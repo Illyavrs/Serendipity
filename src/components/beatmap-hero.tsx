@@ -3,23 +3,12 @@ import { NavigationLink as Link } from './navigation-motion';
 import { useTranslations } from 'next-intl';
 import type { CSSProperties, ReactNode } from 'react';
 import { useState } from 'react';
-import {
-  Circle,
-  Clock,
-  Columns3,
-  Drum,
-  Music2,
-  Star,
-  Target,
-  Citrus,
-  type LucideIcon,
-} from 'lucide-react';
+import { Clock, Music2, Star, Target } from 'lucide-react';
 import { MapArtwork } from '@/features/map-discovery';
 import { difficultyStyle } from '@/lib/difficulty-color';
 import './beatmap-hero.css';
 
 const MODES = ['osu!', 'taiko', 'catch', 'mania'];
-const MODE_ICONS: LucideIcon[] = [Circle, Drum, Citrus, Columns3];
 
 export type HeroDifficulty = {
   key: string | number;
@@ -42,6 +31,46 @@ export type HeroStats = {
   ar?: number | null;
   od?: number | null;
 };
+
+/** Outline mode glyphs drawn in the difficulty colour, in the style of the game's own mode icons. */
+function ModeGlyph({ mode }: { mode: number }) {
+  const common = {
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2.2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  };
+  if (mode === 1)
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="4.5" />
+        <path d="M12 3v4.5M12 16.5V21" />
+      </svg>
+    );
+  if (mode === 2)
+    return (
+      <svg {...common}>
+        <path d="M12 4c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z" />
+        <path d="M12 4c1-1.5 2.4-2 4-2" />
+      </svg>
+    );
+  if (mode === 3)
+    return (
+      <svg {...common}>
+        <path d="M5 4v16M10 4v16M15 4v16M20 4v16" />
+      </svg>
+    );
+  return (
+    <svg {...common}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4" />
+    </svg>
+  );
+}
 
 function duration(seconds: number) {
   const safe = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
@@ -115,8 +144,7 @@ export function BeatmapHero({
         {difficulties.length > 0 && (
           <div className="bm-diffs" role="group" aria-label={t('currentDifficulty')}>
             {difficulties.map((item) => {
-              const Icon = MODE_ICONS[item.mode] ?? Circle;
-              const content = <Icon aria-hidden="true" />;
+              const content = <ModeGlyph mode={item.mode} />;
               const props = {
                 className: 'bm-diff',
                 style: difficultyStyle(item.stars) as CSSProperties,

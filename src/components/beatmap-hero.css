@@ -40,37 +40,49 @@
 .bm-diffs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 10px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgb(14 14 17 / 0.7);
 }
+/* One cell per difficulty: dim until hovered or chosen, then a bordered rounded square. */
 .bm-diff {
-  display: inline-grid;
+  position: relative;
+  display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--difficulty-color);
-  border-radius: 50%;
-  background: rgb(8 8 10 / 0.7);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   color: var(--difficulty-color);
-  transition:
-    background-color 0.15s ease,
-    transform 0.15s ease;
+  opacity: 0.7;
+  transition: opacity 0.1s ease;
 }
-.bm-diff svg {
-  width: 15px;
-  height: 15px;
-  stroke-width: 2.6;
+.bm-diff::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  background: rgb(8 8 10 / 0.5);
+  opacity: 0;
+  transition: opacity 0.1s ease;
 }
 .bm-diff:hover,
-.bm-diff:focus-visible {
-  transform: translateY(-1px);
-  background: rgb(8 8 10 / 0.95);
-}
-/* The chosen difficulty is a filled disc in its colour, like a pressed button. */
+.bm-diff:focus-visible,
 .bm-diff[aria-current='true'] {
-  background: var(--difficulty-color);
-  color: #0a0a0c;
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.55);
+  opacity: 1;
+}
+.bm-diff:hover::before,
+.bm-diff:focus-visible::before,
+.bm-diff[aria-current='true']::before {
+  opacity: 1;
+}
+.bm-diff svg {
+  position: relative;
+  width: 24px;
+  height: 24px;
 }
 .bm-selected {
   display: flex;
@@ -102,9 +114,9 @@
 }
 .bm-hero h1 {
   margin: 14px 0 0;
-  font-size: 38px;
-  font-weight: 900;
-  line-height: 1.12;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
   text-shadow: 0 2px 12px rgb(0 0 0 / 0.5);
@@ -113,7 +125,7 @@
   margin: 0;
   color: #e6e6e6;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 500;
   text-shadow: 0 2px 10px rgb(0 0 0 / 0.5);
 }
 .bm-mapper {
@@ -220,7 +232,7 @@
     padding: 18px;
   }
   .bm-hero h1 {
-    font-size: 28px;
+    font-size: 26px;
   }
   .bm-hero-side {
     align-items: stretch;
