@@ -12,6 +12,7 @@ import {
   canonicalBeatmapHref,
   rememberCatalogueReturn,
   beatmapsetPath,
+  beatmapDifficultyHash,
   parseBeatmapDifficultyHash,
 } from '@/lib/beatmap-routes';
 import {
@@ -74,14 +75,40 @@ export function LocalBeatmapsetPage({ setId }: { setId: number }) {
   return <BeatmapPage key={map.id} id={map.id} />;
 }
 
-/** Old database-ID links keep working, but sharing resolves to native mapset identity. */
+type ResolvedDifficulty = { source: string; set_id: number; mode: number; id: number };
+
+/**
+ * `/beatmaps/<difficulty id>` is the short link osu! uses: it resolves the difficulty to its set and
+ * opens `/beatmapsets/<set>#<mode>/<id>`. Ids that match no known difficulty fall back to the old
+ * database-ID links, which keep working but share as native mapset identity.
+ */
 export function LegacyBeatmapPage({ id }: { id: number }) {
   const search = useSearchParams();
   const { navigate } = useNavigationProgress();
   const management = search.get('management') === '1';
-  const { data } = useSWR<Beatmap>(management ? null : `/beatmaps/${id}`, fetcher, {
+  const resolved = useSWR<ResolvedDifficulty>(
+    management ? null : `/official/beatmaps/${id}/resolve`,
+    fetcher,
+    { shouldRetryOnError: false, revalidateOnFocus: false },
+  );
+  // The old database-ID lookup only starts once the short link is known not to apply.
+  const legacy = management || !!resolved.error;
+  const { data } = useSWR<Beatmap>(legacy && !management ? `/beatmaps/${id}` : null, fetcher, {
     shouldRetryOnError: false,
   });
+  useEffect(() => {
+    const target = resolved.data;
+    if (!target || window.location.pathname !== `/beatmaps/${id}`) return;
+    const href = `${beatmapsetPath(target.set_id, target.source === 'local' ? 'local' : 'official')}${beatmapDifficultyHash(target.mode, target.id)}`;
+    let current = true;
+    queueMicrotask(() => {
+      if (current && window.location.pathname === `/beatmaps/${id}`)
+        navigate(href, { replace: true, scroll: false });
+    });
+    return () => {
+      current = false;
+    };
+  }, [resolved.data, navigate, id]);
   useEffect(() => {
     if (
       !data ||
@@ -111,5 +138,6 @@ export function LegacyBeatmapPage({ id }: { id: number }) {
       current = false;
     };
   }, [data, management, navigate, search, id]);
+  if (!legacy) return <Loading />;
   return <BeatmapPage id={id} />;
 }
