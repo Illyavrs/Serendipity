@@ -1468,7 +1468,7 @@
     "toWeb": "網站通知",
     "toWebHint": "每位未被停權的玩家都會收到一則通知，在通知鈴鐺中顯示。",
     "toGame": "遊戲內",
-    "toGameHint": "目前在線的 osu!stable 玩家會在遊戲內跳出通知，和登入時的歡迎訊息一樣。osu!lazer 暫時收不到。",
+    "toGameHint": "在線的 osu!stable 玩家會跳出通知（和登入歡迎訊息一樣），同時也會發到唯讀的 #announce 頻道（stable 與 lazer 都看得到）。",
     "send": "發送廣播",
     "confirm": "確認發送給所有玩家",
     "cancel": "取消",

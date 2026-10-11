@@ -1468,7 +1468,7 @@
     "toWeb": "Website notification",
     "toWebHint": "Every unrestricted player receives a notification in the bell menu.",
     "toGame": "In game",
-    "toGameHint": "Shown as a notification popup to osu!stable players who are online now, like the welcome notice at login. osu!lazer does not receive it yet.",
+    "toGameHint": "Online osu!stable players get a notification popup like the login welcome notice, and a copy goes to the read-only #announce channel (stable and lazer).",
     "send": "Send broadcast",
     "confirm": "Confirm: send to all players",
     "cancel": "Cancel",
