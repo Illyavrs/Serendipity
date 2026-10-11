@@ -88,14 +88,6 @@
   position: relative;
   display: inline-flex;
 }
-/* A light wash, as on the reference, so the saturated flag colours sit softer on dark cards. */
-.user-card-meta .country-flag::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 3px;
-  background: rgb(255 255 255 / 0.22);
-}
 .user-card-meta .country-flag-image {
   display: block;
   width: 36px;

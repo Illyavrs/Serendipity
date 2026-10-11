@@ -3805,3 +3805,7 @@ input[type='checkbox'] {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Soften the saturated flag artwork everywhere (roughly a light wash) so it sits better on dark UI. */
+.country-flag-image {
+  filter: contrast(0.78) brightness(1.2);
+}
