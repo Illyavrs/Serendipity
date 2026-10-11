@@ -96,6 +96,7 @@ export function FriendsPage() {
                   <RelationshipActions
                     target={friend.target_id}
                     targetUsername={friend.target.username}
+                    compact
                   />
                 }
               />
