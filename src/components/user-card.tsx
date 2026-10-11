@@ -54,27 +54,23 @@ export function UserCard({ user }: { user: CardUser }) {
         <Avatar name={user.username} url={user.avatar_url} size="large" />
       </div>
       <div className="user-card-body">
+        <div className="user-card-meta">
+          <CountryFlag country={user.country} display="flag" />
+          {user.groups?.map((group) => (
+            <RoleBadge
+              key={group.id}
+              id={group.id}
+              label={group.short_name}
+              name={group.name}
+              colour={group.colour}
+              icon={group.icon}
+            />
+          ))}
+          <FriendToggle target={user.id} />
+        </div>
         <Link href={`/users/${user.id}`} className="user-card-name">
           {user.username}
         </Link>
-        <div className="user-card-meta">
-          <CountryFlag country={user.country} />
-          <FriendToggle target={user.id} />
-          {user.groups && user.groups.length > 0 && (
-            <div className="user-card-badges">
-              {user.groups.map((group) => (
-                <RoleBadge
-                  key={group.id}
-                  id={group.id}
-                  label={group.short_name}
-                  name={group.name}
-                  colour={group.colour}
-                  icon={group.icon}
-                />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
       {user.online !== undefined && (
         <div className="user-card-status">

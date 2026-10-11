@@ -2,7 +2,15 @@
 import { NavigationLink as Link } from './navigation-motion';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Ban, Heart, MessageCircle, MoreHorizontal, UserMinus, UserPlus } from 'lucide-react';
+import {
+  Ban,
+  MessageCircle,
+  MoreHorizontal,
+  UserCheck,
+  UserMinus,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 import { useSession } from './providers';
 import { Button } from './ui/button';
 import {
@@ -15,8 +23,8 @@ import { hasPermission } from '@/lib/api';
 import { useRelationship } from '@/lib/relationships';
 
 /**
- * Heart in the card's top row. Filled when the friendship is mutual, outlined when only the
- * viewer added them, and a "+" prompt when they added the viewer first. Clicking toggles.
+ * Round friend button in the card's top row: grey when not friends, pink when the viewer added
+ * them, green when mutual, and a "+" prompt when only they added the viewer. Clicking toggles.
  */
 export function FriendToggle({ target }: { target: number }) {
   const t = useTranslations('social');
@@ -48,7 +56,13 @@ export function FriendToggle({ target }: { target: number }) {
       disabled={!state.ready || state.busy}
       onClick={() => void state.change('friend', state.friend)}
     >
-      {kind === 'theirs' ? <UserPlus aria-hidden="true" /> : <Heart aria-hidden="true" />}
+      {kind === 'theirs' ? (
+        <UserPlus aria-hidden="true" />
+      ) : kind === 'mutual' ? (
+        <UserCheck aria-hidden="true" />
+      ) : (
+        <Users aria-hidden="true" />
+      )}
     </button>
   );
 }

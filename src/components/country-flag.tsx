@@ -11,16 +11,17 @@ export function CountryFlag({
   display = 'code',
 }: {
   country: string;
-  display?: 'code' | 'name';
+  display?: 'code' | 'name' | 'flag';
 }) {
   const locale = useLocale();
   const code = countryCode(country);
   const known = hasCountryFlag(code);
   const [failedCode, setFailedCode] = useState<string | null>(null);
   const name = countryName(code, locale);
+  const showImage = known && failedCode !== code;
   return (
     <span className="country-flag" title={name} data-country={code}>
-      {known && failedCode !== code && (
+      {showImage && (
         // These original Twemoji SVG bytes are vendored with CC BY 4.0 attribution.
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -33,7 +34,8 @@ export function CountryFlag({
           onError={() => setFailedCode(code)}
         />
       )}
-      <span>{display === 'name' ? name : code}</span>
+      {/* `flag` shows only the image; the name stays available as the tooltip and alt text. */}
+      {(display !== 'flag' || !showImage) && <span>{display === 'name' ? name : code}</span>}
     </span>
   );
 }
