@@ -965,8 +965,10 @@ function AdminContents() {
   const section =
     requestedSection && sections.includes(requestedSection) ? requestedSection : sections[0];
   const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  // A profile's admin shortcut links here with ?user=<id>, which the directory search matches exactly.
+  const requestedUser = /^\d{1,18}$/.test(query.get('user') ?? '') ? query.get('user')! : '';
+  const [searchInput, setSearchInput] = useState(requestedUser);
+  const [search, setSearch] = useState(requestedUser);
   const announcementNavigationGuard = useRef<AnnouncementNavigationGuard | null>(null);
   const registerAnnouncementNavigationGuard = useCallback(
     (guard: AnnouncementNavigationGuard | null) => {

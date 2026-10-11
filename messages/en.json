@@ -88,6 +88,7 @@
     "keepEditing": "Keep editing"
   },
   "home": {
+    "groupsTitle": "User groups",
     "title": "Illyaverse",
     "titleEnd": "osu! community server",
     "description": "An independent osu! player community. Create a separate account, discover beatmaps, compare scores, download replays and chat with other players.",
@@ -523,6 +524,7 @@
     "title": "Player profile",
     "joined": "Joined",
     "edit": "Edit profile",
+    "adminView": "View in admin panel",
     "about": "About",
     "scores": "Recent scores",
     "best": "Best performances",
@@ -1378,5 +1380,31 @@
     "errorActive": "Another recalculation is already queued or running. Wait for it or cancel it.",
     "errorPlayer": "No player matches that name or ID.",
     "errorBeatmapMissing": "No beatmap matches that ID."
+  },
+  "groups": {
+    "title": "User groups",
+    "subtitle": "Find the people who run this server when you need help, want to report a problem or request a beatmap ranking.",
+    "memberCount": "{count, plural, one {# member} other {# members}}",
+    "noMembers": "No members yet.",
+    "emptyTitle": "No public groups yet",
+    "emptyDescription": "Groups appear here once an administrator enables the badge on a role.",
+    "roles": {
+      "super_user": {
+        "title": "Server owner",
+        "description": "Holds the highest authority on the server; there is only ever one."
+      },
+      "administrator": {
+        "title": "Administrators",
+        "description": "Manage the server, roles and settings, and handle account and operations issues."
+      },
+      "moderator": {
+        "title": "Moderators",
+        "description": "Keep the community in order: reports, chat and score review."
+      },
+      "beatmap_nominator": {
+        "title": "Beatmap nominators",
+        "description": "Review ranking requests and nominate beatmaps."
+      }
+    }
   }
 }

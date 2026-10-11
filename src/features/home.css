@@ -121,7 +121,7 @@
 }
 .home-community .home-capabilities {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   background: var(--surface);
   backdrop-filter: blur(var(--material-blur));
   border: 1px solid var(--border);
@@ -639,11 +639,14 @@
   .home-community .home-capabilities {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .home-community .home-capabilities a:nth-child(2) {
+  .home-community .home-capabilities a:nth-child(2n) {
     border-right: 0;
   }
-  .home-community .home-capabilities a:nth-child(-n + 2) {
+  .home-community .home-capabilities a:nth-child(-n + 4) {
     border-bottom: 1px solid var(--border);
+  }
+  .home-community .home-capabilities a:last-child {
+    grid-column: 1 / -1;
   }
   .home-community .home-server-status {
     flex-wrap: wrap;

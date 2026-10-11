@@ -88,6 +88,7 @@
     "keepEditing": "編集を続ける"
   },
   "home": {
+    "groupsTitle": "ユーザーグループ",
     "title": "Illyaverse",
     "titleEnd": "osu! コミュニティサーバー",
     "description": "独立した osu! プレイヤーコミュニティです。専用アカウントを作り、マップの検索、スコアの比較、リプレイのダウンロード、チャットを利用できます。",
@@ -523,6 +524,7 @@
     "title": "プロフィール",
     "joined": "参加日",
     "edit": "プロフィール編集",
+    "adminView": "管理パネルで表示",
     "about": "自己紹介",
     "scores": "最近のスコア",
     "best": "ベストパフォーマンス",
@@ -1378,5 +1380,31 @@
     "errorActive": "別の再計算が待機中または実行中です。完了を待つかキャンセルしてください。",
     "errorPlayer": "その名前または ID のプレイヤーが見つかりません。",
     "errorBeatmapMissing": "その ID のビートマップが見つかりません。"
+  },
+  "groups": {
+    "title": "ユーザーグループ",
+    "subtitle": "サポートが必要なとき、問題を報告したいとき、譜面のランク申請をしたいときは、ここから運営メンバーを探せます。",
+    "memberCount": "{count}人",
+    "noMembers": "メンバーはいません。",
+    "emptyTitle": "公開されているグループはありません",
+    "emptyDescription": "管理者がロールのバッジ表示を有効にすると、ここに表示されます。",
+    "roles": {
+      "super_user": {
+        "title": "サーバーオーナー",
+        "description": "サーバーの最上位権限を持ち、1台につき1人だけです。"
+      },
+      "administrator": {
+        "title": "管理者",
+        "description": "サーバー、ロール、設定を管理し、アカウントや運営の問題に対応します。"
+      },
+      "moderator": {
+        "title": "モデレーター",
+        "description": "通報、チャット、スコア審査でコミュニティを守ります。"
+      },
+      "beatmap_nominator": {
+        "title": "譜面ノミネーター",
+        "description": "ランク申請を審査し、譜面をノミネートします。"
+      }
+    }
   }
 }

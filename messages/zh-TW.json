@@ -88,6 +88,7 @@
     "keepEditing": "繼續編輯"
   },
   "home": {
+    "groupsTitle": "用戶群組",
     "title": "Illyaverse",
     "titleEnd": "osu! 社群伺服器",
     "description": "獨立的 osu! 玩家社群。建立專屬帳號，探索圖譜、比較成績、下載 Replay，並與其他玩家聊天。",
@@ -523,6 +524,7 @@
     "title": "玩家個人頁",
     "joined": "加入時間",
     "edit": "編輯個人頁",
+    "adminView": "在管理員面板中檢視",
     "about": "關於我",
     "scores": "最近成績",
     "best": "最佳表現",
@@ -1378,5 +1380,31 @@
     "errorActive": "已有另一個重算工作在排隊或執行中。請等它完成或先取消。",
     "errorPlayer": "找不到符合該名稱或 ID 的玩家。",
     "errorBeatmapMissing": "找不到符合該 ID 的譜面。"
+  },
+  "groups": {
+    "title": "用戶群組",
+    "subtitle": "需要協助、檢舉問題或申請圖譜排名時，可以在這裡找到伺服器的管理團隊。",
+    "memberCount": "{count} 位成員",
+    "noMembers": "目前沒有成員。",
+    "emptyTitle": "尚未公開任何群組",
+    "emptyDescription": "管理員為角色開啟徽章顯示後，群組會出現在這裡。",
+    "roles": {
+      "super_user": {
+        "title": "伺服器擁有者",
+        "description": "擁有伺服器的最高權限，每個伺服器只有一位。"
+      },
+      "administrator": {
+        "title": "管理員",
+        "description": "管理伺服器、角色與設定，處理帳號與營運問題。"
+      },
+      "moderator": {
+        "title": "版主",
+        "description": "維護社群秩序，處理檢舉、聊天與成績審查。"
+      },
+      "beatmap_nominator": {
+        "title": "圖譜提名者",
+        "description": "審查圖譜排名申請並提名圖譜。"
+      }
+    }
   }
 }

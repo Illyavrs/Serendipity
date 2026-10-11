@@ -5,7 +5,7 @@ import { NavigationLink as Link } from '@/components/navigation-motion';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import useSWR, { unstable_serialize, useSWRConfig } from 'swr';
-import { ArrowUpRight, Pencil } from 'lucide-react';
+import { ArrowUpRight, Pencil, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,7 @@ import {
   Avatar,
 } from '@/components/common';
 import { useSession } from '@/components/providers';
-import { api, ApiError, fetcher } from '@/lib/api';
+import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import type {
   Beatmap,
   BestScorePage,
@@ -519,6 +519,17 @@ export function PlayerPage({ id }: { id: number }) {
                       </Link>
                     </Button>
                   )}
+                  {user &&
+                    ['users.moderate', 'roles.manage', 'users.sessions.revoke'].some((permission) =>
+                      hasPermission(user.permissions ?? [], permission),
+                    ) && (
+                      <Button variant="outline" asChild>
+                        <Link href={`/admin?tab=users&user=${id}`}>
+                          <ShieldCheck />
+                          {t('adminView')}
+                        </Link>
+                      </Button>
+                    )}
                   <RelationshipActions target={id} targetUsername={player.username} />
                 </div>
               </div>

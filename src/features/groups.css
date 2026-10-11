@@ -1,0 +1,42 @@
+.groups-page .groups-list {
+  display: grid;
+  gap: 16px;
+}
+.groups-page .groups-section {
+  padding: 20px 24px;
+}
+.groups-page .groups-heading {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.groups-page .groups-title-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.groups-page .groups-title-line h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.groups-page .groups-members {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.groups-page .groups-members li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 4px;
+}
+.groups-page .groups-members .player-cell {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

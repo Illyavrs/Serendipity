@@ -10,6 +10,7 @@ import {
   MessagesSquare,
   Palette,
   Play,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NavigationLink as Link } from '@/components/navigation-motion';
@@ -68,6 +69,7 @@ export function HomePage() {
     { title: 'playTitle', href: '/rankings', icon: Trophy },
     { title: 'communityTitle', href: '/chat', icon: MessagesSquare },
     { title: 'profileTitle', href: '/settings?tab=appearance', icon: Palette },
+    { title: 'groupsTitle', href: '/groups', icon: Users },
   ] as const;
 
   return (
