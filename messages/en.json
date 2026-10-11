@@ -501,7 +501,13 @@
     "archiveDownloadTimeout": "The download timed out. Retry or use the official beatmapset page.",
     "archiveDownloadInvalid": "The provider returned an invalid or incomplete .osz. Retry or use the official beatmapset page.",
     "noScoresTitle": "No scores yet",
-    "noScoresHint": "Nobody has set a score on this difficulty yet. Be the first!"
+    "noScoresHint": "Nobody has set a score on this difficulty yet. Be the first!",
+    "statCs": "Circle Size",
+    "statHp": "HP Drain",
+    "statOd": "Accuracy",
+    "statAr": "Approach Rate",
+    "statStars": "Star Rating",
+    "leaderboardTitle": "Leaderboard"
   },
   "rankings": {
     "title": "Rankings",
@@ -523,7 +529,15 @@
     "mods": "Mods",
     "playedAt": "Played",
     "topPlaysEmptyTitle": "No top plays yet",
-    "topPlaysEmptyDescription": "Verified, ranked scores appear here."
+    "topPlaysEmptyDescription": "Verified, ranked scores appear here.",
+    "playtimeTab": "Play time",
+    "playtimeTitle": "Play time ranking",
+    "playtimeSubtitle": "Players ranked by total time spent playing, across every mode and Relax.",
+    "playtimeNotice": "Each play counts the shorter of its duration and the beatmap length; failed plays count too.",
+    "playtimeEmptyTitle": "No play time recorded yet",
+    "playtimeEmptyDescription": "Play time appears here once scores are submitted.",
+    "playtimeColumn": "Total play time",
+    "playsColumn": "Plays"
   },
   "profile": {
     "banchoRank": "Compare me with Bancho",
@@ -586,7 +600,9 @@
     "downloadReplay": "Download replay: {title}",
     "ppExcluded": "Reference pp",
     "setPreferredMode": "Set as main mode",
-    "preferredModeCurrent": "This is your main mode"
+    "preferredModeCurrent": "This is your main mode",
+    "playTime": "Play time",
+    "playTimeValue": "{hours}h {minutes}m"
   },
   "settings": {
     "title": "Settings",

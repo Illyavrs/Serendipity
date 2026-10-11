@@ -131,10 +131,10 @@ export function BeatmapHero({
     ? { version: preview.version, mode: preview.mode, stars: preview.stars }
     : { version: selectedVersion, mode: selectedMode, stars: stats.stars };
   const bars: [string, number | null | undefined][] = [
-    ['CS', stats.cs],
-    ['HP', stats.hp],
-    ['AR', stats.ar],
-    ['OD', stats.od],
+    [t('statCs'), stats.cs],
+    [t('statHp'), stats.hp],
+    [t('statOd'), stats.od],
+    [t('statAr'), stats.ar],
   ];
   return (
     <section className="bm-hero glass" aria-label={title}>
@@ -178,9 +178,14 @@ export function BeatmapHero({
         </div>
         <h1>{title}</h1>
         <p className="bm-artist">{artist}</p>
-        <p className="bm-mapper">
-          {t('creator')} <strong>{creator}</strong>
-        </p>
+        <div className="bm-mapping">
+          <span className="bm-mapper-avatar" aria-hidden="true">
+            {creator.slice(0, 1).toUpperCase()}
+          </span>
+          <p className="bm-mapper">
+            {t('creator')} <strong>{creator}</strong>
+          </p>
+        </div>
         {actions && <div className="bm-actions">{actions}</div>}
       </div>
       <aside className="bm-hero-side">
@@ -189,7 +194,7 @@ export function BeatmapHero({
           {badges}
         </div>
         <div className="bm-panel" aria-label={t('currentDifficulty')}>
-          <div className="bm-facts">
+          <div className="bm-row bm-facts">
             <span title={t('length')}>
               <Clock aria-hidden="true" />
               {duration(stats.lengthSeconds)}
@@ -203,13 +208,13 @@ export function BeatmapHero({
               {stats.maxCombo === null ? '—' : `${stats.maxCombo}x`}
             </span>
           </div>
-          <div className="bm-bars">
+          <div className="bm-row bm-bars">
             {bars
               .filter((bar): bar is [string, number] => typeof bar[1] === 'number')
               .map(([label, value]) => (
                 <Bar key={label} label={label} value={value} />
               ))}
-            <Bar label={t('stars')} value={stats.stars} />
+            <Bar label={t('statStars')} value={stats.stars} />
           </div>
         </div>
       </aside>

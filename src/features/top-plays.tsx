@@ -11,7 +11,7 @@ import type { Page, Score } from '@/lib/types';
 import { ProfileScoreList } from '@/components/profile-score-list';
 import { readRankingSelection, updateRankingSelection } from '@/lib/ranking-url-state';
 
-export function RankingsTabs({ active }: { active: 'players' | 'top-plays' }) {
+export function RankingsTabs({ active }: { active: 'players' | 'top-plays' | 'playtime' }) {
   const t = useTranslations('rankings');
   const search = useSearchParams();
   const query = new URLSearchParams();
@@ -31,6 +31,9 @@ export function RankingsTabs({ active }: { active: 'players' | 'top-plays' }) {
         aria-current={active === 'top-plays' ? 'page' : undefined}
       >
         {t('topPlaysTab')}
+      </Link>
+      <Link href="/rankings/playtime" aria-current={active === 'playtime' ? 'page' : undefined}>
+        {t('playtimeTab')}
       </Link>
     </nav>
   );

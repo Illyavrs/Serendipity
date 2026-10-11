@@ -674,6 +674,17 @@ export function PlayerPage({ id }: { id: number }) {
                       <dd>{f.number(player.play_count)}</dd>
                     </div>
                     <div>
+                      <dt>{t('playTime')}</dt>
+                      <dd>
+                        {player.statistics?.play_time
+                          ? t('playTimeValue', {
+                              hours: Math.floor(player.statistics.play_time / 3600),
+                              minutes: Math.floor((player.statistics.play_time % 3600) / 60),
+                            })
+                          : '—'}
+                      </dd>
+                    </div>
+                    <div>
                       <dt>{t('maximumCombo')}</dt>
                       <dd>
                         {typeof player.statistics?.maximum_combo === 'number'

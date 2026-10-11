@@ -501,7 +501,13 @@
     "archiveDownloadTimeout": "下載逾時。請重試或使用官方圖譜集頁面。",
     "archiveDownloadInvalid": "下載來源回傳了無效或不完整的 .osz。請重試或使用官方圖譜集頁面。",
     "noScoresTitle": "還沒有成績",
-    "noScoresHint": "還沒有人在這個難度留下成績。成為第一個吧!"
+    "noScoresHint": "還沒有人在這個難度留下成績。成為第一個吧!",
+    "statCs": "圓圈大小",
+    "statHp": "血量流失",
+    "statOd": "準確度",
+    "statAr": "縮圈速度",
+    "statStars": "難度星數",
+    "leaderboardTitle": "譜面排行榜"
   },
   "rankings": {
     "title": "排行榜",
@@ -523,7 +529,15 @@
     "mods": "Mods",
     "playedAt": "遊玩時間",
     "topPlaysEmptyTitle": "目前沒有 Top Play",
-    "topPlaysEmptyDescription": "已驗證並計入排名的成績會出現在這裡。"
+    "topPlaysEmptyDescription": "已驗證並計入排名的成績會出現在這裡。",
+    "playtimeTab": "遊玩時間",
+    "playtimeTitle": "遊玩時間排行榜",
+    "playtimeSubtitle": "依總遊玩時間排名,涵蓋所有模式與 RX。",
+    "playtimeNotice": "時間取遊玩時長與圖譜長度中較短者,失敗的遊玩也會計入。",
+    "playtimeEmptyTitle": "還沒有遊玩時間紀錄",
+    "playtimeEmptyDescription": "提交成績後,遊玩時間就會出現在這裡。",
+    "playtimeColumn": "總遊玩時間",
+    "playsColumn": "遊玩次數"
   },
   "profile": {
     "banchoRank": "與 Bancho 比較排名",
@@ -586,7 +600,9 @@
     "downloadReplay": "下載 Replay：{title}",
     "ppExcluded": "參考 pp",
     "setPreferredMode": "設為主要遊戲模式",
-    "preferredModeCurrent": "這是你的主要遊戲模式"
+    "preferredModeCurrent": "這是你的主要遊戲模式",
+    "playTime": "遊玩時間",
+    "playTimeValue": "{hours}小時 {minutes}分"
   },
   "settings": {
     "title": "設定",

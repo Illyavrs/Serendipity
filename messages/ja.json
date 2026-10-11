@@ -501,7 +501,13 @@
     "archiveDownloadTimeout": "ダウンロードがタイムアウトしました。再試行するか、公式セットのページをご利用ください。",
     "archiveDownloadInvalid": "取得先が無効または不完全な .osz を返しました。再試行するか、公式セットのページをご利用ください。",
     "noScoresTitle": "スコアはまだありません",
-    "noScoresHint": "この難度にはまだスコアがありません。最初の1人になりましょう!"
+    "noScoresHint": "この難度にはまだスコアがありません。最初の1人になりましょう!",
+    "statCs": "サークルサイズ",
+    "statHp": "HPドレイン",
+    "statOd": "精度",
+    "statAr": "アプローチレート",
+    "statStars": "難易度",
+    "leaderboardTitle": "リーダーボード"
   },
   "rankings": {
     "title": "ランキング",
@@ -523,7 +529,15 @@
     "mods": "Mods",
     "playedAt": "プレイ日時",
     "topPlaysEmptyTitle": "トッププレイはまだありません",
-    "topPlaysEmptyDescription": "検証済みでランキング対象のスコアがここに表示されます。"
+    "topPlaysEmptyDescription": "検証済みでランキング対象のスコアがここに表示されます。",
+    "playtimeTab": "プレイ時間",
+    "playtimeTitle": "プレイ時間ランキング",
+    "playtimeSubtitle": "全モードとRelaxを合わせた総プレイ時間の順位です。",
+    "playtimeNotice": "各プレイは所要時間と譜面の長さの短い方で計算され、失敗したプレイも含みます。",
+    "playtimeEmptyTitle": "プレイ時間の記録はまだありません",
+    "playtimeEmptyDescription": "スコアを送信するとここに表示されます。",
+    "playtimeColumn": "総プレイ時間",
+    "playsColumn": "プレイ回数"
   },
   "profile": {
     "banchoRank": "Bancho と比較する",
@@ -586,7 +600,9 @@
     "downloadReplay": "リプレイをダウンロード：{title}",
     "ppExcluded": "参考 pp",
     "setPreferredMode": "メインモードに設定",
-    "preferredModeCurrent": "現在のメインモードです"
+    "preferredModeCurrent": "現在のメインモードです",
+    "playTime": "プレイ時間",
+    "playTimeValue": "{hours}時間{minutes}分"
   },
   "settings": {
     "title": "設定",

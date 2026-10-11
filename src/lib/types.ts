@@ -73,6 +73,8 @@ export type User = {
     rank: number | null;
     country_rank: number | null;
     play_count: number;
+    /** Seconds spent playing in this mode and variant. */
+    play_time?: number;
     accuracy: number;
     maximum_combo?: number;
     total_hits?: number;

@@ -570,9 +570,9 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
             // A difficulty nobody has played is not stored yet; the board is simply empty.
             <section id="server-scores" className="glass content-panel beatmap-leaderboard">
               <header className="section-heading">
-                <h2>{t('leaderboard')}</h2>
+                <h2>{maps('leaderboard')}</h2>
               </header>
-              <Empty title={t('noScoresTitle')} description={t('noScoresHint')} />
+              <Empty title={maps('noScoresTitle')} description={maps('noScoresHint')} />
             </section>
           )}
         </>
