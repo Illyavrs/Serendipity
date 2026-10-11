@@ -887,7 +887,11 @@
     "hint": "朋友與封鎖清單會和 stable、lazer 共用。朋友是單向加入，双方互加時會顯示「互為朋友」。",
     "mutual": "互為朋友",
     "emptyFriends": "還沒有加入朋友",
-    "emptyBlocks": "沒有封鎖的玩家"
+    "emptyBlocks": "沒有封鎖的玩家",
+    "actions": "更多動作",
+    "friendMutual": "互為朋友",
+    "friendMine": "你的朋友(對方還沒加你)",
+    "friendTheirs": "對方加了你為朋友,點擊回加"
   },
   "scores": {
     "rankPosition": "名次",

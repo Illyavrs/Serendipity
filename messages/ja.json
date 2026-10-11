@@ -887,7 +887,11 @@
     "hint": "フレンドとブロックは stable・lazer と共通です。フレンド追加は片方向で、双方が追加した場合は相互フレンドと表示されます。",
     "mutual": "相互フレンド",
     "emptyFriends": "フレンドはまだいません",
-    "emptyBlocks": "ブロックしたプレイヤーはいません"
+    "emptyBlocks": "ブロックしたプレイヤーはいません",
+    "actions": "その他の操作",
+    "friendMutual": "相互フレンド",
+    "friendMine": "あなたのフレンド(相手はまだ追加していません)",
+    "friendTheirs": "相手があなたをフレンドに追加しました。クリックで追加し返す"
   },
   "scores": {
     "rankPosition": "順位",

@@ -887,7 +887,11 @@
     "hint": "Friends and blocks are shared with stable and lazer. Adding a friend is one-way; mutual friendships are marked below.",
     "mutual": "Mutual friends",
     "emptyFriends": "No friends added yet",
-    "emptyBlocks": "No blocked players"
+    "emptyBlocks": "No blocked players",
+    "actions": "More actions",
+    "friendMutual": "Mutual friends",
+    "friendMine": "Your friend (they have not added you)",
+    "friendTheirs": "They added you as a friend; click to add back"
   },
   "scores": {
     "rankPosition": "Position",

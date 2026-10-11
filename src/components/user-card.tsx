@@ -1,10 +1,11 @@
 'use client';
 import { NavigationLink as Link } from './navigation-motion';
 import { useTranslations } from 'next-intl';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import { Avatar } from './common';
 import { CountryFlag } from './country-flag';
 import { RoleBadge } from './role-badge';
+import { CardMenu, FriendToggle } from './card-relationship';
 import './user-card.css';
 
 export type CardUser = {
@@ -30,9 +31,9 @@ const hex = /^#[0-9a-f]{6}$/i;
 
 /**
  * Compact player card for any list of people: banner as a dim backdrop, avatar with a presence
- * dot, name, flag and group badges. The whole card opens the profile; `actions` sit on top.
+ * dot, name, flag and group badges. The whole card opens the profile.
  */
-export function UserCard({ user, actions }: { user: CardUser; actions?: ReactNode }) {
+export function UserCard({ user }: { user: CardUser }) {
   const t = useTranslations('people');
   const style = hex.test(user.accent_color ?? '')
     ? ({ '--card-accent': user.accent_color } as CSSProperties)
@@ -58,6 +59,7 @@ export function UserCard({ user, actions }: { user: CardUser; actions?: ReactNod
         </Link>
         <div className="user-card-meta">
           <CountryFlag country={user.country} />
+          <FriendToggle target={user.id} />
           {user.groups && user.groups.length > 0 && (
             <div className="user-card-badges">
               {user.groups.map((group) => (
@@ -82,9 +84,9 @@ export function UserCard({ user, actions }: { user: CardUser; actions?: ReactNod
             aria-hidden="true"
           />
           <span>{user.online ? t('online') : t('offline')}</span>
+          <CardMenu target={user.id} username={user.username} />
         </div>
       )}
-      {actions && <div className="user-card-actions">{actions}</div>}
     </article>
   );
 }

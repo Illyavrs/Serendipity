@@ -2,36 +2,20 @@
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import useSWR from 'swr';
 import { UserPlus, UserMinus, Ban, LoaderCircle, MessageCircle } from 'lucide-react';
 import { useSession } from '@/components/providers';
 import { Button } from '@/components/ui/button';
 import { Loading, LoadError, Empty } from '@/components/common';
-import { UserCard, type CardUser } from '@/components/user-card';
+import { UserCard } from '@/components/user-card';
+import { useRelationships } from '@/lib/relationships';
 import { api, ApiError, hasPermission } from '@/lib/api';
 
-type Relationship = {
-  target_id: number;
-  relation_type: 'friend' | 'block';
-  mutual: boolean;
-  target: CardUser;
-};
-type Relationships = { friends: Relationship[]; blocks: Relationship[] };
-export function useRelationships() {
-  const { user } = useSession();
-  return useSWR<Relationships>(user ? ['relationships', user.id] : null, () =>
-    api('/me/relationships'),
-  );
-}
 export function RelationshipActions({
   target,
   targetUsername,
-  compact = false,
 }: {
   target: number;
   targetUsername?: string;
-  /** Icon-only buttons with tooltips, for tight spaces such as player cards. */
-  compact?: boolean;
 }) {
   const t = useTranslations('social');
   const c = useTranslations('common');
@@ -71,18 +55,10 @@ export function RelationshipActions({
     <div className="relationship-actions" aria-busy={busy}>
       <div className="relationship-action-row flex flex-wrap items-center gap-2">
         {canMessage && (
-          <Button
-            asChild
-            variant={compact ? 'ghost' : 'outline'}
-            size={compact ? 'icon-sm' : undefined}
-            title={compact ? t('message') : undefined}
-          >
-            <Link
-              href={`/chat?recipient=${encodeURIComponent(targetUsername!)}`}
-              aria-label={compact ? t('message') : undefined}
-            >
+          <Button asChild variant="outline">
+            <Link href={`/chat?recipient=${encodeURIComponent(targetUsername!)}`}>
               <MessageCircle aria-hidden="true" />
-              {!compact && t('message')}
+              {t('message')}
             </Link>
           </Button>
         )}
@@ -95,10 +71,7 @@ export function RelationshipActions({
             <>
               {!blocked && (
                 <Button
-                  variant={compact ? 'ghost' : 'outline'}
-                  size={compact ? 'icon-sm' : undefined}
-                  title={compact ? t(friend ? 'removeFriend' : 'addFriend') : undefined}
-                  aria-label={compact ? t(friend ? 'removeFriend' : 'addFriend') : undefined}
+                  variant="outline"
                   disabled={!data || busy}
                   onClick={() => change('friend', friend)}
                 >
@@ -109,19 +82,16 @@ export function RelationshipActions({
                   ) : (
                     <UserPlus aria-hidden="true" />
                   )}
-                  {!compact && t(friend ? 'removeFriend' : 'addFriend')}
+                  {t(friend ? 'removeFriend' : 'addFriend')}
                 </Button>
               )}
               <Button
                 variant="ghost"
-                size={compact ? 'icon-sm' : undefined}
-                title={compact ? t(blocked ? 'unblock' : 'block') : undefined}
-                aria-label={compact ? t(blocked ? 'unblock' : 'block') : undefined}
                 disabled={!data || busy}
                 onClick={() => (blocked ? change('block', true) : setConfirm(true))}
               >
                 <Ban aria-hidden="true" />
-                {!compact && t(blocked ? 'unblock' : 'block')}
+                {t(blocked ? 'unblock' : 'block')}
               </Button>
             </>
           ))}
@@ -164,16 +134,7 @@ export function RelationshipList() {
             <ul className="user-card-grid">
               {data[kind].map((r) => (
                 <li key={r.target_id}>
-                  <UserCard
-                    user={r.target}
-                    actions={
-                      <RelationshipActions
-                        target={r.target_id}
-                        targetUsername={r.target.username}
-                        compact
-                      />
-                    }
-                  />
+                  <UserCard user={r.target} />
                 </li>
               ))}
             </ul>

@@ -6,7 +6,7 @@ import useSWR from 'swr';
 import { PageHeading, Loading, LoadError, Empty, Pagination } from '@/components/common';
 import { useSession } from '@/components/providers';
 import { UserCard, type CardUser } from '@/components/user-card';
-import { RelationshipActions, useRelationships } from './social';
+import { useRelationships } from '@/lib/relationships';
 import { fetcher } from '@/lib/api';
 import type { Page } from '@/lib/types';
 
@@ -89,16 +89,7 @@ export function FriendsPage() {
         <ul className="user-card-grid">
           {friends.map((friend) => (
             <li key={friend.target_id}>
-              <UserCard
-                user={friend.target}
-                actions={
-                  <RelationshipActions
-                    target={friend.target_id}
-                    targetUsername={friend.target.username}
-                    compact
-                  />
-                }
-              />
+              <UserCard user={friend.target} />
             </li>
           ))}
         </ul>

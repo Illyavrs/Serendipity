@@ -130,33 +130,6 @@
   gap: 6px;
 }
 .user-card-badges .role-badge,
-.user-card-actions {
-  position: relative;
-  z-index: 1;
-}
-.user-card-actions {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-}
-.user-card-actions .relationship-action-row {
-  gap: 2px;
-  padding: 2px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--background) 60%, transparent);
-  backdrop-filter: blur(6px);
-}
-.user-card-actions .relationship-confirm {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 5;
-  width: 260px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-strong);
-}
 .user-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -164,4 +137,56 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+.card-friend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--background) 65%, transparent);
+  color: color-mix(in srgb, var(--foreground) 55%, transparent);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+.card-friend svg {
+  width: 14px;
+  height: 14px;
+}
+.card-friend:hover:not(:disabled) {
+  color: #f472b6;
+}
+.card-friend[data-kind='mine'],
+.card-friend[data-kind='mutual'] {
+  background: #ec4899;
+  color: #fff;
+}
+.card-friend[data-kind='mutual'] svg {
+  fill: currentColor;
+}
+.card-friend[data-kind='theirs'] {
+  color: #f472b6;
+}
+.user-card-status .card-menu {
+  position: relative;
+  margin-left: auto;
+}
+.card-menu-confirm {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  width: 260px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  font-weight: 400;
+}
+.card-menu-confirm p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
 }
