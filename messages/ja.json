@@ -1468,7 +1468,7 @@
     "toWeb": "ウェブ通知",
     "toWebHint": "制限されていないすべてのプレイヤーの通知ベルに表示されます。",
     "toGame": "ゲーム内",
-    "toGameHint": "誰でも読める #announce チャンネルに投稿され、stable と lazer の両方で表示されます。",
+    "toGameHint": "オンラインの osu!stable プレイヤーに、ログイン時のウェルカム通知と同じ形式でポップアップ表示されます。osu!lazer にはまだ届きません。",
     "send": "一斉送信",
     "confirm": "確認：全員に送信",
     "cancel": "キャンセル",

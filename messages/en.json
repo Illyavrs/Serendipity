@@ -1468,7 +1468,7 @@
     "toWeb": "Website notification",
     "toWebHint": "Every unrestricted player receives a notification in the bell menu.",
     "toGame": "In game",
-    "toGameHint": "Posted to the #announce chat channel that every stable and lazer player can read.",
+    "toGameHint": "Shown as a notification popup to osu!stable players who are online now, like the welcome notice at login. osu!lazer does not receive it yet.",
     "send": "Send broadcast",
     "confirm": "Confirm: send to all players",
     "cancel": "Cancel",
