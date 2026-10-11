@@ -1,6 +1,5 @@
 'use client';
 
-import { difficultyStyle } from '@/lib/difficulty-color';
 import { useEffect, useId, useState, type CSSProperties, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -28,6 +27,7 @@ import type { OfficialBeatmapSearch, OfficialBeatmapset, ScoreBoard } from '@/li
 import { MapCardPreview } from './map-card-preview';
 import { MapAudioPreview } from './map-audio-preview';
 import { MapStatus } from './map-status';
+import { BeatmapHero } from '@/components/beatmap-hero';
 import { BeatmapRankRequestAction } from './beatmap-rank-requests';
 import { OfficialArchiveDownload } from './official-archive-download';
 import {
@@ -478,13 +478,34 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
         <OfficialFeedback error={error} retry={retry} />
       ) : (
         <>
-          <header className="public-official-header glass">
-            <MapArtwork source="official" nativeSetId={data.official_set_id} priority />
-            <div className="public-official-title">
-              <SetStatuses set={data} />
-              <h1>{data.title}</h1>
-              <p>{data.artist}</p>
-              <span>{c('mappedBy', { creator: data.creator })}</span>
+          <BeatmapHero
+            coverSource="official"
+            coverSetId={data.official_set_id}
+            status={<SetStatuses set={data} />}
+            title={data.title}
+            artist={data.artist}
+            creator={data.creator}
+            difficulties={data.difficulties.map((map) => ({
+              key: map.official_id,
+              mode: map.mode,
+              version: map.version,
+              stars: map.stars,
+              current: map.official_id === selected.official_id,
+              onSelect: () => choose(map.official_id),
+            }))}
+            selectedVersion={selected.version}
+            selectedMode={selected.mode}
+            stats={{
+              stars: selected.stars,
+              lengthSeconds: selected.length_seconds,
+              bpm: selected.bpm,
+              maxCombo: selected.max_combo,
+              cs: selected.cs,
+              hp: selected.hp,
+              ar: selected.ar,
+              od: selected.od,
+            }}
+            actions={
               <OfficialArchiveDownload key={data.official_set_id} set={data}>
                 <Button asChild variant="outline">
                   <a href={data.official_url} target="_blank" rel="noopener noreferrer">
@@ -500,8 +521,31 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
                   </Button>
                 )}
               </OfficialArchiveDownload>
-            </div>
-          </header>
+            }
+            notes={
+              selected.local_id !== undefined ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    document.getElementById('server-scores')?.scrollIntoView({ block: 'start' })
+                  }
+                >
+                  <ArrowRight aria-hidden="true" />
+                  {t('serverScores')}
+                </Button>
+              ) : (
+                <>
+                  <span className="hint">{t('metadataOnly')}</span>
+                  {user && hasPermission(user.permissions, 'beatmaps.import') && (
+                    <Link className="text-link" href="/beatmaps/import">
+                      {maps('import')}
+                    </Link>
+                  )}
+                </>
+              )
+            }
+          />
           {['pending', 'graveyard'].includes(data.status) && (
             <section className="glass content-panel">
               <BeatmapRankRequestAction
@@ -516,95 +560,6 @@ export function OfficialBeatmapsetPage({ setId }: { setId: string }) {
               />
             </section>
           )}
-          <section
-            className="public-official-difficulties glass"
-            aria-labelledby="official-difficulties-title"
-          >
-            <div className="public-official-difficulty-heading">
-              <h2 id="official-difficulties-title">{c('difficultyPreview')}</h2>
-              <span>{c('fullPreviewCount', { count: data.difficulties.length })}</span>
-            </div>
-            <div
-              className="public-official-difficulty-layout"
-              data-single={data.difficulties.length === 1 ? true : undefined}
-            >
-              <div
-                className="public-official-difficulty-list"
-                role="group"
-                aria-label={c('difficultyPreview')}
-              >
-                {data.difficulties.map((map) => (
-                  <button
-                    key={map.official_id}
-                    type="button"
-                    className="difficulty-chip"
-                    aria-pressed={selected.official_id === map.official_id}
-                    onClick={() => choose(map.official_id)}
-                    style={
-                      {
-                        ...difficultyStyle(map.stars),
-                      } as CSSProperties
-                    }
-                  >
-                    <span className="difficulty-marker" aria-hidden="true" />
-                    <span className="difficulty-chip-copy">
-                      <span className="difficulty-chip-caption">
-                        <span className="difficulty-mode">{modes[map.mode]}</span>
-                        <MapStatus value={map.status} />
-                      </span>
-                      <span className="difficulty-version">{map.version}</span>
-                    </span>
-                    <span className="difficulty-rating">
-                      <Star aria-hidden="true" />
-                      {map.stars.toFixed(2)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="public-official-selected">
-                <div className="public-official-selected-heading">
-                  <h3>{selected.version}</h3>
-                  <MapStatus value={selected.status} />
-                </div>
-                <dl>
-                  {[
-                    [maps('stars'), selected.stars.toFixed(2)],
-                    [maps('length'), mapDuration(selected.length_seconds)],
-                    [maps('bpm'), selected.bpm?.toFixed(0) ?? '—'],
-                    ['AR', selected.ar?.toFixed(1) ?? '—'],
-                    ['CS', selected.cs?.toFixed(1) ?? '—'],
-                    ['OD', selected.od?.toFixed(1) ?? '—'],
-                    ['HP', selected.hp?.toFixed(1) ?? '—'],
-                    [t('maxCombo'), selected.max_combo === null ? '—' : `${selected.max_combo}x`],
-                  ].map(([label, value]) => (
-                    <div key={label}>
-                      <dt>{label}</dt>
-                      <dd>{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-                {selected.local_id !== undefined ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      document.getElementById('server-scores')?.scrollIntoView({ block: 'start' })
-                    }
-                  >
-                    <ArrowRight aria-hidden="true" />
-                    {t('serverScores')}
-                  </Button>
-                ) : (
-                  <p className="hint">{t('metadataOnly')}</p>
-                )}
-                {user && hasPermission(user.permissions, 'beatmaps.import') && (
-                  <Link className="text-link" href="/beatmaps/import">
-                    {maps('import')}
-                  </Link>
-                )}
-              </div>
-            </div>
-          </section>
           {selected.local_id !== undefined && (
             <OfficialDifficultyScores
               key={selected.official_id}

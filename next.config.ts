@@ -24,7 +24,15 @@ const config: NextConfig = {
     ];
   },
   async headers() {
+    // Unhashed static files change rarely: cache them for a month and revalidate in the background.
+    const staticCache = {
+      key: 'Cache-Control',
+      value: 'public, max-age=2592000, stale-while-revalidate=86400',
+    };
     return [
+      { source: '/images/:path*', headers: [staticCache] },
+      { source: '/flags/:path*', headers: [staticCache] },
+      { source: '/fonts/:path*', headers: [staticCache] },
       {
         source: '/:path*',
         headers: [

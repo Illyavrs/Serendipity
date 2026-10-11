@@ -79,7 +79,7 @@ export function HomeCharacter() {
       onPointerCancel={reset}
     >
       <Image
-        src="/images/home-character.png"
+        src="/images/home-character.webp"
         width={700}
         height={1251}
         alt=""

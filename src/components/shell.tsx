@@ -38,9 +38,15 @@ import {
 import { useAppearance, useSession } from './providers';
 import { hasPermission } from '@/lib/api';
 import { isLocale } from '@/i18n/config';
-import { AppearanceControls } from '@/features/settings';
+import dynamic from 'next/dynamic';
 import { NotificationBell } from '@/features/notifications';
 import { Avatar } from './common';
+
+// The appearance panel pulls in the whole settings feature; load it only when the sheet opens.
+const AppearanceControls = dynamic(
+  () => import('@/features/settings').then((module) => module.AppearanceControls),
+  { ssr: false },
+);
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const t = useTranslations('nav');

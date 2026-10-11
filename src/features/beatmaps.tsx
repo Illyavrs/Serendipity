@@ -1,6 +1,14 @@
 'use client';
 import { difficultyStyle } from '@/lib/difficulty-color';
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -36,6 +44,7 @@ import type {
   BeatmapDifficulty,
   BeatmapUploadResult,
   OfficialBeatmapset,
+  Page,
   ScoreBoard,
   ScoreVariant,
 } from '@/lib/types';
@@ -49,9 +58,10 @@ import {
 import { BeatmapAvailabilityAction } from './admin';
 import { OfficialMapSearch } from './official-map-search';
 import { BeatmapRankRequestAction } from './beatmap-rank-requests';
-import { MapArtwork, MapMetadata, SetDifficultySelector, usePublicData } from './map-discovery';
+import { MapArtwork, beatmapDifficultyHref, usePublicData } from './map-discovery';
+import { BeatmapHero } from '@/components/beatmap-hero';
 import { OfficialArchiveDownload } from './official-archive-download';
-import { canonicalBeatmapHref } from '@/lib/beatmap-routes';
+import { canonicalBeatmapHref, type BeatmapNavigation } from '@/lib/beatmap-routes';
 import { useCatalogueReturn } from './beatmap-route-state';
 export { MapDiscoveryPage as BeatmapsPage } from './map-discovery';
 
@@ -301,6 +311,51 @@ export function MapRows({ items, compact = false }: { items: Beatmap[]; compact?
   );
 }
 
+function MapSetHero({
+  map,
+  navigation,
+  badges,
+  actions,
+}: {
+  map: Beatmap;
+  navigation: BeatmapNavigation;
+  badges: ReactNode;
+  actions: ReactNode;
+}) {
+  const c = useTranslations('common');
+  const { data } = usePublicData<Page<BeatmapDifficulty>>(
+    `/beatmaps/${map.id}/set/difficulties?page=1&page_size=24`,
+  );
+  return (
+    <BeatmapHero
+      coverSource={map.source}
+      coverSetId={map.native_set_id ?? map.package?.native_set_id}
+      status={<span className={`status-text status-${map.status}`}>{c(map.status)}</span>}
+      badges={badges}
+      title={map.title}
+      artist={map.artist}
+      creator={map.creator}
+      difficulties={(data?.items ?? []).map((item) => ({
+        key: item.id,
+        mode: item.mode,
+        version: item.version,
+        stars: item.stars,
+        current: item.id === map.id,
+        href: beatmapDifficultyHref(item, navigation),
+      }))}
+      selectedVersion={map.version}
+      selectedMode={map.mode}
+      stats={{
+        stars: map.stars,
+        lengthSeconds: map.length_seconds,
+        bpm: map.bpm,
+        maxCombo: map.max_combo,
+      }}
+      actions={actions}
+    />
+  );
+}
+
 export function BeatmapPage({ id }: { id: number }) {
   const t = useTranslations('maps');
   const c = useTranslations('common');
@@ -460,33 +515,28 @@ export function BeatmapPage({ id }: { id: number }) {
         map && (
           <>
             {error && <LoadError retry={() => mutate()} />}
-            <div className="beatmap-overview">
-              <section className="map-detail-cover glass">
-                <MapArtwork
-                  source={map.source}
-                  nativeSetId={map.native_set_id ?? map.package?.native_set_id}
-                  className="map-detail-art"
-                  priority
-                />
-                <div className="map-detail-identity">
-                  <div className="map-tags">
-                    <span className={`status-text status-${map.status}`}>{c(map.status)}</span>
-                    <span className="map-detail-source">
-                      {c(map.source === 'local' ? 'local' : 'official')}
-                    </span>
-                    {management && (
-                      <Badge variant="outline">
-                        {availability(withdrawn ? 'withdrawn' : 'active')}
-                      </Badge>
-                    )}
-                  </div>
-                  <h1>{map.title}</h1>
-                  <span className="map-artist">{map.artist}</span>
-                  <p>
-                    {t('creator')} <strong>{map.creator}</strong>
-                  </p>
-                </div>
-                <div className="map-detail-actions">
+            <MapSetHero
+              map={map}
+              navigation={{
+                mode,
+                variant,
+                returnTo: reviewReturn ?? catalogueReturn,
+                management: management && canManage,
+              }}
+              badges={
+                <>
+                  <span className="map-detail-source">
+                    {c(map.source === 'local' ? 'local' : 'official')}
+                  </span>
+                  {management && (
+                    <Badge variant="outline">
+                      {availability(withdrawn ? 'withdrawn' : 'active')}
+                    </Badge>
+                  )}
+                </>
+              }
+              actions={
+                <>
                   {!withdrawn && <MapDownloads map={map} />}
                   {!withdrawn &&
                     nativeSetId !== undefined &&
@@ -536,27 +586,9 @@ export function BeatmapPage({ id }: { id: number }) {
                       }
                     />
                   )}
-                </div>
-              </section>
-              <aside
-                className="map-selected-difficulty glass"
-                aria-label={t('currentDifficulty')}
-                style={
-                  {
-                    ...difficultyStyle(map.stars),
-                  } as CSSProperties
-                }
-              >
-                <div className="map-selected-name">
-                  <span className="difficulty-marker" aria-hidden="true" />
-                  <div>
-                    <h2>{map.version}</h2>
-                    <span>{['osu!', 'taiko', 'catch', 'mania'][map.mode]}</span>
-                  </div>
-                </div>
-                <MapMetadata map={map} />
-              </aside>
-            </div>
+                </>
+              }
+            />
             {management && (
               <section
                 className="glass content-panel map-availability-summary"
@@ -601,18 +633,6 @@ export function BeatmapPage({ id }: { id: number }) {
                   </div>
                 )}
               </section>
-            )}
-            {!withdrawn && (
-              <SetDifficultySelector
-                mapId={map.id}
-                currentVersion={map.version}
-                navigation={{
-                  mode,
-                  variant,
-                  returnTo: reviewReturn ?? catalogueReturn,
-                  management: management && canManage,
-                }}
-              />
             )}
             {!withdrawn && (
               <section className="glass content-panel beatmap-leaderboard">
