@@ -37,3 +37,9 @@
 .role-badge-preview {
   display: flex;
 }
+.role-badge-icon {
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  flex: none;
+}
