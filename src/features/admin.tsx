@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ColorPicker } from '@/components/color-picker';
-import { RoleBadge } from '@/components/role-badge';
+import { RoleBadge, roleIcons } from '@/components/role-badge';
 import {
   PageHeading,
   Protected,
@@ -371,7 +371,12 @@ function UserActions({
   );
 }
 const defaultBadgeColour = '#3b82f6';
-const emptyBadge = { show: false, short: '', colour: defaultBadgeColour };
+const emptyBadge: { show: boolean; short: string; colour: string; icon: string | null } = {
+  show: false,
+  short: '',
+  colour: defaultBadgeColour,
+  icon: null,
+};
 const badgeSwatches = ['#ff5c8d', '#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6'] as const;
 
 function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissions: string[] }) {
@@ -416,6 +421,7 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
           permissions: chosen,
           short_name: badge.short.trim(),
           colour: badge.colour,
+          icon: badge.icon,
           display_badge: badge.show,
         }),
       });
@@ -485,7 +491,12 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
                     <strong>
                       {role.name}
                       {role.display_badge && (
-                        <RoleBadge label={role.short_name} name={role.name} colour={role.colour} />
+                        <RoleBadge
+                          label={role.short_name}
+                          name={role.name}
+                          colour={role.colour}
+                          icon={role.icon}
+                        />
                       )}
                     </strong>
                     <p className="hint">{role.description}</p>
@@ -507,6 +518,7 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
                           show: role.display_badge ?? false,
                           short: role.short_name ?? '',
                           colour: role.colour ?? defaultBadgeColour,
+                          icon: role.icon ?? null,
                         });
                         setError('');
                         setSuccess('');
@@ -677,11 +689,43 @@ function RolesEditor({ changed, permissions }: { changed: RefreshAdmin; permissi
               swatches={badgeSwatches}
             />
           </div>
+          <div className="field">
+            <label id="roleBadgeIconLabel">{t('badgeIcon')}</label>
+            <div
+              className="role-icon-picker"
+              role="radiogroup"
+              aria-labelledby="roleBadgeIconLabel"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={badge.icon === null}
+                title={t('badgeIconDefault')}
+                onClick={() => setBadge((old) => ({ ...old, icon: null }))}
+              >
+                {t('badgeIconDefault')}
+              </button>
+              {Object.entries(roleIcons).map(([key, Icon]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="radio"
+                  aria-checked={badge.icon === key}
+                  aria-label={key}
+                  title={key}
+                  onClick={() => setBadge((old) => ({ ...old, icon: key }))}
+                >
+                  <Icon aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="role-badge-preview" aria-label={t('badgePreview')}>
             <RoleBadge
               label={badge.short.trim() || t('badgePreviewSample')}
               name={t('badgePreview')}
               colour={badge.colour}
+              icon={badge.icon}
             />
           </div>
           <p className="hint">{t('badgeHint')}</p>

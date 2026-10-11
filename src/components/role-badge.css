@@ -51,3 +51,31 @@
 .role-badge-link:focus-visible {
   background: hsl(260 8% 16% / 0.9);
 }
+.role-icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.role-icon-picker button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+.role-icon-picker button svg {
+  width: 16px;
+  height: 16px;
+}
+.role-icon-picker button[aria-checked='true'] {
+  border-color: var(--readable-accent);
+  background: var(--selection-fill);
+  color: var(--readable-accent);
+}

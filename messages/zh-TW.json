@@ -813,7 +813,9 @@
     "i18nHint": "在群組頁依訪客語言顯示;留空則使用上面的預設介紹。",
     "locale_zh-TW": "繁體中文",
     "locale_en": "English",
-    "locale_ja": "日本語"
+    "locale_ja": "日本語",
+    "badgeIcon": "徽章圖示",
+    "badgeIconDefault": "預設"
   },
   "connect": {
     "title": "連線教學",

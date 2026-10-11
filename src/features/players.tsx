@@ -506,6 +506,7 @@ export function PlayerPage({ id }: { id: number }) {
                           label={group.short_name}
                           name={group.name}
                           colour={group.colour}
+                          icon={group.icon}
                         />
                       ))}
                     </div>

@@ -17,7 +17,13 @@ export type CardUser = {
   banner_position_y?: number;
   accent_color?: string;
   online?: boolean;
-  groups?: { id: number; name: string; short_name: string; colour: string | null }[];
+  groups?: {
+    id: number;
+    name: string;
+    short_name: string;
+    colour: string | null;
+    icon?: string | null;
+  }[];
 };
 
 const hex = /^#[0-9a-f]{6}$/i;
@@ -81,6 +87,7 @@ export function UserCard({
                 label={group.short_name}
                 name={group.name}
                 colour={group.colour}
+                icon={group.icon}
               />
             ))}
           </div>

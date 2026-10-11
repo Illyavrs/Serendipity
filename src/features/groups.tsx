@@ -15,6 +15,7 @@ type Group = {
   description_i18n?: Record<string, string>;
   short_name: string;
   colour: string | null;
+  icon?: string | null;
   rank: number;
   members: Member[];
 };
@@ -57,6 +58,7 @@ export function GroupsPage() {
                       label={group.short_name || title}
                       name={group.name}
                       colour={group.colour}
+                      icon={group.icon}
                     />
                     <h2>{title}</h2>
                     <span className="hint">

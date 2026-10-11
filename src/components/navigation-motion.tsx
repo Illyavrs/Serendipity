@@ -378,11 +378,7 @@ export function NavigationLink({ onNavigate, ...props }: NavigationLinkProps) {
         if (routeUrl(destination) === routeUrl(current)) {
           if (destination.pathname.startsWith('/beatmapsets/')) {
             event.preventDefault();
-            window.history[props.replace ? 'replaceState' : 'pushState'](
-              null,
-              '',
-              href,
-            );
+            window.history[props.replace ? 'replaceState' : 'pushState'](null, '', href);
             window.dispatchEvent(new Event('illyaverse:beatmap-difficulty'));
           }
           return;

@@ -296,6 +296,7 @@ export type RoleGroup = {
   name: string;
   short_name: string;
   colour: string | null;
+  icon?: string | null;
 };
 export type Role = {
   id: number;
@@ -305,6 +306,7 @@ export type Role = {
   description_i18n?: Record<string, string>;
   short_name: string;
   colour: string | null;
+  icon?: string | null;
   display_badge: boolean;
   membership_count: number;
   is_builtin: boolean;

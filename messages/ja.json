@@ -813,7 +813,9 @@
     "i18nHint": "グループページで閲覧者の言語に合わせて表示されます。空欄なら上の既定の紹介文を使います。",
     "locale_zh-TW": "繁體中文",
     "locale_en": "English",
-    "locale_ja": "日本語"
+    "locale_ja": "日本語",
+    "badgeIcon": "バッジアイコン",
+    "badgeIconDefault": "既定"
   },
   "connect": {
     "title": "接続ガイド",

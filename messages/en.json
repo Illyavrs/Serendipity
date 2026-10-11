@@ -813,7 +813,9 @@
     "i18nHint": "Shown on the groups page in the visitor language; leave blank to use the default introduction above.",
     "locale_zh-TW": "繁體中文",
     "locale_en": "English",
-    "locale_ja": "日本語"
+    "locale_ja": "日本語",
+    "badgeIcon": "Badge icon",
+    "badgeIconDefault": "Default"
   },
   "connect": {
     "title": "How to connect",

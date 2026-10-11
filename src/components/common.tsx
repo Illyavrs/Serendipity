@@ -85,7 +85,12 @@ export function Pagination({
   const t = useTranslations('common');
   return total > pageSize ? (
     <div className="pagination">
-      <Button type="button" variant="outline" disabled={page === 1} onClick={() => onChange(page - 1)}>
+      <Button
+        type="button"
+        variant="outline"
+        disabled={page === 1}
+        onClick={() => onChange(page - 1)}
+      >
         <ArrowLeft />
         {t('previous')}
       </Button>
@@ -166,9 +171,13 @@ export function GameMode({
         ['2', 'catch'],
         ['3', 'mania'],
       ].map(([id, name]) => (
-        <button key={id} type="button" aria-pressed={value === id}
+        <button
+          key={id}
+          type="button"
+          aria-pressed={value === id}
           disabled={allowedModes !== undefined && !allowedModes.includes(id)}
-          onClick={() => onChange(id)}>
+          onClick={() => onChange(id)}
+        >
           {name}
         </button>
       ))}
