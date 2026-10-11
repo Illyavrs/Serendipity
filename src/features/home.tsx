@@ -56,7 +56,7 @@ export function HomePage() {
       .map((set) => set.representative) ?? [];
   const leaders = useSWR<Page<Leader>>('/leaderboard?mode=0&variant=vanilla&page_size=5', fetcher);
   // Exclude private pending/rejected submissions even for owners and moderators.
-  const scores = useSWR<Page<Score>>('/scores?verification=verified&page_size=4', fetcher);
+  const scores = useSWR<Page<Score>>('/scores?verification=verified&page_size=10', fetcher);
   const publicScores =
     scores.data?.items.filter((score) => score.verification === 'verified') ?? [];
   const profileHref = user ? `/users/${user.id}` : '/register';
