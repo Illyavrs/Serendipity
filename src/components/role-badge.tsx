@@ -2,6 +2,7 @@ import './role-badge.css';
 import { NavigationLink as Link } from './navigation-motion';
 import {
   Award,
+  Bot,
   Brush,
   Bug,
   Code,
@@ -71,11 +72,13 @@ export const roleIcons: Record<string, LucideIcon> = {
   swords: Swords,
   rocket: Rocket,
   leaf: Leaf,
+  bot: Bot,
 };
 
 /** Built-in roles get a recognisable icon; any custom role falls back to a plain tag. */
 const icons: Record<string, LucideIcon> = {
   super_user: Crown,
+  bot: Bot,
   administrator: ShieldCheck,
   moderator: Shield,
   beatmap_nominator: Music,
