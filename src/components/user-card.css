@@ -1,18 +1,21 @@
-/* Layout: avatar column on the left, flag/badges/friend icons above the name, and a status bar
-   along the bottom whose ring sits under the avatar. The banner is tinted dark for legibility. */
+/* Player card: 60px avatar on the left; flag and friend button above the name (with group badges
+   beside it); a status bar along the bottom whose ring sits under the avatar and whose text lines
+   up with the name. The banner fills the card under a dark tint. */
 .user-card {
   --card-accent: var(--readable-accent);
   position: relative;
   isolation: isolate;
   display: grid;
   grid-template-columns: 60px minmax(0, 1fr);
+  grid-template-rows: 60px 1fr;
   grid-template-areas:
     'avatar body'
     'status status';
-  gap: 8px 10px;
+  column-gap: 10px;
   min-width: 0;
+  min-height: 120px;
   padding: 10px;
-  border: 1px solid transparent;
+  border: 2px solid transparent;
   border-radius: 10px;
   background:
     linear-gradient(
@@ -21,18 +24,19 @@
       transparent 80%
     ),
     #17151a;
+  background-clip: padding-box;
   transition: border-color 0.15s ease;
 }
 .user-card:hover,
 .user-card:focus-within {
-  border-color: color-mix(in srgb, var(--foreground) 55%, transparent);
+  border-color: color-mix(in srgb, #fff 70%, transparent);
 }
 .user-card-cover {
   position: absolute;
   z-index: -1;
   inset: 0;
   overflow: hidden;
-  border-radius: inherit;
+  border-radius: 8px;
   background-size: cover;
   pointer-events: none;
 }
@@ -43,7 +47,7 @@
   background: rgb(18 16 20 / 0.62);
 }
 .user-card[data-online] .user-card-cover::after {
-  background: rgb(18 16 20 / 0.45);
+  background: rgb(18 16 20 / 0.42);
 }
 .user-card > * {
   position: relative;
@@ -61,7 +65,7 @@
 .user-card-avatar .avatar {
   width: 60px;
   height: 60px;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 .user-card-avatar .avatar img {
   width: 100%;
@@ -70,35 +74,38 @@
 }
 .user-card-body {
   grid-area: body;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: grid;
+  grid-template-rows: 26px 1fr;
   min-width: 0;
 }
 .user-card-meta {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
   gap: 6px;
   min-width: 0;
-  height: 26px;
+}
+.user-card-meta .country-flag {
+  display: inline-flex;
 }
 .user-card-meta .country-flag-image {
   display: block;
   width: 36px;
   height: 26px;
-  border-radius: 4px;
+  border-radius: 3px;
   object-fit: cover;
 }
-.user-card-meta .role-badge {
-  flex: none;
-  height: 26px;
+.user-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 .user-card-name {
+  min-width: 0;
   overflow: hidden;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -107,19 +114,25 @@
   position: absolute;
   inset: 0;
 }
+.user-card-title .role-badge {
+  position: relative;
+  z-index: 1;
+  flex: none;
+}
 .user-card-status {
   grid-area: status;
-  display: flex;
+  align-self: end;
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) auto;
+  column-gap: 10px;
   align-items: center;
-  gap: 10px;
   font-size: 14px;
   font-weight: 700;
 }
 .user-card-presence {
-  flex: none;
+  justify-self: center;
   width: 25px;
   height: 25px;
-  margin-inline: 17px 7px;
   border: 5px solid #000;
   border-radius: 50%;
 }
@@ -141,29 +154,44 @@
   transition: background-color 0.15s ease;
 }
 .card-friend svg {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
 }
 .card-friend:hover:not(:disabled) {
   background: #3a3a3a;
 }
 .card-friend[data-kind='mine'] {
-  background: #ec4899;
+  background: #d1568f;
 }
 .card-friend[data-kind='mutual'] {
-  background: #84a82c;
+  background: #6f9410;
 }
 .card-friend[data-kind='theirs'] {
-  box-shadow: inset 0 0 0 2px #ec4899;
+  box-shadow: inset 0 0 0 2px #d1568f;
 }
-.user-card-meta .role-badge {
+/* The "…" menu shows on hover or focus, like the reference; touch screens always show it. */
+.card-menu {
   position: relative;
   z-index: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
-.user-card-status .card-menu {
-  position: relative;
-  z-index: 1;
-  margin-left: auto;
+.user-card:hover .card-menu,
+.user-card:focus-within .card-menu,
+.card-menu:has([data-state='open']) {
+  opacity: 1;
+}
+@media (hover: none) {
+  .card-menu {
+    opacity: 1;
+  }
+}
+.card-menu [data-slot='button'] {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #000;
+  color: #fff;
 }
 .card-menu-confirm {
   position: absolute;
@@ -184,9 +212,14 @@
 }
 .user-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+@media (max-width: 420px) {
+  .user-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

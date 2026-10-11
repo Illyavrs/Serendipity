@@ -56,6 +56,12 @@ export function UserCard({ user }: { user: CardUser }) {
       <div className="user-card-body">
         <div className="user-card-meta">
           <CountryFlag country={user.country} display="flag" />
+          <FriendToggle target={user.id} />
+        </div>
+        <div className="user-card-title">
+          <Link href={`/users/${user.id}`} className="user-card-name">
+            {user.username}
+          </Link>
           {user.groups?.map((group) => (
             <RoleBadge
               key={group.id}
@@ -66,11 +72,7 @@ export function UserCard({ user }: { user: CardUser }) {
               icon={group.icon}
             />
           ))}
-          <FriendToggle target={user.id} />
         </div>
-        <Link href={`/users/${user.id}`} className="user-card-name">
-          {user.username}
-        </Link>
       </div>
       {user.online !== undefined && (
         <div className="user-card-status">
