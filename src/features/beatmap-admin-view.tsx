@@ -29,7 +29,8 @@ type LocalSet = {
   creator: string;
   difficulty_count: number;
   statuses: string[];
-  uploaded_by: { id: number; username: string; country: string; avatar_url: string | null };
+  uploaded_by: { id: number; username: string; country: string; avatar_url: string | null } | null;
+  official?: boolean;
   withdrawn: boolean;
   added_at: string;
   representative_id: number;
@@ -171,9 +172,11 @@ export function LocalBeatmapAdminCatalogue() {
                   </p>
                   <div className={styles.meta}>
                     <span>{t('difficulties', { count: set.difficulty_count })}</span>
-                    <Link href={`/users/${set.uploaded_by.id}`}>
-                      {t('uploader')} · {set.uploaded_by.username}
-                    </Link>
+                    {set.uploaded_by && (
+                      <Link href={`/users/${set.uploaded_by.id}`}>
+                        {t('uploader')} · {set.uploaded_by.username}
+                      </Link>
+                    )}
                     <time dateTime={set.added_at}>
                       {f.dateTime(new Date(set.added_at), { dateStyle: 'medium' })}
                     </time>
@@ -184,6 +187,7 @@ export function LocalBeatmapAdminCatalogue() {
                         {c(status)}
                       </Badge>
                     ))}
+                    {set.official && <Badge variant="outline">{t('officialSet')}</Badge>}
                     {set.withdrawn && <Badge variant="outline">{availability('withdrawn')}</Badge>}
                   </div>
                 </div>
