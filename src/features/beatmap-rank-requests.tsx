@@ -408,7 +408,7 @@ function RequestDecision({
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy || stale || snapshot.status !== 'pending' || !validRevision(snapshot.revision)) return;
-    if (staff && !validReason(reason)) {
+    if (staff && (decision === 'rejected' || reason.trim()) && !validReason(reason)) {
       setError(t('invalidReason'));
       return;
     }

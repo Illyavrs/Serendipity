@@ -673,7 +673,7 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: 38px minmax(140px, 1fr) 112px 250px 120px 40px;
+  grid-template-columns: 38px minmax(120px, 1fr) minmax(112px, max-content) 236px 110px 40px;
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -686,7 +686,7 @@
 }
 
 .profile-page .profile-best-score-list .profile-score-row {
-  grid-template-columns: 70px minmax(140px, 1fr) 112px 250px 120px 40px;
+  grid-template-columns: 70px minmax(120px, 1fr) minmax(112px, max-content) 236px 110px 40px;
 }
 
 .profile-page .profile-score-result {
@@ -885,6 +885,7 @@ html.light .profile-page .profile-score-artwork img {
   align-items: center;
   justify-content: flex-end;
   gap: 3px;
+  flex-wrap: nowrap;
   max-height: 42px;
   overflow: hidden;
 }

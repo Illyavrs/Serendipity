@@ -962,7 +962,7 @@
 .profile-page.top-plays-page .profile-score-row {
   min-height: 88px;
   padding: 10px 18px;
-  grid-template-columns: 78px minmax(220px, 1fr) 120px 240px 150px 44px;
+  grid-template-columns: 78px minmax(200px, 1fr) minmax(120px, max-content) 240px 130px 44px;
   gap: 14px;
 }
 .profile-page.top-plays-page .profile-score-main .score-title strong {
@@ -991,7 +991,7 @@
 }
 @media (max-width: 1050px) {
   .profile-page.top-plays-page .profile-score-row {
-    grid-template-columns: 70px minmax(0, 1fr) 80px 180px 120px 44px;
+    grid-template-columns: 70px minmax(0, 1fr) minmax(80px, max-content) 180px 110px 44px;
   }
 }
 @media (max-width: 800px) {

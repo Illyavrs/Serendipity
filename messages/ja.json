@@ -1276,7 +1276,7 @@
     "updated": "更新日時",
     "reviewer": "審査担当者",
     "reviewReason": "審査理由",
-    "reviewReasonHint": "判断の理由を入力してください。申請者と審査担当者に表示されます。",
+    "reviewReasonHint": "却下する場合は理由が必要です。承認の場合は任意です。申請者と審査担当者に表示されます。",
     "review": "申請を審査",
     "decision": "判断",
     "approve": "承認してランク",

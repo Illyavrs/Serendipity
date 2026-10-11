@@ -1276,7 +1276,7 @@
     "updated": "Updated",
     "reviewer": "Reviewed by",
     "reviewReason": "Review reason",
-    "reviewReasonHint": "Give a reason for the decision. It will be visible to the requester and reviewers.",
+    "reviewReasonHint": "Required when rejecting; optional when approving. Visible to the requester and reviewers.",
     "review": "Review request",
     "decision": "Decision",
     "approve": "Approve and rank",

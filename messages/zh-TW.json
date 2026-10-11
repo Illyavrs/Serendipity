@@ -1276,7 +1276,7 @@
     "updated": "更新時間",
     "reviewer": "審查者",
     "reviewReason": "審查理由",
-    "reviewReasonHint": "請說明決定的理由，申請者與審查人員可以查看。",
+    "reviewReasonHint": "拒絕時必須填寫理由，核准可以不填。申請者與審查人員可以查看。",
     "review": "審查申請",
     "decision": "決定",
     "approve": "核准並排名",
