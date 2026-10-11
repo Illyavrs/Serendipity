@@ -166,7 +166,6 @@ export function RelationshipList() {
                 <li key={r.target_id}>
                   <UserCard
                     user={r.target}
-                    showStatus={kind === 'friends'}
                     actions={
                       <RelationshipActions
                         target={r.target_id}

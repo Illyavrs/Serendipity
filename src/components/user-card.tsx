@@ -32,15 +32,7 @@ const hex = /^#[0-9a-f]{6}$/i;
  * Compact player card for any list of people: banner as a dim backdrop, avatar with a presence
  * dot, name, flag and group badges. The whole card opens the profile; `actions` sit on top.
  */
-export function UserCard({
-  user,
-  showStatus = false,
-  actions,
-}: {
-  user: CardUser;
-  showStatus?: boolean;
-  actions?: ReactNode;
-}) {
+export function UserCard({ user, actions }: { user: CardUser; actions?: ReactNode }) {
   const t = useTranslations('people');
   const style = hex.test(user.accent_color ?? '')
     ? ({ '--card-accent': user.accent_color } as CSSProperties)
@@ -59,14 +51,6 @@ export function UserCard({
       )}
       <div className="user-card-avatar">
         <Avatar name={user.username} url={user.avatar_url} size="large" />
-        {user.online !== undefined && (
-          <span
-            className="user-card-presence"
-            data-online={user.online ? '' : undefined}
-            role="img"
-            aria-label={user.online ? t('online') : t('offline')}
-          />
-        )}
       </div>
       <div className="user-card-body">
         <Link href={`/users/${user.id}`} className="user-card-name">
@@ -74,25 +58,32 @@ export function UserCard({
         </Link>
         <div className="user-card-meta">
           <CountryFlag country={user.country} />
-          {showStatus && user.online !== undefined && (
-            <span className="hint">{user.online ? t('online') : t('offline')}</span>
+          {user.groups && user.groups.length > 0 && (
+            <div className="user-card-badges">
+              {user.groups.map((group) => (
+                <RoleBadge
+                  key={group.id}
+                  id={group.id}
+                  label={group.short_name}
+                  name={group.name}
+                  colour={group.colour}
+                  icon={group.icon}
+                />
+              ))}
+            </div>
           )}
         </div>
-        {user.groups && user.groups.length > 0 && (
-          <div className="user-card-badges">
-            {user.groups.map((group) => (
-              <RoleBadge
-                key={group.id}
-                id={group.id}
-                label={group.short_name}
-                name={group.name}
-                colour={group.colour}
-                icon={group.icon}
-              />
-            ))}
-          </div>
-        )}
       </div>
+      {user.online !== undefined && (
+        <div className="user-card-status">
+          <span
+            className="user-card-presence"
+            data-online={user.online ? '' : undefined}
+            aria-hidden="true"
+          />
+          <span>{user.online ? t('online') : t('offline')}</span>
+        </div>
+      )}
       {actions && <div className="user-card-actions">{actions}</div>}
     </article>
   );

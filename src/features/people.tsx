@@ -91,7 +91,6 @@ export function FriendsPage() {
             <li key={friend.target_id}>
               <UserCard
                 user={friend.target}
-                showStatus
                 actions={
                   <RelationshipActions
                     target={friend.target_id}
