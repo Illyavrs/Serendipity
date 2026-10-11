@@ -294,7 +294,8 @@
       "small_tick_miss": "小ティックミス",
       "slider_tail_hit": "スライダー終端命中",
       "combo_break": "コンボ切れ"
-    }
+    },
+    "preferred": "メインモード"
   },
   "auth": {
     "loginTitle": "ログイン",
@@ -580,7 +581,9 @@
     "scoreGrade": "評価 {grade}",
     "scoreDifficulty": "難易度：{stars} スター",
     "downloadReplay": "リプレイをダウンロード：{title}",
-    "ppExcluded": "参考 pp"
+    "ppExcluded": "参考 pp",
+    "setPreferredMode": "メインモードに設定",
+    "preferredModeCurrent": "現在のメインモードです"
   },
   "settings": {
     "title": "設定",

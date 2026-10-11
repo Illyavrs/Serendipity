@@ -1,6 +1,7 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Star } from 'lucide-react';
 import type { ScoreVariant } from '@/lib/types';
 
 export function useScoreSelection(defaultMode = 0) {
@@ -24,10 +25,13 @@ export function ScoreVariantControl({
   mode,
   value,
   onChange,
+  starred,
 }: {
   mode: string;
   value: ScoreVariant;
   onChange: (value: ScoreVariant) => void;
+  /** Variant marked with a star, for the player's preferred variant. */
+  starred?: ScoreVariant;
 }) {
   const t = useTranslations('common');
   return (
@@ -42,6 +46,7 @@ export function ScoreVariantControl({
           onClick={() => onChange(variant)}
         >
           {t(variant)}
+          {starred === variant && <Star className="mode-star" aria-label={t('preferred')} />}
         </button>
       ))}
     </div>

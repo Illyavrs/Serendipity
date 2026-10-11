@@ -3807,5 +3807,16 @@ input[type='checkbox'] {
 }
 /* Soften the saturated flag artwork everywhere (roughly a light wash) so it sits better on dark UI. */
 .country-flag-image {
-  filter: contrast(0.78) brightness(1.2);
+  filter: contrast(0.7) brightness(1.22);
+}
+.mode-control .mode-star {
+  width: 11px;
+  height: 11px;
+  margin-left: 5px;
+  color: #f5b301;
+  fill: currentColor;
+  vertical-align: -1px;
+}
+.profile-preferred-mode {
+  margin-top: 8px;
 }

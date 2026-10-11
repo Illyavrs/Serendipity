@@ -5,7 +5,7 @@ import { NavigationLink as Link } from '@/components/navigation-motion';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import useSWR, { unstable_serialize, useSWRConfig } from 'swr';
-import { ArrowUpRight, Pencil, ShieldCheck } from 'lucide-react';
+import { ArrowUpRight, Pencil, ShieldCheck, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -368,6 +368,29 @@ export function PlayerPage({ id }: { id: number }) {
     onSuccess: (_data, requestedKey) => clearAccessFailure(requestedKey),
   });
   const error = playerError ?? accessFailures[profileKey];
+  const preferredMode = String(player?.preferred_mode ?? 0);
+  const preferredVariant: ScoreVariant =
+    player?.preferred_variant === 'relax' ? 'relax' : 'vanilla';
+  const [savingPreference, setSavingPreference] = useState(false);
+  // A link that names no mode opens on the owner's preferred mode; explicit links are left alone.
+  useEffect(() => {
+    if (!player || search.has('mode')) return;
+    if (preferredMode !== mode || preferredVariant !== variant)
+      updateProfileScoreSelection({ mode: preferredMode, variant: preferredVariant }, true);
+  }, [player, search, preferredMode, preferredVariant, mode, variant]);
+  async function savePreferredMode() {
+    if (savingPreference) return;
+    setSavingPreference(true);
+    try {
+      await api('/me/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({ preferred_mode: Number(mode), preferred_variant: variant }),
+      });
+      await mutate();
+    } finally {
+      setSavingPreference(false);
+    }
+  }
   const query = new URLSearchParams({
     mode,
     variant,
@@ -538,13 +561,31 @@ export function PlayerPage({ id }: { id: number }) {
               <div className="profile-mode-rail">
                 <GameMode
                   value={mode}
+                  starred={preferredMode}
                   onChange={(nextMode) => updateProfileScoreSelection({ mode: nextMode })}
                 />
                 <ScoreVariantControl
                   mode={mode}
                   value={variant}
+                  starred={preferredVariant}
                   onChange={(nextVariant) => updateProfileScoreSelection({ variant: nextVariant })}
                 />
+                {user?.id === id && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="profile-preferred-mode"
+                    disabled={
+                      savingPreference || (preferredMode === mode && preferredVariant === variant)
+                    }
+                    onClick={() => void savePreferredMode()}
+                  >
+                    <Star aria-hidden="true" />
+                    {preferredMode === mode && preferredVariant === variant
+                      ? t('preferredModeCurrent')
+                      : t('setPreferredMode')}
+                  </Button>
+                )}
                 {mode === '3' && <p className="hint">{c('relaxUnsupported')}</p>}
               </div>
               <div className="profile-rank-band">

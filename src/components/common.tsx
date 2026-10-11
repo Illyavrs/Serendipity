@@ -2,7 +2,7 @@
 import { NavigationLink as Link } from './navigation-motion';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, ArrowRight, Disc3, RefreshCw, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Disc3, RefreshCw, AlertCircle, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSession } from './providers';
@@ -155,11 +155,14 @@ export function GameMode({
   onChange,
   all = false,
   allowedModes,
+  starred,
 }: {
   value: string;
   onChange: (value: string) => void;
   all?: boolean;
   allowedModes?: readonly string[];
+  /** Mode id marked with a star, for the player's preferred mode. */
+  starred?: string;
 }) {
   const t = useTranslations('common');
   return (
@@ -179,6 +182,7 @@ export function GameMode({
           onClick={() => onChange(id)}
         >
           {name}
+          {starred === id && <Star className="mode-star" aria-label={t('preferred')} />}
         </button>
       ))}
     </div>

@@ -294,7 +294,8 @@
       "small_tick_miss": "Small tick miss",
       "slider_tail_hit": "Slider tail hit",
       "combo_break": "Combo break"
-    }
+    },
+    "preferred": "Main mode"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -580,7 +581,9 @@
     "scoreGrade": "Grade {grade}",
     "scoreDifficulty": "Difficulty: {stars} stars",
     "downloadReplay": "Download replay: {title}",
-    "ppExcluded": "Reference pp"
+    "ppExcluded": "Reference pp",
+    "setPreferredMode": "Set as main mode",
+    "preferredModeCurrent": "This is your main mode"
   },
   "settings": {
     "title": "Settings",

@@ -57,6 +57,9 @@ export type User = {
   banner_position_x: number;
   banner_position_y: number;
   accent_color: string;
+  /** Mode and score variant this profile opens with when the link names neither. */
+  preferred_mode?: number;
+  preferred_variant?: ScoreVariant;
   roles: string[];
   groups?: RoleGroup[];
   permissions: string[];

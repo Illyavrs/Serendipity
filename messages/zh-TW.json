@@ -294,7 +294,8 @@
       "small_tick_miss": "小 Tick 失誤",
       "slider_tail_hit": "滑條尾端命中",
       "combo_break": "斷 Combo"
-    }
+    },
+    "preferred": "主要遊戲模式"
   },
   "auth": {
     "loginTitle": "登入",
@@ -580,7 +581,9 @@
     "scoreGrade": "評級 {grade}",
     "scoreDifficulty": "難度：{stars} 星",
     "downloadReplay": "下載 Replay：{title}",
-    "ppExcluded": "參考 pp"
+    "ppExcluded": "參考 pp",
+    "setPreferredMode": "設為主要遊戲模式",
+    "preferredModeCurrent": "這是你的主要遊戲模式"
   },
   "settings": {
     "title": "設定",
