@@ -924,7 +924,10 @@ svg {
 }
 .site-footer nav {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  gap: 12px 24px;
 }
 .site-footer nav a {
   display: flex;
@@ -3239,7 +3242,7 @@ input[type='checkbox'] {
     min-width: 100%;
   }
   .site-footer nav {
-    gap: 20px;
+    gap: 12px 20px;
     font-size: 11px;
   }
   .page-container {
@@ -3867,4 +3870,15 @@ input[type='checkbox'] {
 .admin-rename .hint {
   flex-basis: 100%;
   margin: 0;
+}
+
+.mobile-nav a:has(> svg) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mobile-nav a > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }

@@ -86,25 +86,29 @@ function hitJudgements(score: Score) {
           ['nkatu', '200'],
           ['n100', '100'],
           ['n50', '50'],
-          ['nmiss', 'miss'],
+          ['nmiss', 'Miss'],
         ]
       : score.mode === 1
         ? [
             ['n300', '300'],
             ['n100', '100'],
-            ['nmiss', 'miss'],
+            ['nmiss', 'Miss'],
           ]
         : [
             ['n300', '300'],
             ['n100', '100'],
             ['n50', '50'],
-            ['nmiss', 'miss'],
+            ['nmiss', 'Miss'],
           ];
-  return keys.flatMap(([key, label]) => {
-    const value = score.hit_counts?.[key];
+  return keys.flatMap<{ key: string; label: string; value: number | null }>(([key, label]) => {
+    const aliases: Record<string, string> = { nmiss: 'misses', ngeki: 'geki', nkatu: 'katu' };
+    const canonical = aliases[key] ?? key;
+    const value = score.hit_counts?.[canonical] ?? score.hit_counts?.[key];
     return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
       ? [{ key, label, value }]
-      : [];
+      : key === 'nmiss'
+        ? [{ key, label, value: null }]
+        : [];
   });
 }
 
@@ -282,7 +286,7 @@ export function ProfileScoreList({
                     {judgements.map(({ key, label, value }) => (
                       <div key={key} data-judgement={key}>
                         <dt>{label}</dt>
-                        <dd>{f.number(value)}</dd>
+                        <dd>{value === null ? '—' : f.number(value)}</dd>
                       </div>
                     ))}
                   </dl>
@@ -388,7 +392,7 @@ export function ProfileScoreList({
                       {judgements.map(({ key, label, value }) => (
                         <div key={key}>
                           <dt>{label}</dt>
-                          <dd>{f.number(value)}</dd>
+                          <dd>{value === null ? '—' : f.number(value)}</dd>
                         </div>
                       ))}
                     </dl>

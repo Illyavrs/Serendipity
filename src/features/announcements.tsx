@@ -1,7 +1,7 @@
 'use client';
 
-import { excerpt, markdownToPlainText } from '@/lib/plain-text';
-import { Markdown } from '@/components/markdown';
+import { excerpt, richTextToPlainText } from '@/lib/plain-text';
+import { RichText } from '@/components/rich-text';
 import { Suspense, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -13,7 +13,8 @@ import { useSession } from '@/components/providers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FieldSelect } from '@/components/ui/field-select';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/rich-text-editor';
+import type { TextFormat } from '@/lib/types';
 import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import type { Announcement, AnnouncementStatus, Page } from '@/lib/types';
 import { useAnnouncementDraft } from './announcement-draft';
@@ -103,7 +104,7 @@ function AnnouncementRows({
             <AnnouncementMeta announcement={announcement} />
             {!compact && (
               <p className="announcement-excerpt">
-                {excerpt(markdownToPlainText(announcement.body), 200)}
+                {excerpt(richTextToPlainText(announcement.body, announcement.body_format), 200)}
               </p>
             )}
           </li>
@@ -244,7 +245,9 @@ export function AnnouncementPage({ id }: { id: number }) {
             <h1>{announcement.title}</h1>
             <AnnouncementMeta announcement={announcement} />
           </header>
-          <Markdown className="announcement-body">{announcement.body}</Markdown>
+          <RichText className="announcement-body" format={announcement.body_format}>
+            {announcement.body}
+          </RichText>
         </article>
       )}
     </div>
@@ -296,6 +299,9 @@ function AnnouncementWorkbench({ registerNavigationGuard }: AdminAnnouncementPro
   const [editing, setEditing] = useState(Boolean(recoveryDraft));
   const [title, setTitle] = useState(recoveryDraft?.title ?? '');
   const [body, setBody] = useState(recoveryDraft?.body ?? '');
+  const [bodyFormat, setBodyFormat] = useState<TextFormat>(
+    recoveryDraft?.bodyFormat ?? recoveryDraft?.announcement?.body_format ?? 'markdown',
+  );
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
   const mounted = useRef(true);
@@ -335,7 +341,11 @@ function AnnouncementWorkbench({ registerNavigationGuard }: AdminAnnouncementPro
       window.history.replaceState(null, '', `?${current}`);
     },
   });
-  const dirty = editing && (title !== (selected?.title ?? '') || body !== (selected?.body ?? ''));
+  const dirty =
+    editing &&
+    (title !== (selected?.title ?? '') ||
+      body !== (selected?.body ?? '') ||
+      bodyFormat !== (selected?.body_format ?? 'markdown'));
   const guard = useCallback<AnnouncementNavigationGuard>(
     (action) => {
       if (saving.current) return;
@@ -348,9 +358,20 @@ function AnnouncementWorkbench({ registerNavigationGuard }: AdminAnnouncementPro
   useEffect(() => {
     if (!draftScope) return;
     if (editing && !accessLost && (dirty || conflict || recovered))
-      draftScope.retain({ announcement: selected, title, body, conflict });
+      draftScope.retain({ announcement: selected, title, body, bodyFormat, conflict });
     else draftScope.discard();
-  }, [draftScope, editing, accessLost, dirty, conflict, recovered, selected, title, body]);
+  }, [
+    draftScope,
+    editing,
+    accessLost,
+    dirty,
+    conflict,
+    recovered,
+    selected,
+    title,
+    body,
+    bodyFormat,
+  ]);
 
   const finishRecovery = useEffectEvent((latest: Announcement | null, failure?: unknown) => {
     if (failure) {
@@ -455,6 +476,7 @@ function AnnouncementWorkbench({ registerNavigationGuard }: AdminAnnouncementPro
     setSelected(null);
     setTitle('');
     setBody('');
+    setBodyFormat('markdown');
     setEditing(false);
     setPending(null);
     setConflict(false);
@@ -470,6 +492,7 @@ function AnnouncementWorkbench({ registerNavigationGuard }: AdminAnnouncementPro
     setSelected(announcement);
     setTitle(announcement?.title ?? '');
     setBody(announcement?.body ?? '');
+    setBodyFormat(announcement?.body_format ?? 'markdown');
     setEditing(true);
     setError('');
     setSuccess('');
@@ -487,6 +510,7 @@ function AnnouncementWorkbench({ registerNavigationGuard }: AdminAnnouncementPro
     setSelected(null);
     setTitle('');
     setBody('');
+    setBodyFormat('markdown');
     setError('');
     setConflict(false);
     setWithdrawConfirm(false);
@@ -557,12 +581,17 @@ function AnnouncementWorkbench({ registerNavigationGuard }: AdminAnnouncementPro
       if (!saved) {
         saved = await api<Announcement>('/admin/announcements', {
           method: 'POST',
-          body: JSON.stringify({ title: normalizedTitle, body: normalizedBody }),
+          body: JSON.stringify({
+            title: normalizedTitle,
+            body: normalizedBody,
+            body_format: bodyFormat,
+          }),
         });
         if (!mounted.current) return;
-        setSelected(saved);
+        setSelected({ ...saved, body_format: saved.body_format ?? bodyFormat });
         setTitle(saved.title);
         setBody(saved.body);
+        setBodyFormat(saved.body_format ?? bodyFormat);
       }
       if (selected || nextStatus !== 'draft') {
         saved = await api<Announcement>(`/admin/announcements/${saved.id}`, {
@@ -570,15 +599,17 @@ function AnnouncementWorkbench({ registerNavigationGuard }: AdminAnnouncementPro
           body: JSON.stringify({
             title: normalizedTitle,
             body: normalizedBody,
+            body_format: bodyFormat,
             status: nextStatus,
             revision: saved.revision,
           }),
         });
       }
       if (!mounted.current) return;
-      setSelected(saved);
+      setSelected({ ...saved, body_format: saved.body_format ?? bodyFormat });
       setTitle(saved.title);
       setBody(saved.body);
+      setBodyFormat(saved.body_format ?? bodyFormat);
       setRecovered(false);
       setRecoveryDraft(null);
       draftScope?.discard();
@@ -811,18 +842,20 @@ function AnnouncementWorkbench({ registerNavigationGuard }: AdminAnnouncementPro
             </div>
             <div className="field">
               <label htmlFor="announcement-body">{t('bodyField')}</label>
-              <Textarea
+              <RichTextEditor
+                key={selected?.id ?? 'new'}
                 id="announcement-body"
-                name="body"
+                label={t('bodyField')}
                 value={body}
+                format={bodyFormat}
+                onFormatChange={setBodyFormat}
                 disabled={busy}
-                maxLength={40000}
-                rows={13}
-                onChange={(event) => {
-                  setBody(event.target.value);
+                maxLength={20000}
+                describedBy="announcement-body-hint"
+                onChange={(value) => {
+                  setBody(value);
                   setSuccess('');
                 }}
-                aria-describedby="announcement-body-hint"
               />
               <p className="hint" id="announcement-body-hint">
                 {t('bodyHint', { count: Array.from(body).length })}

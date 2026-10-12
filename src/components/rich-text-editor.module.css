@@ -1,0 +1,154 @@
+.editor {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--solid-surface);
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.header > :first-child {
+  width: 135px;
+}
+.views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.views svg {
+  width: 14px;
+  height: 14px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.toolbar button {
+  width: 34px;
+  height: 34px;
+}
+.toolbar svg {
+  width: 16px;
+  height: 16px;
+}
+.canvas :global(.tiptap) {
+  min-height: 190px;
+  max-height: 600px;
+  overflow: auto;
+  outline: 0;
+  padding: 18px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.canvas :global(.tiptap:focus-visible) {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.canvas :global(.tiptap p) {
+  margin-block: 0 12px;
+}
+.canvas :global(.tiptap h2) {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-block: 16px 8px;
+}
+.canvas :global(.tiptap ul),
+.canvas :global(.tiptap ol) {
+  padding-inline-start: 24px;
+}
+.canvas :global(.tiptap ul) {
+  list-style: disc;
+}
+.canvas :global(.tiptap ol) {
+  list-style: decimal;
+}
+.canvas :global(.tiptap blockquote) {
+  border-inline-start: 3px solid var(--accent);
+  margin-block: 12px;
+  padding-inline-start: 14px;
+  color: var(--secondary-text);
+}
+.canvas :global(.tiptap pre) {
+  padding: 12px;
+  background: var(--surface);
+  border-radius: 6px;
+  white-space: pre-wrap;
+}
+.canvas :global(.tiptap a) {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.canvas :global(.tiptap table) {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+.canvas :global(.tiptap td),
+.canvas :global(.tiptap th) {
+  border: 1px solid var(--border);
+  padding: 8px;
+}
+.canvas :global(.tiptap p.is-editor-empty:first-child::before) {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--secondary-text);
+}
+.editor > textarea {
+  border: 0;
+  border-radius: 0;
+  padding: 18px;
+  font-family: monospace;
+}
+.preview {
+  min-height: 190px;
+  max-height: 600px;
+  overflow: auto;
+  padding: 18px;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--secondary-text);
+}
+.link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.link input {
+  flex: 1;
+  min-width: 100px;
+}
+@media (max-width: 480px) {
+  .header {
+    align-items: stretch;
+  }
+  .views {
+    width: 100%;
+  }
+  .views button {
+    flex: 1;
+  }
+  .canvas :global(.tiptap),
+  .preview {
+    padding: 14px;
+  }
+}

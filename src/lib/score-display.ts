@@ -69,3 +69,9 @@ export function scoreVerificationKey(verification: string) {
       return null;
   }
 }
+
+/** Canonical counters are used by the API; legacy aliases remain readable. */
+export function scoreMissCount(score: { hit_counts?: Record<string, number> | null }) {
+  const value = score.hit_counts?.misses ?? score.hit_counts?.nmiss ?? score.hit_counts?.miss;
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null;
+}

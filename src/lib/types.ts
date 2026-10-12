@@ -22,11 +22,13 @@ export type NotificationReadResult = {
   updated: number;
   unread_count: number;
 };
+export type TextFormat = 'markdown' | 'bbcode';
 export type AnnouncementStatus = 'draft' | 'published' | 'archived';
 export type Announcement = {
   id: number;
   title: string;
   body: string;
+  body_format?: TextFormat;
   status: AnnouncementStatus;
   revision: number;
   created_at: string;
@@ -52,6 +54,7 @@ export type User = {
   username: string;
   country: string;
   bio: string;
+  bio_format?: TextFormat;
   avatar_url: string | null;
   banner_url: string | null;
   banner_position_x: number;

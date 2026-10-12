@@ -552,13 +552,17 @@ const requestArticle = (page: Page, id = pendingId) =>
   page.locator(`[data-rank-request-id="${id}"]`);
 async function creationForm(page: Page) {
   await page.getByRole('button', { name: copy.request, exact: true }).click();
-  return page
+  const form = page
     .locator('div[class*="requestAction"]')
     .filter({ has: page.locator('a[href="/beatmaps/rank-requests"]') });
+  await form.getByRole('button', { name: 'Source', exact: true }).click();
+  return form;
 }
 async function reviewForm(article: Locator) {
   await article.getByRole('button', { name: copy.review, exact: true }).click();
-  return article.locator('form[data-rank-request-editor]');
+  const form = article.locator('form[data-rank-request-editor]');
+  await form.getByRole('button', { name: 'Source', exact: true }).click();
+  return form;
 }
 async function withdrawForm(article: Locator) {
   await article.getByRole('button', { name: copy.withdraw, exact: true }).click();
@@ -598,6 +602,7 @@ test('local creation submits exactly the native set and trimmed reason then link
       body: {
         native_set_id: localSetId,
         reason: 'Synthetic local evidence',
+        reason_format: 'markdown',
         difficulty_ids: [localNativeId],
       },
     },
@@ -630,6 +635,7 @@ test('upstream-only official Pending creation uses official_set_id without impor
       body: {
         official_set_id: officialSetId,
         reason: 'Synthetic official evidence',
+        reason_format: 'markdown',
         difficulty_ids: [991212],
       },
     },
@@ -695,6 +701,7 @@ for (const setStatus of ['pending', 'graveyard'] as const) {
         body: {
           official_set_id: officialSetId,
           reason: 'Synthetic mixed official evidence',
+          reason_format: 'markdown',
           difficulty_ids: [991213],
         },
       },
@@ -751,6 +758,7 @@ test('local creation excludes Ranked, Loved and WIP siblings and sends only the 
       body: {
         native_set_id: localSetId,
         reason: 'Synthetic selected legacy evidence',
+        reason_format: 'markdown',
         difficulty_ids: [localNativeId + 1],
       },
     },
@@ -805,6 +813,7 @@ test('creation preserves reason and selection across public difficulty pages whi
   expect(state.writes[0].body).toEqual({
     native_set_id: localSetId,
     reason: 'Synthetic paginated selection draft',
+    reason_format: 'markdown',
     difficulty_ids: [
       localNativeId,
       ...Array.from({ length: 4 }, (_, index) => localNativeId + 100 + index),
@@ -848,7 +857,7 @@ test('empty and control-character creation reasons are rejected before any write
   await page.goto(`/beatmaps/${localMapId}`);
   const form = await creationForm(page);
   const reason = form.getByRole('textbox', { name: copy.reason });
-  for (const value of ['   ', 'Synthetic reason\nwith a control character']) {
+  for (const value of ['   ', 'Synthetic reason\u007fwith a control character']) {
     await reason.fill(value);
     await form.getByRole('button', { name: copy.send, exact: true }).click();
     await expect(form.getByRole('alert')).toHaveText(copy.invalidReason);
@@ -946,8 +955,18 @@ test('review conflict preserves rejection reason and decision until explicit req
   await form.getByRole('button', { name: copy.saveDecision, exact: true }).click();
   await expect(article).toHaveCount(0);
   expect(state.writes.map((write) => write.body)).toEqual([
-    { decision: 'rejected', reason: 'Synthetic rejection evidence', expected_revision: 4 },
-    { decision: 'rejected', reason: 'Synthetic rejection evidence', expected_revision: 6 },
+    {
+      decision: 'rejected',
+      reason: 'Synthetic rejection evidence',
+      reason_format: 'markdown',
+      expected_revision: 4,
+    },
+    {
+      decision: 'rejected',
+      reason: 'Synthetic rejection evidence',
+      reason_format: 'markdown',
+      expected_revision: 6,
+    },
   ]);
   expect(state.reads).toContain(`/beatmap-rank-requests/${pendingId}`);
   expect(state.reads.some((path) => path.startsWith('/admin/beatmap-rank-requests'))).toBe(true);
@@ -1009,6 +1028,7 @@ test('approval starts with no selected difficulties and submits only the explici
       body: {
         decision: 'approved',
         reason: 'Synthetic selected evidence',
+        reason_format: 'markdown',
         expected_revision: 4,
         difficulty_ids: [localNativeId],
         difficulty_revisions: [
@@ -1062,6 +1082,7 @@ for (const [code, refreshedOverride, refreshedStatus] of [
     expect(state.writes[1].body).toEqual({
       decision: 'approved',
       reason: 'Synthetic preserved subset review',
+      reason_format: 'markdown',
       expected_revision: 4,
       difficulty_ids: [localNativeId],
       difficulty_revisions: [

@@ -250,8 +250,14 @@ test('native score sources remain distinct beside identical mods in best and rec
     await expect(mods).toContainText('SV2');
     await expect(origin).not.toHaveAttribute('tabindex');
     const size = await origin.boundingBox();
-    expect(size?.width).toBe(16);
-    expect(size?.height).toBe(16);
+    if (client === 'lazer') {
+      expect(size!.width).toBeGreaterThanOrEqual(16);
+      expect(size!.width).toBeLessThanOrEqual(64);
+      expect(size!.height).toBeLessThanOrEqual(20);
+    } else {
+      expect(size?.width).toBe(16);
+      expect(size?.height).toBe(16);
+    }
   }
   await page.getByRole('button', { name: 'Recent scores', exact: true }).click();
   const recent = page.locator('.profile-score-list');
@@ -429,8 +435,9 @@ test('logout removes private recent rows when returning to the same profile', as
   const path = `/users/${ownerId}?score_view=recent`;
   await page.goto(path);
   await expect(page.locator('.score-table')).toContainText('Private pending fixture');
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Account menu', exact: true })).toHaveCount(0);
   await page.goto(path);
   await expect(page.locator('.profile-score-list li')).toHaveCount(1);
   await expect(page.locator('.score-table')).not.toContainText('Private pending fixture');

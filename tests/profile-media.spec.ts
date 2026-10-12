@@ -103,6 +103,7 @@ test('removing profile images clears only the selected image and preserves unsav
   await page.goto('/settings?tab=profile');
   await expect(page.getByRole('button', { name: '移除頭像', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '移除橫幅', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '原始碼', exact: true }).click();
   await page.getByLabel('自我介紹', { exact: true }).fill('Unsaved profile draft');
   await page.locator('#country').click();
   await page.getByRole('combobox', { name: '搜尋國家／地區', exact: true }).fill('JP');
@@ -125,6 +126,7 @@ test('removing profile images clears only the selected image and preserves unsav
     method: 'PATCH',
     body: {
       bio: 'Unsaved profile draft',
+      bio_format: 'markdown',
       country: 'JP',
       accent_color: '#f28eb6',
       banner_position_x: 50,
@@ -149,6 +151,7 @@ test('image-removal failure keeps previews and drafts and offers a working retry
   state.fail = true;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/settings?tab=profile');
+  await page.getByRole('button', { name: 'ソース', exact: true }).click();
   await page.getByLabel('自己紹介', { exact: true }).fill('Retry draft');
   await page.getByRole('button', { name: 'バナーを削除', exact: true }).click();
   await expect(page.locator('.settings-form').getByRole('alert')).toHaveText(

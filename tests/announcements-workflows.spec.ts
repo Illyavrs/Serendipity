@@ -6,6 +6,15 @@ import type { Announcement, AnnouncementStatus } from '../src/lib/types';
 
 const stamp = '2026-10-08T04:00:00Z';
 const author = { id: 990801, username: 'Announcement fixture editor', avatar_url: null };
+
+async function sourceBody(page: Page) {
+  await page
+    .locator('.announcement-editor')
+    .getByRole('button', { name: /^(Source|原始碼|ソース)$/ })
+    .click();
+  return page.locator('#announcement-body-source');
+}
+
 const synthetic = 'Synthetic announcement fixtures; no real account or database is used.';
 const captured: Record<string, unknown>[] = [];
 const copy = {
@@ -182,6 +191,7 @@ async function fixture(
       if (request.method() === 'POST') {
         state.writes.push({ method: 'POST', body });
         const created = announcement(991000 + state.writes.length, 'draft', body.title, body.body);
+        created.body_format = body.body_format ?? 'markdown';
         state.items.unshift(created);
         return route.fulfill({ status: 201, json: created });
       }
@@ -199,6 +209,7 @@ async function fixture(
         Object.assign(item, {
           title: body.title,
           body: body.body,
+          body_format: body.body_format ?? item.body_format ?? 'markdown',
           status: body.status,
           revision: item.revision + 1,
           published_at:
@@ -395,9 +406,13 @@ test('mobile light detail preserves long plain text and supports keyboard naviga
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/news/990899');
   await expect(page.locator('html')).toHaveClass(/light/);
-  await expect(page.locator('.announcement-body')).toHaveText(body);
+  await expect(page.locator('.announcement-body')).toContainText(
+    'This is a synthetic announcement',
+  );
+  await expect(page.locator('.announcement-body')).toContainText('Final line.');
+  await expect(page.locator('.announcement-body')).toContainText('x'.repeat(240));
   await expect(page.locator('.announcement-body img')).toHaveCount(0);
-  await expect(page.locator('.announcement-body')).toHaveCSS('white-space', 'pre-wrap');
+  await expect(page.locator('.announcement-body p')).not.toHaveCount(0);
   expect(await page.evaluate(() => 'fixtureExecuted' in window)).toBe(false);
   await capture(page, 'news-390-light-en-longbody');
   await page.locator('.announcement-back').focus();
@@ -416,13 +431,13 @@ test('create, failed save, explicit publish and withdrawal retain the authored t
   await page.goto('/admin?tab=announcements');
   await page.getByRole('button', { name: 'New announcement', exact: true }).click();
   await page.getByLabel('Title', { exact: true }).fill('Authored synthetic announcement');
-  await page.getByLabel('Body', { exact: true }).fill('First line\nSecond line');
+  await (await sourceBody(page)).fill('First line\nSecond line');
   state.failWrite = 503;
   await page.getByRole('button', { name: 'Save draft', exact: true }).click();
   await expect(page.locator('.announcement-editor .form-error')).toContainText(
     "The server couldn't complete your request.",
   );
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue('First line\nSecond line');
+  await expect(await sourceBody(page)).toHaveValue('First line\nSecond line');
   expect(state.writes).toHaveLength(0);
   state.failWrite = 0;
   state.holdWrite = true;
@@ -457,20 +472,24 @@ test('create, failed save, explicit publish and withdrawal retain the authored t
 test('desktop editor guards selection, cancellation and tab navigation without implicit writes', async ({
   page,
 }) => {
-  const state = await fixture(page, 'zh-TW');
+  const state = await fixture(page, 'zh-TW', 'dark', [
+    'admin.view',
+    'announcements.manage',
+    'beatmaps.moderate',
+  ]);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/admin');
   await page.locator('.admin-toolbar').getByRole('button', { name: '公告', exact: true }).click();
   await page.locator('.announcement-select').first().click();
   await page.getByLabel('標題', { exact: true }).fill('維護草稿：請確認連線教學與伺服器位址');
-  await page.getByLabel('內文', { exact: true }).fill(copy['zh-TW'].body);
+  await (await sourceBody(page)).fill(copy['zh-TW'].body);
   await page.goBack();
   await expect(page).toHaveURL(/\/admin$/);
   await page.goForward();
   await expect(page.getByLabel('標題', { exact: true })).toHaveValue(
     '維護草稿：請確認連線教學與伺服器位址',
   );
-  await expect(page.getByLabel('內文', { exact: true })).toHaveValue(copy['zh-TW'].body);
+  await expect(await sourceBody(page)).toHaveValue(copy['zh-TW'].body);
   await expect(page.locator('.announcement-recovered')).toContainText('已恢復');
   await expect(page.locator('.announcement-admin-rows > li')).toHaveCount(12);
   await capture(page, 'admin-1440-dark-zh-TW-edit');
@@ -501,13 +520,11 @@ test('mobile Japanese conflict keeps unsaved text until latest replacement is co
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/admin?tab=announcements');
   await page.locator('.announcement-select').first().click();
-  await page
-    .getByLabel('本文', { exact: true })
-    .fill('自分の未保存の変更。\n確認してから公開します。');
+  await (await sourceBody(page)).fill('自分の未保存の変更。\n確認してから公開します。');
   state.conflict = true;
   await page.getByRole('button', { name: '下書きを保存', exact: true }).click();
   await expect(page.locator('.announcement-editor .form-error')).toContainText('別の編集者');
-  await expect(page.getByLabel('本文', { exact: true })).toHaveValue(
+  await expect(await sourceBody(page)).toHaveValue(
     '自分の未保存の変更。\n確認してから公開します。',
   );
   await expect(page.getByRole('button', { name: '公開する', exact: true })).toBeDisabled();
@@ -518,7 +535,7 @@ test('mobile Japanese conflict keeps unsaved text until latest replacement is co
     .click();
   await page.getByRole('button', { name: '編集を続ける', exact: true }).click();
   expect(state.privateDetailReads).toBe(0);
-  await expect(page.getByLabel('本文', { exact: true })).toHaveValue(
+  await expect(await sourceBody(page)).toHaveValue(
     '自分の未保存の変更。\n確認してから公開します。',
   );
   await page
@@ -529,7 +546,7 @@ test('mobile Japanese conflict keeps unsaved text until latest replacement is co
     .getByRole('group', { name: '最新の版で入力内容を置き換えますか？' })
     .getByRole('button', { name: '最新の版を読み込む', exact: true })
     .click();
-  await expect(page.getByLabel('本文', { exact: true })).toHaveValue(
+  await expect(await sourceBody(page)).toHaveValue(
     'Latest text from another editor — synthetic fixture.',
   );
   expect(state.privateDetailReads).toBe(1);
@@ -545,29 +562,21 @@ test('admin pagination and status filters preserve the open editor', async ({ pa
   await page.goto('/admin?tab=announcements');
   await expect(page.locator('.announcement-admin-rows > li')).toHaveCount(12);
   await page.locator('.announcement-select').first().click();
-  await page.getByLabel('Body', { exact: true }).fill('Keep this local draft while browsing.');
+  await (await sourceBody(page)).fill('Keep this local draft while browsing.');
   await page.locator('.announcement-management-list .pagination button').last().click();
   await expect(page).toHaveURL(/page=2/);
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue(
-    'Keep this local draft while browsing.',
-  );
+  await expect(await sourceBody(page)).toHaveValue('Keep this local draft while browsing.');
   await selectField(page.getByLabel('Publication status', { exact: true }), 'draft');
   await expect(page.locator('.announcement-admin-rows > li')).toHaveCount(1);
   await expect(page).toHaveURL(/status=draft/);
   expect(new URL(page.url()).searchParams.has('page')).toBe(false);
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue(
-    'Keep this local draft while browsing.',
-  );
+  await expect(await sourceBody(page)).toHaveValue('Keep this local draft while browsing.');
   await page.goBack();
   await expect(page).toHaveURL(/page=2/);
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue(
-    'Keep this local draft while browsing.',
-  );
+  await expect(await sourceBody(page)).toHaveValue('Keep this local draft while browsing.');
   await page.goForward();
   await expect(page).toHaveURL(/status=draft/);
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue(
-    'Keep this local draft while browsing.',
-  );
+  await expect(await sourceBody(page)).toHaveValue('Keep this local draft while browsing.');
   await expect(page.locator('.announcement-recovered')).toHaveCount(0);
   expect(state.writes).toHaveLength(0);
 });
@@ -603,13 +612,15 @@ async function refreshViewer(page: Page, state: { meReads: number }) {
 test('Back and Forward recover an unpublished draft across announcement tabs and routes without writes', async ({
   page,
 }) => {
-  const state = await fixture(page);
+  const state = await fixture(page, 'en', 'dark', [
+    'admin.view',
+    'announcements.manage',
+    'beatmaps.moderate',
+  ]);
   await enterEditorThroughNavigation(page);
   await page.getByRole('button', { name: 'New announcement', exact: true }).click();
   await page.getByLabel('Title', { exact: true }).fill('Own unpublished history draft');
-  await page
-    .getByLabel('Body', { exact: true })
-    .fill('Keep this exact unsaved text.\nIt has not been published.');
+  await (await sourceBody(page)).fill('Keep this exact unsaved text.\nIt has not been published.');
   await page.goBack();
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.locator('.announcement-editor')).toHaveCount(0);
@@ -617,7 +628,7 @@ test('Back and Forward recover an unpublished draft across announcement tabs and
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
     'Own unpublished history draft',
   );
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue(
+  await expect(await sourceBody(page)).toHaveValue(
     'Keep this exact unsaved text.\nIt has not been published.',
   );
   await expect(page.locator('.announcement-recovered')).toContainText(
@@ -632,7 +643,7 @@ test('Back and Forward recover an unpublished draft across announcement tabs and
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
     'Own unpublished history draft',
   );
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue(
+  await expect(await sourceBody(page)).toHaveValue(
     'Keep this exact unsaved text.\nIt has not been published.',
   );
   await page.getByRole('button', { name: 'New announcement', exact: true }).click();
@@ -656,11 +667,15 @@ test('Back and Forward recover an unpublished draft across announcement tabs and
 test('history recovery keeps own text when the original record changed or disappeared', async ({
   page,
 }) => {
-  const state = await fixture(page);
+  const state = await fixture(page, 'en', 'dark', [
+    'admin.view',
+    'announcements.manage',
+    'beatmaps.moderate',
+  ]);
   await enterEditorThroughNavigation(page);
   await page.locator('.announcement-select').first().click();
   await page.getByLabel('Title', { exact: true }).fill('Own title across a concurrent update');
-  await page.getByLabel('Body', { exact: true }).fill('Own body across a concurrent update');
+  await (await sourceBody(page)).fill('Own body across a concurrent update');
   await page.goBack();
   await expect(page).toHaveURL(/\/admin$/);
   state.items[0].revision++;
@@ -670,9 +685,7 @@ test('history recovery keeps own text when the original record changed or disapp
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
     'Own title across a concurrent update',
   );
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue(
-    'Own body across a concurrent update',
-  );
+  await expect(await sourceBody(page)).toHaveValue('Own body across a concurrent update');
   await expect(page.locator('.announcement-editor .form-error')).toContainText(
     'changed by another editor',
   );
@@ -682,9 +695,7 @@ test('history recovery keeps own text when the original record changed or disapp
   await expect(page).toHaveURL(/\/admin$/);
   state.items = state.items.filter((item) => item.id !== 990900);
   await page.goForward();
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue(
-    'Own body across a concurrent update',
-  );
+  await expect(await sourceBody(page)).toHaveValue('Own body across a concurrent update');
   await expect(page.locator('.announcement-editor .form-error')).toHaveText(
     'This announcement is unavailable.',
   );
@@ -696,25 +707,29 @@ for (const change of ['lost grant', 'changed account', 'logout'] as const) {
   test(`retained history text clears after ${change} while the editor is absent`, async ({
     page,
   }) => {
-    const state = await fixture(page);
+    const state = await fixture(page, 'en', 'dark', [
+      'admin.view',
+      'announcements.manage',
+      'beatmaps.moderate',
+    ]);
     await enterEditorThroughNavigation(page);
     await page.getByRole('button', { name: 'New announcement', exact: true }).click();
     await page.getByLabel('Title', { exact: true }).fill(`Private title before ${change}`);
-    await page.getByLabel('Body', { exact: true }).fill(`Private text before ${change}`);
+    await (await sourceBody(page)).fill(`Private text before ${change}`);
     await page.goBack();
     await page.goBack();
     await expect(page).toHaveURL(/\/news$/);
     if (change === 'lost grant') {
       state.permissions = ['admin.view'];
       await refreshViewer(page, state);
-      await page
-        .locator('.desktop-nav')
-        .getByRole('link', { name: 'Administration', exact: true })
-        .click();
+      await expect(
+        page.locator('.desktop-nav').getByRole('link', { name: 'Administration', exact: true }),
+      ).toHaveCount(0);
+      await page.goto('/admin');
       await expect(
         page.locator('.admin-toolbar').getByRole('button', { name: 'Announcements', exact: true }),
       ).toHaveCount(0);
-      state.permissions = ['admin.view', 'announcements.manage'];
+      state.permissions = ['admin.view', 'announcements.manage', 'beatmaps.moderate'];
       await refreshViewer(page, state);
       await page
         .locator('.admin-toolbar')
@@ -723,12 +738,18 @@ for (const change of ['lost grant', 'changed account', 'logout'] as const) {
     } else if (change === 'changed account') {
       state.viewer = author.id + 1;
       await refreshViewer(page, state);
-      await expect(page.locator('.user-link')).toHaveAttribute('href', `/users/${author.id + 1}`);
+      await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+      await expect(page.getByRole('menuitem', { name: 'My profile', exact: true })).toHaveAttribute(
+        'href',
+        `/users/${author.id + 1}`,
+      );
+      await page.keyboard.press('Escape');
       await page.goForward();
       await page.goForward();
     } else {
-      await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-      await expect(page).toHaveURL(/\/$/);
+      await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+      await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Account menu', exact: true })).toHaveCount(0);
       state.viewer = author.id;
       await refreshViewer(page, state);
       await page
@@ -745,7 +766,7 @@ for (const change of ['lost grant', 'changed account', 'logout'] as const) {
     await expect(page.locator('.announcement-editor')).toHaveCount(0);
     await page.getByRole('button', { name: 'New announcement', exact: true }).click();
     await expect(page.getByLabel('Title', { exact: true })).toHaveValue('');
-    await expect(page.getByLabel('Body', { exact: true })).toHaveValue('');
+    await expect(await sourceBody(page)).toHaveValue('');
     await expect(page.locator('.announcement-recovered')).toHaveCount(0);
     expect(state.writes).toHaveLength(0);
   });
@@ -767,7 +788,7 @@ test('missing grant hides the tab and expired grant clears private forms and cac
     .getByRole('button', { name: 'Announcements', exact: true })
     .click();
   await page.locator('.announcement-select').first().click();
-  await page.getByLabel('Body', { exact: true }).fill('Private unsaved text after grant expiry');
+  await (await sourceBody(page)).fill('Private unsaved text after grant expiry');
   state.permissions = ['admin.view'];
   await page.getByRole('button', { name: 'Save draft', exact: true }).click();
   await expect(page.locator('#announcement-body')).toHaveCount(0);
@@ -820,7 +841,7 @@ test('management read failures and vanished conflict targets retain recoverable 
   state.adminError = 0;
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await page.locator('.announcement-select').first().click();
-  await page.getByLabel('Body', { exact: true }).fill('Retain on missing latest target.');
+  await (await sourceBody(page)).fill('Retain on missing latest target.');
   state.conflict = true;
   await page.getByRole('button', { name: 'Save draft', exact: true }).click();
   await expect(page.locator('.announcement-conflict')).toBeVisible();
@@ -836,9 +857,7 @@ test('management read failures and vanished conflict targets retain recoverable 
   await expect(page.locator('.announcement-editor .form-error')).toHaveText(
     'This announcement is unavailable.',
   );
-  await expect(page.getByLabel('Body', { exact: true })).toHaveValue(
-    'Retain on missing latest target.',
-  );
+  await expect(await sourceBody(page)).toHaveValue('Retain on missing latest target.');
 });
 
 test('withdrawing the final filtered row returns to the remaining last page', async ({ page }) => {
@@ -992,4 +1011,42 @@ test('owned API lifecycle enforces delegated grants, public visibility and revis
     if (roleId) await operator.delete(`/api/v1/admin/roles/${roleId}`);
     await Promise.all(contexts.map((context) => context.dispose()));
   }
+});
+
+test('announcement visual BBCode draft retains its format through history and saves explicitly', async ({
+  page,
+}) => {
+  const state = await fixture(page, 'en', 'dark', [
+    'admin.view',
+    'announcements.manage',
+    'beatmaps.moderate',
+  ]);
+  await enterEditorThroughNavigation(page);
+  await page.getByRole('button', { name: 'New announcement', exact: true }).click();
+  await page.getByLabel('Title', { exact: true }).fill('Visual announcement fixture');
+  const visual = page.getByRole('textbox', { name: 'Body', exact: true });
+  await visual.fill('A visual announcement');
+  await visual.press('ControlOrMeta+A');
+  await page.getByRole('button', { name: 'Bold', exact: true }).click();
+  await selectField(page.getByRole('combobox', { name: 'Text format' }), 'bbcode');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/admin$/);
+  await page.goForward();
+  await expect(page.getByRole('combobox', { name: 'Text format' })).toHaveAttribute(
+    'data-value',
+    'bbcode',
+  );
+  await expect(await sourceBody(page)).toHaveValue('[b]A visual announcement[/b]');
+  expect(state.writes).toHaveLength(0);
+  await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+  await expect.poll(() => state.writes.length).toBe(1);
+  expect(state.writes[0].body).toMatchObject({
+    body: '[b]A visual announcement[/b]',
+    body_format: 'bbcode',
+  });
+  await page.reload();
+  await page.locator('.announcement-select').first().click();
+  await expect(
+    page.getByRole('textbox', { name: 'Body', exact: true }).locator('strong'),
+  ).toHaveText('A visual announcement');
 });

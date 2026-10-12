@@ -6,7 +6,8 @@ import { ImagePlus, RotateCcw, Check, LoaderCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FieldSelect } from '@/components/ui/field-select';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/rich-text-editor';
+import type { TextFormat } from '@/lib/types';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppearance, useSession } from '@/components/providers';
@@ -257,6 +258,7 @@ function ProfileControls() {
   const c = useTranslations('common');
   const { user, refresh } = useSession();
   const [bio, setBio] = useState(user?.bio ?? '');
+  const [bioFormat, setBioFormat] = useState<TextFormat>(user?.bio_format ?? 'markdown');
   const [country, setCountry] = useState(user?.country ?? 'TW');
   const [accent, setAccent] = useState(
     typeof user?.accent_color === 'string' && /^#[0-9a-f]{6}$/i.test(user.accent_color)
@@ -269,6 +271,7 @@ function ProfileControls() {
   const [bannerY, setBannerY] = useState(validPosition(user?.banner_position_y));
   const draft = {
     bio,
+    bio_format: bioFormat,
     country,
     accent_color: accent,
     banner_position_x: bannerX,
@@ -489,16 +492,18 @@ function ProfileControls() {
       )}
       <div className="field">
         <label htmlFor="bio">{t('bio')}</label>
-        <Textarea
+        <RichTextEditor
           id="bio"
-          disabled={pending === 'save'}
-          maxLength={4000}
+          label={t('bio')}
           value={bio}
-          onChange={(e) => {
-            setBio(e.target.value);
+          format={bioFormat}
+          onFormatChange={setBioFormat}
+          maxLength={4000}
+          disabled={pending === 'save'}
+          onChange={(value) => {
+            setBio(value);
             setFeedback('');
           }}
-          rows={6}
         />
       </div>
       <div className="field">

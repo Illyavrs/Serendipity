@@ -1,5 +1,5 @@
 'use client';
-import { Markdown } from '@/components/markdown';
+import { RichText } from '@/components/rich-text';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -768,7 +768,9 @@ export function PlayerPage({ id }: { id: number }) {
               >
                 <h2 id="profile-about-heading">{t('about')}</h2>
                 {player.bio ? (
-                  <Markdown className="profile-bio">{player.bio}</Markdown>
+                  <RichText className="profile-bio" format={player.bio_format}>
+                    {player.bio}
+                  </RichText>
                 ) : (
                   <p className="profile-bio">{t('noBio')}</p>
                 )}

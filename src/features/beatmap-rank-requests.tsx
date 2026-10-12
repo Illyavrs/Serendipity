@@ -1,6 +1,6 @@
 'use client';
 
-import { Markdown } from '@/components/markdown';
+import { RichText } from '@/components/rich-text';
 import { Suspense, useId, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -13,7 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FieldSelect } from '@/components/ui/field-select';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/rich-text-editor';
+import type { TextFormat } from '@/lib/types';
 import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import type { Page } from '@/lib/types';
 import { useDeniedResponseGuard } from './admin-moderation';
@@ -46,6 +47,7 @@ export type BeatmapRankRequest = {
   source: 'local' | 'official';
   requester: Identity;
   reason: string;
+  reason_format?: TextFormat;
   status: RankRequestStatus;
   revision: number;
   metadata: {
@@ -56,6 +58,7 @@ export type BeatmapRankRequest = {
     official_url: string | null;
   };
   review_reason: string | null;
+  review_reason_format?: TextFormat;
   reviewer: Identity | null;
   created_at: string;
   updated_at: string;
@@ -70,7 +73,14 @@ const statuses: RankRequestStatus[] = ['pending', 'approved', 'rejected', 'withd
 const validRevision = (value: number) => Number.isSafeInteger(value) && value >= 0;
 const validReason = (value: string) => {
   const length = Array.from(value.trim()).length;
-  return length >= 1 && length <= 1000 && !/[\u0000-\u001f\u007f-\u009f]/.test(value);
+  return (
+    length >= 1 &&
+    length <= 1000 &&
+    Array.from(value).every((character) => {
+      const code = character.codePointAt(0)!;
+      return code === 9 || code === 10 || (code >= 32 && !(code >= 127 && code <= 159));
+    })
+  );
 };
 const denial = (value: unknown): value is ApiError =>
   value instanceof ApiError && [401, 403, 404, 410].includes(value.status);
@@ -328,12 +338,12 @@ function RequestRecord({
         </p>
         <div className={styles.reason}>
           <strong>{t('reason')}</strong>
-          <Markdown>{item.reason}</Markdown>
+          <RichText format={item.reason_format}>{item.reason}</RichText>
         </div>
         {item.review_reason && (
           <div className={styles.reason}>
             <strong>{t('reviewReason')}</strong>
-            <Markdown>{item.review_reason}</Markdown>
+            <RichText format={item.review_reason_format}>{item.review_reason}</RichText>
             {item.reviewer && (
               <Link href={`/users/${item.reviewer.id}`}>
                 {t('reviewer')} · {item.reviewer.username}
@@ -378,6 +388,7 @@ function RequestDecision({
   const [snapshot, setSnapshot] = useState(item);
   const [decision, setDecision] = useState('rejected');
   const [reason, setReason] = useState('');
+  const [reasonFormat, setReasonFormat] = useState<TextFormat>('markdown');
   const [selected, setSelected] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [stale, setStale] = useState(false);
@@ -429,6 +440,7 @@ function RequestDecision({
               ? {
                   decision,
                   reason: reason.trim(),
+                  reason_format: reasonFormat,
                   expected_revision: snapshot.revision,
                   ...(decision === 'approved'
                     ? {
@@ -498,13 +510,16 @@ function RequestDecision({
           )}
           <div className="field">
             <label htmlFor={`${id}-reason`}>{t('reviewReason')}</label>
-            <Textarea
+            <RichTextEditor
               id={`${id}-reason`}
+              label={t('reviewReason')}
               value={reason}
-              onChange={(event) => setReason(event.target.value)}
-              maxLength={2000}
+              format={reasonFormat}
+              onFormatChange={setReasonFormat}
+              onChange={setReason}
               disabled={busy}
-              aria-describedby={`${id}-hint`}
+              maxLength={1000}
+              describedBy={`${id}-hint`}
             />
             <p className="hint" id={`${id}-hint`}>
               {t('reviewReasonHint')}
@@ -684,6 +699,7 @@ function RequestAction({ target, initialDifficulties = [], localMapId }: Request
   const id = useId();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
+  const [reasonFormat, setReasonFormat] = useState<TextFormat>('markdown');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -741,7 +757,12 @@ function RequestAction({ target, initialDifficulties = [], localMapId }: Request
     try {
       await api('/beatmap-rank-requests', {
         method: 'POST',
-        body: JSON.stringify({ ...target, reason: reason.trim(), difficulty_ids: selected }),
+        body: JSON.stringify({
+          ...target,
+          reason: reason.trim(),
+          reason_format: reasonFormat,
+          difficulty_ids: selected,
+        }),
       });
       setSaved(true);
       setSuccess(t('submitted'));
@@ -828,13 +849,16 @@ function RequestAction({ target, initialDifficulties = [], localMapId }: Request
               {localMapId !== undefined && <p className="hint">{t('selectionPages')}</p>}
               <div className="field">
                 <label htmlFor={`${id}-reason`}>{t('reason')}</label>
-                <Textarea
+                <RichTextEditor
                   id={`${id}-reason`}
+                  label={t('reason')}
                   value={reason}
-                  onChange={(event) => setReason(event.target.value)}
+                  format={reasonFormat}
+                  onFormatChange={setReasonFormat}
+                  onChange={setReason}
                   disabled={busy || saved}
-                  maxLength={2000}
-                  aria-describedby={`${id}-hint`}
+                  maxLength={1000}
+                  describedBy={`${id}-hint`}
                 />
                 <p id={`${id}-hint`} className="hint">
                   {t('reasonHint')}

@@ -16,6 +16,7 @@ import {
   Radio,
   Settings as SettingsIcon,
   ShieldCheck,
+  Upload,
 } from 'lucide-react';
 import { LayoutGroup } from 'motion/react';
 import * as m from 'motion/react-m';
@@ -236,7 +237,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/scores/resubmit">{t('resubmitScore')}</Link>
+                      <Link href="/scores/resubmit">
+                        <Upload aria-hidden="true" />
+                        {t('resubmitScore')}
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/friends">
@@ -301,6 +305,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                           {t('profile')}
                         </Link>
                         <Link href="/scores/resubmit" onNavigate={() => setNavOpen(false)}>
+                          <Upload aria-hidden="true" />
                           {t('resubmitScore')}
                         </Link>
                         <Link href="/friends" onNavigate={() => setNavOpen(false)}>

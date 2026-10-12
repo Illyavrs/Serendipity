@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/common';
 import { ScoreOrigin } from '@/components/score-origin';
 import type { Score, ScoreBoardOrder } from '@/lib/types';
-import { scoreMods, scoreVerificationKey } from '@/lib/score-display';
+import { scoreMods, scoreVerificationKey, scoreMissCount } from '@/lib/score-display';
 import './score-presentation.css';
 export function ScoreTable({
   scores,
@@ -74,6 +74,9 @@ export function ScoreTable({
             </th>
             <th scope="col" className="score-record-number">
               {c('combo')}
+            </th>
+            <th scope="col" className="score-record-number">
+              Miss
             </th>
             {!bestList && (!leaderboard || orderedBy !== 'pp') && (
               <th scope="col" className="score-record-number">
@@ -203,6 +206,9 @@ export function ScoreTable({
                 </td>
                 <td className="score-record-number">
                   {bestList ? f.number(score.max_combo) : score.max_combo}x
+                </td>
+                <td className="score-record-number" data-label="Miss">
+                  {scoreMissCount(score) === null ? '—' : f.number(scoreMissCount(score)!)}
                 </td>
                 {!bestList && (!leaderboard || orderedBy !== 'pp') && (
                   <td className="pp-value score-record-number">{score.pp.toFixed(2)}</td>

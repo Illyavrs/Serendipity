@@ -1,12 +1,13 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
-import type { Announcement } from '@/lib/types';
+import type { Announcement, TextFormat } from '@/lib/types';
 
 export type LocalAnnouncementDraft = {
   announcement: Announcement | null;
   title: string;
   body: string;
+  bodyFormat?: TextFormat;
   conflict: boolean;
 };
 

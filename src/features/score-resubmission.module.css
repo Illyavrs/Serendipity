@@ -18,3 +18,15 @@
 .form input[type='checkbox'] {
   accent-color: var(--accent);
 }
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.heading svg {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--accent);
+}

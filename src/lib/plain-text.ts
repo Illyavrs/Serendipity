@@ -1,3 +1,5 @@
+import { bbcodeToPlainText } from './bbcode';
+import type { TextFormat } from './types';
 /** Reduce Markdown to the text a reader would see, for list excerpts that must not show syntax. */
 export function markdownToPlainText(markdown: string): string {
   return markdown
@@ -24,4 +26,8 @@ export function markdownToPlainText(markdown: string): string {
 export function excerpt(text: string, limit: number): string {
   const characters = Array.from(text);
   return characters.length > limit ? `${characters.slice(0, limit).join('')}…` : text;
+}
+
+export function richTextToPlainText(source: string, format: TextFormat = 'markdown') {
+  return format === 'bbcode' ? bbcodeToPlainText(source) : markdownToPlainText(source);
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
+import { Upload } from 'lucide-react';
 import { NavigationLink as Link } from '@/components/navigation-motion';
 import { Protected } from '@/components/common';
 import { useSession } from '@/components/providers';
@@ -71,7 +72,10 @@ function SubmissionForm() {
 
   return (
     <section className={`glass content-panel ${styles.panel}`}>
-      <h1>{t('title')}</h1>
+      <h1 className={styles.heading}>
+        <Upload aria-hidden="true" />
+        {t('title')}
+      </h1>
       <p className="lede">{t('description')}</p>
       <p className="hint">{t('instructions')}</p>
       {result ? (
@@ -132,9 +136,11 @@ function SubmissionForm() {
 export function ScoreResubmissionPage() {
   const { user } = useSession();
   return (
-    <Protected>
-      <SubmissionForm key={user?.id ?? 'guest'} />
-    </Protected>
+    <div className="page-container narrow">
+      <Protected>
+        <SubmissionForm key={user?.id ?? 'guest'} />
+      </Protected>
+    </div>
   );
 }
 
