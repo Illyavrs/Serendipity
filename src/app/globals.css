@@ -372,6 +372,25 @@ svg {
 .light .global-veil {
   background: rgb(255 255 255 / var(--scene-dim));
 }
+@media (hover: none) and (pointer: coarse) {
+  /* Browser chrome changes the visible height while scrolling. Keep the image
+     crop and its dimming layer sized to the stable, largest viewport instead. */
+  .global-scene,
+  .global-veil {
+    bottom: auto;
+    height: 100vh;
+    height: 100lvh;
+  }
+  .global-scene[data-background-mode='image'] {
+    /* Keep the blur's transparent edges outside even when its radius is large. */
+    --scene-bleed: calc(var(--scene-blur) * 3);
+    top: calc(-1 * var(--scene-bleed));
+    left: calc(-1 * var(--scene-bleed));
+    right: calc(-1 * var(--scene-bleed));
+    height: calc(100vh + var(--scene-bleed) * 2);
+    height: calc(100lvh + var(--scene-bleed) * 2);
+  }
+}
 .glass {
   background: var(--surface);
   border: 1px solid var(--border);
