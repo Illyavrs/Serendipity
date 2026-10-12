@@ -14,6 +14,110 @@ async function guest(page: Page) {
   );
 }
 
+for (const purpose of ['verify-email', 'reset-password'] as const) {
+  test(`${purpose} keeps its mail token when a delayed signed-in session mounts the account cache`, async ({
+    page,
+    baseURL,
+  }) => {
+    await page.context().addCookies([{ name: 'illya_locale', value: 'en', url: baseURL! }]);
+    let releaseSession!: () => void;
+    const sessionReady = new Promise<void>((resolve) => {
+      releaseSession = resolve;
+    });
+    const user = {
+      id: 987600,
+      username: 'Recovery fixture',
+      email: 'fixture@example.test',
+      email_verified: false,
+      country: 'TW',
+      bio: '',
+      avatar_url: null,
+      banner_url: null,
+      accent_color: '#f28eb6',
+      roles: ['player'],
+      permissions: [],
+      joined_at: '2026-10-07T00:00:00Z',
+      pp: 0,
+      play_count: 0,
+    };
+    await page.route('**/api/v1/me', async (route) => {
+      await sessionReady;
+      return route.fulfill({ json: user });
+    });
+    await page.route('**/api/v1/me/preferences', (route) =>
+      route.fulfill({
+        json: {
+          locale: 'en',
+          mode: 'dark',
+          accent_color: '#f28eb6',
+          background_url: null,
+          background_blur: 0,
+          background_dim: 0.76,
+          panel_blur: 8,
+          panel_opacity: 0.55,
+          border_radius: 14,
+        },
+      }),
+    );
+    let requests = 0;
+    const endpoint = purpose === 'verify-email' ? '/auth/email/verify' : '/auth/recovery/reset';
+    await page.route(`**/api/v1${endpoint}`, (route) => {
+      requests++;
+      expect(route.request().postDataJSON().token === token).toBe(true);
+      return route.fulfill({ json: { message: 'Fixture success' } });
+    });
+    await page.goto(`/${purpose}#token=${token}`);
+    await expect(page.locator('.auth-form h1')).toBeVisible();
+    // Let the first page commit while /me is still pending, then resolve it.
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    const sessionResponse = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === '/api/v1/me',
+    );
+    releaseSession();
+    await (await sessionResponse).finished();
+    await expect(page.locator('.user-link')).toContainText(user.username);
+    await expect(page).toHaveURL(new RegExp(`/${purpose}$`));
+    expect(requests).toBe(0);
+    expect(
+      await page.evaluate(
+        (secret) =>
+          [...Object.values(localStorage), ...Object.values(sessionStorage)].some((value) =>
+            String(value).includes(secret),
+          ),
+        token,
+      ),
+    ).toBe(false);
+    if (purpose === 'reset-password') {
+      await expect(page.getByLabel('New password', { exact: true })).toBeVisible();
+      await page.getByLabel('New password', { exact: true }).fill(password);
+      await page.getByLabel('Confirm new password', { exact: true }).fill(password);
+    }
+    const confirm = page.getByRole('button', {
+      name: purpose === 'verify-email' ? 'Confirm email' : 'Reset password',
+      exact: true,
+    });
+    await expect(confirm).toBeVisible();
+    await confirm.click();
+    await expect(
+      page.getByText(
+        purpose === 'verify-email'
+          ? 'Your email has been verified.'
+          : 'Your password has been updated.',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    expect(requests).toBe(1);
+    await page.reload();
+    await expect(page.locator('.form-error[role="alert"]')).toBeVisible();
+    expect(requests).toBe(1);
+  });
+}
+
 async function capture(page: Page, name: string) {
   if (process.env.ILLYA_CAPTURE_RECOVERY_REVIEW === '1')
     await page.screenshot({ path: `../../data-recovery-review/${name}.png`, fullPage: true });
@@ -234,6 +338,11 @@ test('account settings requests verification and shows its persisted verified st
     play_count: 0,
   };
   await page.route('**/api/v1/me', (route) => route.fulfill({ json: fixture }));
+  // Account settings also loads sessions; keep this synthetic signed-in user
+  // from reaching the real unauthenticated API and triggering a logout.
+  await page.route('**/api/v1/me/sessions', (route) =>
+    route.fulfill({ json: { sessions: [], has_more: false } }),
+  );
   await page.route('**/api/v1/me/preferences', (route) =>
     route.fulfill({
       json: {

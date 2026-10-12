@@ -95,6 +95,7 @@ function CapabilityMessage({
 // The fragment never reaches the server. Clear it before any intentional API action,
 // and keep the credential only in this mounted component's memory.
 function useRecoveryToken(onNewLink: () => void) {
+  const { loading: sessionLoading } = useSession();
   const captured = useRef<string | null>(null);
   const revision = useRef(0);
   const active = useRef(false);
@@ -104,6 +105,10 @@ function useRecoveryToken(onNewLink: () => void) {
     revision: 0,
   });
   useEffect(() => {
+    // Resolving /me replaces the account-keyed SWR subtree. Read and clear the
+    // fragment only after that initial session resolution, so a remount cannot
+    // discard the sole in-memory copy before the user confirms the mail link.
+    if (sessionLoading) return;
     active.current = true;
     function publish() {
       const value = { token: captured.current, revision: revision.current };
@@ -131,7 +136,7 @@ function useRecoveryToken(onNewLink: () => void) {
       active.current = false;
       window.removeEventListener('hashchange', capture);
     };
-  }, []);
+  }, [sessionLoading]);
   function isCurrent(expectedRevision: number) {
     return active.current && revision.current === expectedRevision;
   }
