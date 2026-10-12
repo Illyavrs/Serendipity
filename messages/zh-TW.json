@@ -18,7 +18,8 @@
     "menu": "開啟導覽",
     "account": "帳號選單",
     "friends": "朋友",
-    "online": "線上玩家"
+    "online": "線上玩家",
+    "resubmitScore": "補提交成績"
   },
   "notifications": {
     "title": "通知",
@@ -1494,5 +1495,29 @@
     "friendsSubtitle": "你加入的朋友,線上的會排在前面。",
     "friendsEmptyTitle": "還沒有朋友",
     "friendsEmptyDescription": "到玩家的個人頁面按「加為朋友」。"
+  },
+  "scoreResubmission": {
+    "title": "補提交成績",
+    "description": "成績未送達時，可上傳自己的 Replay。成績會標為待審核，經管理員通過後才會計入排行榜。",
+    "instructions": "在 osu! 將該筆成績匯出為 .osr Replay 後上傳。Replay 的玩家名稱須與你的帳號一致，且伺服器須有相符版本的圖譜。Replay 僅供人工審核，不代表已驗證遊玩過程。",
+    "file": "Replay 檔案",
+    "limits": "每次一個 .osr 檔案，上限 16 MiB。每個帳號最多 20 筆待審核的補提交成績。",
+    "passed": "這次遊玩已通關",
+    "passedHint": "stable 匯出檔須自行確認是否通關；lazer 匯出檔依 Replay 的評級判定。未通關成績不計入排行榜。",
+    "submit": "提交審核",
+    "submitting": "上傳中…",
+    "submitted": "Replay 已提交，成績待管理員審核。",
+    "existing": "這個 Replay 已有對應成績，原本的審核狀態已保留。",
+    "viewScore": "查看成績與審核狀態",
+    "another": "提交另一個 Replay",
+    "origin": "Replay 補提交",
+    "playedAt": "Replay 遊玩時間：{date}",
+    "errorSession": "登入已失效，請重新登入後再試。",
+    "errorOwner": "Replay 的玩家與你的帳號不同，請上傳以自己帳號名稱匯出的 Replay。",
+    "errorMap": "伺服器沒有可用的相符圖譜版本，請聯絡管理員匯入該版本。",
+    "errorLimit": "已有 20 筆待審核的補提交成績，請等待管理員審核。",
+    "errorSize": "Replay 不可超過 16 MiB。",
+    "errorFile": "請選擇完整且支援的 .osr Replay，標頭、Mods 與遊玩資料須有效。",
+    "errorRequest": "未能確認提交結果，請保留檔案再試；重複提交同一個 Replay 不會產生另一筆成績。"
   }
 }

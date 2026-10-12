@@ -198,12 +198,13 @@ test('unavailable conversion excludes misleading comparison values in both local
   await page.goto('/scores/987656');
   const assertUnavailable = async (locale: keyof typeof conversionCopy) => {
     const copy = conversionCopy[locale];
-    const panel = conversionPanel(page, copy.heading);
+    // Unavailable conversions show the warning beside judgements; no conversion
+    // panel is rendered. Keep checking that no misleading converted values appear.
     await expect(valueFor(page.locator('.score-detail-values'), copy.raw)).toHaveText('2,460');
-    await expect(panel.getByText(copy.unavailable, { exact: true })).toBeVisible();
-    await expect(panel.locator('dl')).toHaveCount(0);
-    await expect(panel.getByText(copy.standardised, { exact: true })).toHaveCount(0);
-    await expect(panel.getByText(copy.classic, { exact: true })).toHaveCount(0);
+    await expect(page.locator('main').getByText(copy.unavailable, { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: copy.heading, exact: true })).toHaveCount(0);
+    await expect(page.locator('main').getByText(copy.standardised, { exact: true })).toHaveCount(0);
+    await expect(page.locator('main').getByText(copy.classic, { exact: true })).toHaveCount(0);
     await expectNoPageOverflow(page);
   };
   await assertUnavailable('zh-TW');
@@ -213,4 +214,26 @@ test('unavailable conversion excludes misleading comparison values in both local
   await assertUnavailable('ja');
   await capture(page, 'unavailable-mobile-ja');
   expect(errors).toEqual([]);
+});
+
+test('manually resubmitted replay provenance appears on score details', async ({
+  page,
+  baseURL,
+}) => {
+  await page.context().addCookies([{ name: 'illya_locale', value: 'en', url: baseURL! }]);
+  await page.route('**/api/v1/me', (route) =>
+    route.fulfill({ status: 401, json: { error: { code: 'unauthorized' } } }),
+  );
+  await page.route('**/api/v1/scores/987654', (route) =>
+    route.fulfill({
+      json: {
+        ...nativeFixture,
+        submission_origin: 'replay',
+        replay_played_at: '2026-10-12T00:00:00Z',
+      },
+    }),
+  );
+  await page.goto('/scores/987654');
+  await expect(page.getByText('Replay resubmission', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Replay play time:/)).toBeVisible();
 });

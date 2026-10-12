@@ -697,3 +697,21 @@ test('paired desktop and phone moderation layouts retain contained controls and 
     expect(geometry.scroll).toBeLessThanOrEqual(geometry.width + 1);
   }
 });
+
+test('staff can identify a replay resubmission and download its evidence', async ({ page }) => {
+  const state = await fixture(page, ['scores.moderate']);
+  Object.assign(state.scores[0], {
+    submission_origin: 'replay',
+    replay_played_at: '2026-10-12T00:00:00Z',
+    has_replay: true,
+  });
+  await page.goto('/admin?tab=scores');
+  const row = page.locator('[data-score-id="991301"]');
+  await expect(row.getByText('Replay resubmission', { exact: true })).toBeVisible();
+  await expect(row.getByText(/Replay play time:/)).toBeVisible();
+  await expect(row.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'href',
+    '/api/v1/scores/991301/replay',
+  );
+  await expect(row.getByRole('button', { name: 'Apply decision', exact: true })).toBeVisible();
+});

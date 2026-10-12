@@ -16,6 +16,7 @@ import { FieldSelect } from '@/components/ui/field-select';
 import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import type { AdminChatUser, Audit, Page, Score } from '@/lib/types';
 import styles from './admin-moderation.module.css';
+import { ReplayClaimOrigin } from './score-resubmission';
 
 type Verification = 'pending' | 'verified' | 'rejected';
 const statuses: Verification[] = ['pending', 'verified', 'rejected'];
@@ -421,6 +422,7 @@ export function ScoreModeration() {
                       </p>
                     </td>
                     <td data-label={c('status')}>
+                      <ReplayClaimOrigin score={score} />
                       <Badge
                         variant={score.verification === 'rejected' ? 'destructive' : 'secondary'}
                       >

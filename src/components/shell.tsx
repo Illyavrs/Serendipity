@@ -236,6 +236,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
+                      <Link href="/scores/resubmit">{t('resubmitScore')}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <Link href="/friends">
                         <Users aria-hidden="true" />
                         {t('friends')}
@@ -296,6 +299,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
                         </Link>
                         <Link href={`/users/${user.id}`} onNavigate={() => setNavOpen(false)}>
                           {t('profile')}
+                        </Link>
+                        <Link href="/scores/resubmit" onNavigate={() => setNavOpen(false)}>
+                          {t('resubmitScore')}
                         </Link>
                         <Link href="/friends" onNavigate={() => setNavOpen(false)}>
                           {t('friends')}

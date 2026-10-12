@@ -156,6 +156,8 @@ export type BeatmapUploadResult = {
   idempotent: boolean;
 };
 export type Score = {
+  submission_origin?: 'client' | 'replay';
+  replay_played_at?: string | null;
   id: number;
   /** Recorded submission source; absent legacy values must not imply stable. */
   client?: string | null;

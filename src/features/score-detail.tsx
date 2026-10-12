@@ -15,6 +15,7 @@ import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import { scoreMods, scoreVerificationKey } from '@/lib/score-display';
 import type { Beatmap, User, Score } from '@/lib/types';
 import './score-presentation.css';
+import { ReplayClaimOrigin } from './score-resubmission';
 import { canonicalBeatmapHref } from '@/lib/beatmap-routes';
 import { ScoreModerationControls, useDeniedResponseGuard } from './admin-moderation';
 type ScoreDetail = Score & {
@@ -474,6 +475,7 @@ export function ScorePage({ id }: { id: number }) {
             <dt>{c('mods')}</dt>
             <dd className="score-mod-summary">
               <ScoreOrigin client={score.client} />
+              <ReplayClaimOrigin score={score} />
               <span>{modText}</span>
             </dd>
           </div>

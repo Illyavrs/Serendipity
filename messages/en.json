@@ -18,7 +18,8 @@
     "menu": "Open navigation",
     "account": "Account menu",
     "friends": "Friends",
-    "online": "Online players"
+    "online": "Online players",
+    "resubmitScore": "Resubmit a score"
   },
   "notifications": {
     "title": "Notifications",
@@ -1494,5 +1495,29 @@
     "friendsSubtitle": "Players you added as friends, with anyone online first.",
     "friendsEmptyTitle": "No friends yet",
     "friendsEmptyDescription": "Open a player profile and choose Add friend."
+  },
+  "scoreResubmission": {
+    "title": "Resubmit a score",
+    "description": "Upload your own replay when a score was not received. It stays pending until a moderator approves it; pending scores do not count toward rankings.",
+    "instructions": "Export the score as an .osr replay from osu!, then upload it here. The replay player name must match your account, and its beatmap version must exist on this server. A replay is a review claim, not proof of verified gameplay.",
+    "file": "Replay file",
+    "limits": "One .osr file, up to 16 MiB. Up to 20 pending replay submissions per account.",
+    "passed": "I completed this play",
+    "passedHint": "For stable exports, declare whether you passed. For lazer exports, the replay grade determines this. Failed plays do not count toward rankings.",
+    "submit": "Submit for review",
+    "submitting": "Uploading…",
+    "submitted": "Replay submitted. Your score is pending moderator review.",
+    "existing": "This replay already has a score. Its current review status has been preserved.",
+    "viewScore": "View score and review status",
+    "another": "Submit another replay",
+    "origin": "Replay resubmission",
+    "playedAt": "Replay play time: {date}",
+    "errorSession": "Your session is no longer available. Sign in again before retrying.",
+    "errorOwner": "This replay belongs to a different player. Upload a replay exported under your own account name.",
+    "errorMap": "This beatmap version is unavailable on the server. Ask an administrator to import the matching version.",
+    "errorLimit": "You already have 20 pending replay submissions. Wait for a moderator to review them.",
+    "errorSize": "The replay must be no larger than 16 MiB.",
+    "errorFile": "Choose a valid, supported .osr replay. Its header, mods and replay frames must be complete.",
+    "errorRequest": "The submission could not be confirmed. Keep the file and retry; resubmitting the same replay will not create another score."
   }
 }
