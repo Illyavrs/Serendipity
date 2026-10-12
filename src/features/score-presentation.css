@@ -663,6 +663,7 @@
 
 /* Profile performances stay a compact record: identity, result, contribution. */
 .profile-page .profile-score-list {
+  container: performance-list / inline-size;
   display: grid;
   gap: 3px;
   min-width: 0;
@@ -1107,7 +1108,7 @@ html.light .profile-page .profile-score-artwork img {
   line-height: 1.6;
 }
 
-@media (max-width: 1050px) {
+@container performance-list (max-width: 1050px) {
   .profile-page .profile-score-row {
     grid-template-columns: 34px minmax(0, 1fr) 70px 164px 116px 44px;
     gap: 8px;
@@ -1130,6 +1131,9 @@ html.light .profile-page .profile-score-artwork img {
   .profile-page .profile-score-list {
     padding: 7px 8px 10px;
   }
+}
+
+@container performance-list (max-width: 800px) {
   .profile-page .profile-score-row,
   .profile-page .profile-best-score-list .profile-score-row {
     grid-template-columns: 32px minmax(0, 1fr) 44px;
@@ -1253,7 +1257,7 @@ html.light .profile-page .profile-score-artwork img {
   }
 }
 
-@media (max-width: 420px) {
+@container performance-list (max-width: 420px) {
   .profile-page .profile-score-row,
   .profile-page .profile-best-score-list .profile-score-row {
     grid-template-columns: 28px minmax(0, 1fr) 44px;

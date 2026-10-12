@@ -281,13 +281,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   <Menu />
                 </Button>
               </SheetTrigger>
-              <SheetContent>
+              <SheetContent className="mobile-navigation-sheet">
                 <SheetHeader>
                   <SheetTitle>Illyaverse</SheetTitle>
                   <SheetDescription>{t('menu')}</SheetDescription>
                 </SheetHeader>
                 <LayoutGroup id="mobile-navigation">
-                  <nav className="mobile-nav">
+                  <nav className="mobile-nav" aria-label={t('menu')}>
                     {navigation()}
                     {user ? (
                       <>

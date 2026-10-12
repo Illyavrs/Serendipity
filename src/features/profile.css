@@ -989,12 +989,12 @@
 .profile-page.top-plays-page .profile-score-mods > .profile-score-mod {
   font-size: 12px;
 }
-@media (max-width: 1050px) {
+@container performance-list (max-width: 1050px) {
   .profile-page.top-plays-page .profile-score-row {
     grid-template-columns: 70px minmax(0, 1fr) minmax(80px, max-content) 180px 110px 44px;
   }
 }
-@media (max-width: 800px) {
+@container performance-list (max-width: 800px) {
   .profile-page.top-plays-page .profile-score-row {
     grid-template-columns: 38px minmax(0, 1fr) 44px;
     min-height: 0;

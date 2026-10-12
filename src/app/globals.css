@@ -2970,8 +2970,21 @@ input[type='checkbox'] {
   .mobile-nav {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
     gap: 6px;
-    padding: 8px 20px;
+    padding: 8px 20px max(20px, env(safe-area-inset-bottom));
+  }
+  [data-slot='sheet-content'].mobile-navigation-sheet {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  .mobile-navigation-sheet [data-slot='sheet-header'] {
+    flex-shrink: 0;
   }
   .mobile-nav a {
     padding: 10px 12px;

@@ -685,12 +685,13 @@
     top: -90px;
     right: 0;
     bottom: auto;
-    width: 180px;
+    width: 300px;
+    max-width: 100%;
     height: 198px;
   }
   .home-community .home-character-image {
     top: -40px;
-    width: 300px;
+    width: 100%;
   }
   .home-community .home-primary-actions {
     flex-direction: row;
@@ -803,11 +804,10 @@
   }
   .home-community .home-hero-character {
     top: -86px;
-    width: 150px;
+    width: 270px;
     height: 188px;
   }
   .home-community .home-character-image {
-    width: 270px;
     top: -35px;
   }
 }
@@ -816,33 +816,12 @@
 .home-community .home-profile-scores .profile-score-hits {
   display: none;
 }
-.home-community .home-profile-scores .profile-score-version {
-  min-width: 9ch;
-}
 /* The F grade and 0 pp already say "failed"; the extra label would overflow the narrow title column. */
 .home-community .home-profile-scores .profile-score-failed {
   display: none;
 }
 
-/* Fixed score-row columns are sized for a full-width profile; fit them to this narrower panel so the
-   mods column cannot spill over the title and date. */
-.home-community .home-profile-scores .profile-score-row {
-  grid-template-columns: 34px minmax(0, 1fr) 76px 112px 88px 36px;
-  gap: 8px;
-  padding-inline: 10px;
-}
-.home-community .home-profile-scores .profile-score-mods {
-  flex-wrap: nowrap;
-  min-width: 0;
-}
+/* Share the best-performance layout, including its response to the list's own width. */
 .home-community .home-profile-scores .profile-score-meta > * {
   min-width: 0;
-}
-.home-community .home-profile-scores .profile-score-version {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.home-community .home-profile-scores .profile-score-details {
-  gap: 10px;
 }
