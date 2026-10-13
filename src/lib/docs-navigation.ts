@@ -7,6 +7,7 @@ export const documents = Object.freeze({
   beatmaps: 'beatmaps.md',
   account: 'account.md',
   markdown: 'markdown.md',
+  rewards: 'rewards.md',
 } as const);
 
 export function documentFilename(slug: unknown): string | undefined {

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { RoleBadge } from '@/components/role-badge';
+import { RewardTitle, RewardAvatarFrame } from '@/components/reward-cosmetics';
 import {
   PageHeading,
   GameMode,
@@ -512,9 +513,12 @@ export function PlayerPage({ id }: { id: number }) {
                 />
               )}
               <div className="profile-identity">
-                <Avatar name={player.username} url={player.avatar_url} size="large" />
+                <RewardAvatarFrame reward={player.cosmetics?.avatar_frame}>
+                  <Avatar name={player.username} url={player.avatar_url} size="large" />
+                </RewardAvatarFrame>
                 <div className="profile-player-name">
                   <h1>{player.username}</h1>
+                  <RewardTitle reward={player.cosmetics?.title} />
                   <p>
                     <CountryFlag country={player.country} display="name" />{' '}
                     <span className="dot">·</span> {t('joined')}{' '}

@@ -55,6 +55,10 @@ export type User = {
   country: string;
   bio: string;
   bio_format?: TextFormat;
+  cosmetics?: {
+    title: import('./rewards').Reward | null;
+    avatar_frame: import('./rewards').Reward | null;
+  };
   avatar_url: string | null;
   banner_url: string | null;
   banner_position_x: number;

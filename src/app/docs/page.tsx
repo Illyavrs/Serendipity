@@ -3,6 +3,11 @@ import { documents } from '@/lib/docs-navigation';
 
 const guides: { slug: keyof typeof documents; title: string; summary: string }[] = [
   {
+    slug: 'rewards',
+    title: '任務、星塵與稱號',
+    summary: '每週任務、兌換獎勵，以及個人頁稱號與頭像框。',
+  },
+  {
     slug: 'scores-and-pp',
     title: '成績、pp 與 Relax',
     summary: '成績怎麼驗證、pp 怎麼算，以及 Relax 分區。',

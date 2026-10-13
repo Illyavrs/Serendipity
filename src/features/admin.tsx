@@ -29,6 +29,7 @@ import { AdminAnnouncements, type AnnouncementNavigationGuard } from './announce
 import { AuditDisclosure, ChatModeration, ScoreModeration } from './admin-moderation';
 import { ScoreRecalculation } from './admin-recalculation';
 import { AdminBroadcast } from './admin-broadcast';
+import { AdminRewards } from './rewards';
 import { AdminRankRequests } from './beatmap-rank-requests';
 import { LocalBeatmapAdminCatalogue } from './beatmap-admin-view';
 import moderationStyles from './admin-moderation.module.css';
@@ -49,6 +50,7 @@ const grants = [
   'scores.moderate',
   'admin.view',
   'announcements.manage',
+  'rewards.manage',
   'broadcast.send',
 ];
 type Section =
@@ -60,6 +62,7 @@ type Section =
   | 'chat'
   | 'audit'
   | 'announcements'
+  | 'rewards'
   | 'broadcast';
 type RefreshAdmin = () => Promise<boolean>;
 const errorKeys = {
@@ -1100,6 +1103,7 @@ function AdminContents() {
   if (allowed('chat.moderate')) sections.push('chat');
   if (allowed('audit.read')) sections.push('audit');
   if (allowed('announcements.manage')) sections.push('announcements');
+  if (allowed('rewards.manage')) sections.push('rewards');
   if (allowed('broadcast.send')) sections.push('broadcast');
   const requestedSection = query.get('tab') as Section | null;
   const section =
@@ -1125,9 +1129,16 @@ function AdminContents() {
     isLoading,
     mutate,
   } = useSWR<Page<AdminUser | Audit>>(
-    ['roles', 'beatmaps', 'announcements', 'scores', 'recalculation', 'chat', 'broadcast'].includes(
-      section,
-    ) ||
+    [
+      'roles',
+      'beatmaps',
+      'announcements',
+      'rewards',
+      'scores',
+      'recalculation',
+      'chat',
+      'broadcast',
+    ].includes(section) ||
       !key ||
       !user
       ? null
@@ -1251,6 +1262,8 @@ function AdminContents() {
       )}
       {section === 'announcements' ? (
         <AdminAnnouncements registerNavigationGuard={registerAnnouncementNavigationGuard} />
+      ) : section === 'rewards' ? (
+        <AdminRewards key={user?.id} />
       ) : section === 'beatmaps' ? (
         <BeatmapAdminTools key={user?.id} />
       ) : section === 'scores' ? (

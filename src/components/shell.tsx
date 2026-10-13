@@ -17,6 +17,7 @@ import {
   Settings as SettingsIcon,
   ShieldCheck,
   Upload,
+  Gift,
 } from 'lucide-react';
 import { LayoutGroup } from 'motion/react';
 import * as m from 'motion/react-m';
@@ -97,12 +98,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
       'chat.moderate',
       'audit.read',
       'announcements.manage',
+      'rewards.manage',
     ].some((permission) => hasPermission(user.permissions, permission));
   const links = [
     ['/', 'home'],
     ['/news', 'news'],
     ['/beatmaps', 'beatmaps'],
     ['/rankings', 'rankings'],
+    ['/rewards', 'rewards'],
     ['/chat', 'community'],
     ['/connect', 'connect'],
     ['/settings', 'settings'],
@@ -240,6 +243,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
                       <Link href="/scores/resubmit">
                         <Upload aria-hidden="true" />
                         {t('resubmitScore')}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/rewards">
+                        <Gift aria-hidden="true" />
+                        {t('rewards')}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>

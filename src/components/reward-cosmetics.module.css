@@ -1,0 +1,46 @@
+.title {
+  display: inline-flex;
+  max-width: 100%;
+  margin-block: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--reward-color);
+  border-radius: 6px;
+  color: var(--reward-color);
+  background: color-mix(in srgb, var(--reward-color) 8%, transparent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.frame {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+}
+.frame::after {
+  position: absolute;
+  inset: -4px;
+  content: '';
+  pointer-events: none;
+  border: 2px solid var(--reward-color);
+  border-radius: inherit;
+}
+.frame[data-reward-frame='double']::after {
+  inset: -5px;
+  border: 4px double var(--reward-color);
+}
+.frame[data-reward-frame='corners']::after {
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(var(--reward-color), var(--reward-color)) left top / 14px 2px,
+    linear-gradient(var(--reward-color), var(--reward-color)) left top / 2px 14px,
+    linear-gradient(var(--reward-color), var(--reward-color)) right top / 14px 2px,
+    linear-gradient(var(--reward-color), var(--reward-color)) right top / 2px 14px,
+    linear-gradient(var(--reward-color), var(--reward-color)) left bottom / 14px 2px,
+    linear-gradient(var(--reward-color), var(--reward-color)) left bottom / 2px 14px,
+    linear-gradient(var(--reward-color), var(--reward-color)) right bottom / 14px 2px,
+    linear-gradient(var(--reward-color), var(--reward-color)) right bottom / 2px 14px;
+  background-repeat: no-repeat;
+}
