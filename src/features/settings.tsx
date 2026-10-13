@@ -391,7 +391,13 @@ function ProfileControls() {
           />
         )}
         <div className="profile-media-preview">
-          <Avatar name={user?.username ?? ''} url={user?.avatar_url} size="large" />
+          <Avatar
+            userId={user?.id}
+            cosmetics={user?.cosmetics}
+            name={user?.username ?? ''}
+            url={user?.avatar_url}
+            size="large"
+          />
           <div>
             <strong>{user?.username}</strong>
             <p className="profile-accent-example">{t('profileAccentPreview')}</p>

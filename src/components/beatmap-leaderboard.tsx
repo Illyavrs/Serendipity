@@ -118,9 +118,17 @@ export function BeatmapLeaderboard({
           <div className="lb-top-player">
             <span className="lb-top-position">#{top.position ?? 1}</span>
             <Grade score={top} />
-            <Avatar name={top.username} url={top.avatar_url} />
+            <Link
+              data-user-preview
+              href={`/users/${top.user_id}?mode=${top.mode}&variant=${top.score_variant ?? 'vanilla'}`}
+              className="lb-top-avatar"
+              aria-label={top.username}
+            >
+              <Avatar userId={top.user_id} name={top.username} url={top.avatar_url} />
+            </Link>
             <div>
               <Link
+                data-user-preview
                 href={`/users/${top.user_id}?mode=${top.mode}&variant=${top.score_variant ?? 'vanilla'}`}
                 className="lb-top-name"
               >
@@ -210,6 +218,7 @@ export function BeatmapLeaderboard({
                   <td className="lb-left">
                     <Link
                       className="lb-player"
+                      data-user-preview
                       href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
                     >
                       {score.username}

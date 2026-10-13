@@ -443,7 +443,11 @@ function AccountChat({ user }: { user: User | null }) {
                         }
                         onClick={() => select({ kind: 'conversation', id: item.id })}
                       >
-                        <Avatar name={item.peer.username} url={item.peer.avatar_url} />
+                        <Avatar
+                          userId={item.peer.id}
+                          name={item.peer.username}
+                          url={item.peer.avatar_url}
+                        />
                         <span className="conversation-text">
                           <strong>{item.peer.username}</strong>
                           <span className="conversation-preview">
@@ -559,16 +563,21 @@ function AccountChat({ user }: { user: User | null }) {
             <div className="chat-heading">
               {conversation ? (
                 <Link
+                  data-user-preview
                   href={`/users/${conversation.peer.id}`}
                   aria-label={t('viewProfile', { name: conversation.peer.username })}
                 >
-                  <Avatar name={conversation.peer.username} url={conversation.peer.avatar_url} />
+                  <Avatar
+                    userId={conversation.peer.id}
+                    name={conversation.peer.username}
+                    url={conversation.peer.avatar_url}
+                  />
                 </Link>
               ) : null}
               <div>
                 <h2>
                   {conversation ? (
-                    <Link href={`/users/${conversation.peer.id}`}>
+                    <Link data-user-preview href={`/users/${conversation.peer.id}`}>
                       {conversation.peer.username}
                     </Link>
                   ) : (
@@ -655,14 +664,21 @@ function AccountChat({ user }: { user: User | null }) {
                     data-message-id={message.id}
                   >
                     <Link
+                      data-user-preview
                       href={`/users/${message.user_id}`}
                       aria-label={t('viewProfile', { name: message.username })}
                     >
-                      <Avatar name={message.username} url={message.avatar_url} />
+                      <Avatar
+                        userId={message.user_id}
+                        name={message.username}
+                        url={message.avatar_url}
+                      />
                     </Link>
                     <div>
                       <header className="message-head">
-                        <Link href={`/users/${message.user_id}`}>{message.username}</Link>
+                        <Link data-user-preview href={`/users/${message.user_id}`}>
+                          {message.username}
+                        </Link>
                         <time
                           dateTime={message.created_at}
                           title={f.dateTime(new Date(message.created_at), {

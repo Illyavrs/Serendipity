@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { RoleBadge } from '@/components/role-badge';
-import { RewardTitle, RewardAvatarFrame } from '@/components/reward-cosmetics';
+import { RewardTitle } from '@/components/reward-cosmetics';
 import {
   PageHeading,
   GameMode,
@@ -173,8 +173,16 @@ export function RankingsPage() {
                     <tr key={player.id} data-rank={player.rank <= 3 ? player.rank : undefined}>
                       <td className="rank-cell">#{f.number(player.rank)}</td>
                       <td>
-                        <Link href={`/users/${player.id}?${selection}`} className="player-cell">
-                          <Avatar name={player.username} url={player.avatar_url} />
+                        <Link
+                          data-user-preview
+                          href={`/users/${player.id}?${selection}`}
+                          className="player-cell"
+                        >
+                          <Avatar
+                            userId={player.id}
+                            name={player.username}
+                            url={player.avatar_url}
+                          />
                           {player.username}
                         </Link>
                       </td>
@@ -513,9 +521,13 @@ export function PlayerPage({ id }: { id: number }) {
                 />
               )}
               <div className="profile-identity">
-                <RewardAvatarFrame reward={player.cosmetics?.avatar_frame}>
-                  <Avatar name={player.username} url={player.avatar_url} size="large" />
-                </RewardAvatarFrame>
+                <Avatar
+                  userId={player.id}
+                  cosmetics={player.cosmetics}
+                  name={player.username}
+                  url={player.avatar_url}
+                  size="large"
+                />
                 <div className="profile-player-name">
                   <h1>{player.username}</h1>
                   <RewardTitle reward={player.cosmetics?.title} />

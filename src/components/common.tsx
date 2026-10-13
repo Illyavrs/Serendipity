@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSession } from './providers';
 import { hasPermission } from '@/lib/api';
+import { usePublicUserCard } from '@/lib/public-user-cards';
+import type { User } from '@/lib/types';
+import { RewardAvatarFrame, type RewardDecoration } from './reward-cosmetics';
 import type { ReactNode } from 'react';
 
 export function PageHeading({
@@ -129,25 +132,39 @@ export function Avatar({
   name,
   url,
   size = 'normal',
+  userId,
+  cosmetics,
+  frame,
 }: {
   name: string;
   url?: string | null;
   size?: 'normal' | 'large';
+  userId?: number;
+  cosmetics?: User['cosmetics'];
+  frame?: RewardDecoration | null;
 }) {
+  const card = usePublicUserCard(
+    cosmetics === undefined && frame === undefined ? userId : undefined,
+  );
+  const decoration =
+    frame !== undefined ? frame : (cosmetics?.avatar_frame ?? card?.cosmetics?.avatar_frame);
+  const imageUrl = url === undefined ? card?.avatar_url : url;
   return (
-    <span className={`avatar avatar-${size}`}>
-      {url ? (
-        <Image
-          src={url}
-          alt=""
-          width={size === 'large' ? 104 : 32}
-          height={size === 'large' ? 104 : 32}
-          unoptimized
-        />
-      ) : (
-        name.slice(0, 1).toUpperCase()
-      )}
-    </span>
+    <RewardAvatarFrame reward={decoration}>
+      <span className={`avatar avatar-${size}`} data-user-avatar>
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt=""
+            width={size === 'large' ? 104 : 32}
+            height={size === 'large' ? 104 : 32}
+            unoptimized
+          />
+        ) : (
+          name.slice(0, 1).toUpperCase()
+        )}
+      </span>
+    </RewardAvatarFrame>
   );
 }
 export function GameMode({

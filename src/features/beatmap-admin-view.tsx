@@ -173,7 +173,7 @@ export function LocalBeatmapAdminCatalogue() {
                   <div className={styles.meta}>
                     <span>{t('difficulties', { count: set.difficulty_count })}</span>
                     {set.uploaded_by && (
-                      <Link href={`/users/${set.uploaded_by.id}`}>
+                      <Link data-user-preview href={`/users/${set.uploaded_by.id}`}>
                         {t('uploader')} · {set.uploaded_by.username}
                       </Link>
                     )}

@@ -519,6 +519,7 @@ test('admin creates a frame with explicit optional fields and deletes using its 
   await form.getByLabel('Price in Stardust (1–100,000)').fill('25');
   await selectField(form.getByRole('combobox', { name: 'Reward type' }), 'avatar_frame');
   await selectField(form.getByRole('combobox', { name: 'Frame style' }), 'corners');
+  await form.getByLabel('Published in the shop').check();
   await form.getByRole('button', { name: 'Save', exact: true }).click();
   const row = page.locator('[data-reward-id="992103"]');
   await expect(row).toBeVisible();

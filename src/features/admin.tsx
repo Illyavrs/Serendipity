@@ -1323,8 +1323,12 @@ function AdminContents() {
                           return (
                             <tr key={u.id} className="admin-user-row" data-user-id={u.id}>
                               <td>
-                                <Link href={`/users/${u.id}`} className="player-cell">
-                                  <Avatar name={u.username} url={u.avatar_url} />
+                                <Link
+                                  data-user-preview
+                                  href={`/users/${u.id}`}
+                                  className="player-cell"
+                                >
+                                  <Avatar userId={u.id} name={u.username} url={u.avatar_url} />
                                   {u.username}
                                 </Link>
                                 <p className="hint admin-player-id">

@@ -224,13 +224,23 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="user-link" aria-label={t('account')}>
-                      <Avatar name={user.username} url={user.avatar_url} />
+                      <Avatar
+                        userId={user.id}
+                        cosmetics={user.cosmetics}
+                        name={user.username}
+                        url={user.avatar_url}
+                      />
                       <span>{user.username}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="user-menu-content">
                     <div className="user-menu-heading">
-                      <Avatar name={user.username} url={user.avatar_url} />
+                      <Avatar
+                        userId={user.id}
+                        cosmetics={user.cosmetics}
+                        name={user.username}
+                        url={user.avatar_url}
+                      />
                       <strong>{user.username}</strong>
                     </div>
                     <DropdownMenuItem asChild>

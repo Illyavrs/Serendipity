@@ -288,9 +288,10 @@ export function HomePage() {
                       <span className="home-leader-rank">#{f.number(player.rank)}</span>
                       <Link
                         className="home-leader-player"
+                        data-user-preview
                         href={`/users/${player.id}?mode=0&variant=vanilla`}
                       >
-                        <Avatar name={player.username} url={player.avatar_url} />
+                        <Avatar userId={player.id} name={player.username} url={player.avatar_url} />
                         <span>
                           <strong>{player.username}</strong>
                           <small>

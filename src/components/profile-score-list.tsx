@@ -198,6 +198,7 @@ export function ProfileScoreList({
                 {showPlayer && (
                   <Link
                     className="profile-score-player"
+                    data-user-preview
                     href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
                   >
                     {score.username}

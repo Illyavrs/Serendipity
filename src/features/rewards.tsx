@@ -11,10 +11,10 @@ import {
 } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import useSWR, { unstable_serialize, useSWRConfig } from 'swr';
-import { Check, RefreshCw, Sparkles } from 'lucide-react';
+import { Check, RefreshCw, Sparkles, Upload } from 'lucide-react';
 import { Avatar, Empty, Loading, PageHeading, Pagination, Protected } from '@/components/common';
 import { useSession } from '@/components/providers';
-import { RewardTitle, RewardAvatarFrame } from '@/components/reward-cosmetics';
+import { RewardTitle } from '@/components/reward-cosmetics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +22,7 @@ import { FieldSelect } from '@/components/ui/field-select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api, ApiError, fetcher, hasPermission } from '@/lib/api';
 import type { Page } from '@/lib/types';
+import { invalidatePublicUserCards } from '@/lib/public-user-cards';
 import {
   adminRewardsPath,
   claimRewardMission,
@@ -31,6 +32,7 @@ import {
   rewardsPath,
   updateReward,
   updateRewardEquipment,
+  uploadRewardImage,
   type AdminReward,
   type Reward,
   type RewardInput,
@@ -60,6 +62,7 @@ function useRewardError(management = false) {
       reward_balance_insufficient: 'balance',
       reward_unavailable: 'unavailable',
       reward_not_owned: 'notOwned',
+      reward_image_required: 'imageRequired',
     } as const;
     const known = codes[cause.code as keyof typeof codes];
     if (known === 'conflict' && !management) return t('errors.changed');
@@ -219,7 +222,7 @@ function RewardPreview({
   reward,
   name,
 }: {
-  reward: Pick<Reward, 'name' | 'kind' | 'color' | 'style'>;
+  reward: Pick<Reward, 'name' | 'kind' | 'color' | 'style' | 'image_url'>;
   name: string;
 }) {
   return (
@@ -227,9 +230,7 @@ function RewardPreview({
       {reward.kind === 'title' ? (
         <RewardTitle reward={reward} />
       ) : (
-        <RewardAvatarFrame reward={reward}>
-          <Avatar name={name} />
-        </RewardAvatarFrame>
+        <Avatar name={name} frame={reward} />
       )}
     </div>
   );
@@ -292,7 +293,10 @@ function RewardsWorkbench({ userId, name }: { userId: number; name: string }) {
       await state.accept(result.state, ticket);
       if (!state.current(ticket)) return;
       setSuccess(typeof message === 'function' ? message(result) : message);
-      if (equipment) await refreshSession();
+      if (equipment) {
+        invalidatePublicUserCards([userId]);
+        await refreshSession();
+      }
     } catch (cause) {
       if (!state.current(ticket)) return;
       setError(describe(cause));
@@ -614,7 +618,8 @@ function validInput(draft: Draft): RewardInput | null {
     price < 1 ||
     price > 100000 ||
     (color && !/^#[0-9a-f]{6}$/i.test(color)) ||
-    (draft.kind === 'avatar_frame' && !['line', 'double', 'corners'].includes(draft.style ?? ''))
+    (draft.kind === 'avatar_frame' &&
+      !['line', 'double', 'corners', 'image'].includes(draft.style ?? ''))
   )
     return null;
   return {
@@ -642,6 +647,7 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
   const t = useTranslations('rewards');
   const format = useFormatter();
   const describe = useRewardError(true);
+  const { refresh: refreshSession } = useSession();
   const [page, setPage] = useState(1);
   const [observed, setObserved] = useState<AdminReward | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -650,11 +656,15 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageInputVersion, setImageInputVersion] = useState(0);
   const clearEditor = useCallback(() => {
     setObserved(null);
     setDraft(emptyDraft());
     setStale(false);
     setSuccess('');
+    setImageFile(null);
+    setImageInputVersion((version) => version + 1);
   }, []);
   const alignPage = useCallback((value: Page<AdminReward>) => {
     setPage((current) => Math.min(current, Math.max(1, Math.ceil(value.total / pageSize))));
@@ -678,7 +688,11 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
     kind: draft.kind,
     color: draft.color || null,
     style: draft.style,
+    image_url: observed?.image_url ?? null,
   };
+  const imageFrame = draft.kind === 'avatar_frame' && draft.style === 'image';
+  const imageMissing = imageFrame && !observed?.image_url;
+  const canUploadImage = imageFrame && observed?.kind === 'avatar_frame';
 
   function edit(reward: AdminReward | null) {
     if (busy) return;
@@ -687,12 +701,15 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
     setStale(false);
     setError('');
     setSuccess('');
+    setImageFile(null);
+    setImageInputVersion((version) => version + 1);
   }
   async function write<R>(
-    operation: () => Promise<R>,
+    operation: (ticket: Ticket) => Promise<R>,
     message: string,
     done: (value: R) => void,
     editor = false,
+    imageUpload = false,
   ) {
     if (writing.current || collection.error || !collection.data) return;
     writing.current = true;
@@ -700,18 +717,37 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
     setError('');
     setSuccess('');
     const ticket = collection.begin();
+    let committed = false;
     try {
-      const value = await operation();
+      const value = await operation(ticket);
       if (!collection.current(ticket)) return;
       done(value);
+      committed = true;
+      invalidatePublicUserCards();
       setSuccess(message);
+      // The mutation is confirmed. Session reads update known equipped cosmetics,
+      // and the session provider handles their failures without retrying the write.
+      await refreshSession().catch(() => {});
+      if (!collection.current(ticket)) return;
       await collection.refresh();
     } catch (cause) {
       if (!collection.current(ticket)) return;
-      setError(describe(cause));
+      const uncertain =
+        imageUpload && !committed && (!(cause instanceof ApiError) || cause.status >= 500);
+      setError(
+        imageUpload && cause instanceof ApiError && cause.status === 400
+          ? t('errors.invalidImage')
+          : uncertain
+            ? t('errors.uploadUncertain')
+            : describe(cause),
+      );
       if (cause instanceof ApiError && [404, 409].includes(cause.status)) {
         setListConflict(true);
         if (editor) setStale(true);
+      }
+      if (uncertain) {
+        setListConflict(true);
+        setStale(true);
       }
       if (denied(cause)) await collection.deny(cause, ticket);
     } finally {
@@ -728,6 +764,11 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
       setError(t('invalidDraft'));
       return;
     }
+    if (imageMissing && (input.active || (observed?.owned_count ?? 0) > 0)) {
+      setSuccess('');
+      setError(t('errors.imageRequired'));
+      return;
+    }
     await write(
       () => (observed ? updateReward(observed.id, input, observed.revision) : createReward(input)),
       t(observed ? 'updateSuccess' : 'createSuccess'),
@@ -736,6 +777,43 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
         setDraft(draftFrom(value));
         setStale(false);
       },
+      true,
+    );
+  }
+  function chooseImage(file: File | null) {
+    setSuccess('');
+    setError('');
+    if (file && (!['image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024)) {
+      setImageFile(null);
+      setImageInputVersion((version) => version + 1);
+      setError(t('errors.invalidImage'));
+      return;
+    }
+    setImageFile(file);
+  }
+  async function uploadImage() {
+    if (!observed || !canUploadImage || !imageFile || stale) return;
+    await write(
+      async (ticket) => {
+        let bitmap: ImageBitmap;
+        try {
+          bitmap = await createImageBitmap(imageFile);
+        } catch {
+          throw new ApiError(400, 'invalid_reward_image', '');
+        }
+        const valid = bitmap.width === bitmap.height && bitmap.width >= 128 && bitmap.width <= 1024;
+        bitmap.close();
+        if (!valid) throw new ApiError(400, 'invalid_reward_image', '');
+        if (!collection.current(ticket)) throw new DOMException('Request superseded', 'AbortError');
+        return uploadRewardImage(observed.id, imageFile, observed.revision);
+      },
+      t('imageUploadSuccess'),
+      (value) => {
+        setObserved(value);
+        setImageFile(null);
+        setImageInputVersion((version) => version + 1);
+      },
+      true,
       true,
     );
   }
@@ -773,6 +851,8 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
         if (!collection.current(ticket)) return;
         setObserved(reward);
         setDraft(draftFrom(reward));
+        setImageFile(null);
+        setImageInputVersion((version) => version + 1);
         setStale(false);
       }
       setListConflict(false);
@@ -831,13 +911,25 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
                   id="reward-kind"
                   value={draft.kind}
                   disabled={busy || !!observed?.owned_count}
-                  onValueChange={(value) =>
-                    setDraft({
-                      ...draft,
+                  onValueChange={(value) => {
+                    if (!['title', 'avatar_frame'].includes(value)) return;
+                    setDraft((current) => ({
+                      ...current,
                       kind: value as RewardKind,
-                      style: value === 'title' ? null : (draft.style ?? 'line'),
-                    })
-                  }
+                      style:
+                        value === 'title'
+                          ? null
+                          : current.kind === 'avatar_frame'
+                            ? (current.style ?? 'image')
+                            : 'image',
+                      active:
+                        value === 'avatar_frame' && current.kind !== 'avatar_frame'
+                          ? false
+                          : current.active,
+                    }));
+                    setImageFile(null);
+                    setImageInputVersion((version) => version + 1);
+                  }}
                   options={(['title', 'avatar_frame'] as const).map((value) => ({
                     value,
                     label: t(`type.${value}`),
@@ -875,7 +967,7 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
                   value={draft.color}
                   placeholder="#RRGGBB"
                   aria-describedby="reward-color-hint"
-                  disabled={busy}
+                  disabled={busy || imageFrame}
                   onChange={(event) => setDraft({ ...draft, color: event.target.value })}
                 />
                 <span id="reward-color-hint" className={styles.hint}>
@@ -888,12 +980,26 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
                   id="reward-style"
                   value={draft.style ?? ''}
                   disabled={busy || draft.kind === 'title'}
-                  onValueChange={(value) =>
-                    setDraft({ ...draft, style: (value || null) as RewardStyle | null })
-                  }
+                  onValueChange={(value) => {
+                    // The select's hidden native control may emit an empty value
+                    // when an edited reward replaces its options. It is not a frame style.
+                    if (!['image', 'line', 'double', 'corners'].includes(value)) return;
+                    setDraft((current) => ({
+                      ...current,
+                      style: value as RewardStyle,
+                      active:
+                        value === 'image' &&
+                        !observed?.image_url &&
+                        observed?.kind !== 'avatar_frame'
+                          ? false
+                          : current.active,
+                    }));
+                    setImageFile(null);
+                    setImageInputVersion((version) => version + 1);
+                  }}
                   options={(draft.kind === 'title'
                     ? (['none'] as const)
-                    : (['line', 'double', 'corners'] as const)
+                    : (['image', 'line', 'double', 'corners'] as const)
                   ).map((value) => ({
                     value: value === 'none' ? '' : value,
                     label: t(`styleLabels.${value}`),
@@ -904,7 +1010,7 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
                 <input
                   type="checkbox"
                   checked={draft.active}
-                  disabled={busy}
+                  disabled={busy || imageMissing}
                   onChange={(event) => setDraft({ ...draft, active: event.target.checked })}
                 />
                 {t('active')}
@@ -912,6 +1018,44 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
               <div className={styles.wide}>
                 <RewardPreview reward={preview} name={name} />
               </div>
+              {imageFrame && (
+                <section className={`${styles.imageUpload} ${styles.wide}`}>
+                  <div className={styles.field}>
+                    <label htmlFor="reward-image">{t('imageLabel')}</label>
+                    <p id="reward-image-guidance" className={styles.hint}>
+                      {t('imageGuidance')}
+                    </p>
+                    <p className={styles.hint}>{t('imageTransparencyHint')}</p>
+                    <Input
+                      key={imageInputVersion}
+                      id="reward-image"
+                      type="file"
+                      accept="image/png,image/webp"
+                      aria-describedby="reward-image-guidance"
+                      disabled={blocked || stale || !canUploadImage}
+                      onChange={(event) => chooseImage(event.target.files?.[0] ?? null)}
+                    />
+                  </div>
+                  {!canUploadImage && <p className={styles.hint}>{t('imageSaveFirst')}</p>}
+                  {canUploadImage && observed?.style !== 'image' && (
+                    <p className={styles.hint}>{t('imageExistingHint')}</p>
+                  )}
+                  {imageMissing && !observed?.active && (
+                    <p className={styles.hint}>{t('imagePublishHint')}</p>
+                  )}
+                  <div className={styles.actions}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={blocked || stale || !imageFile || !canUploadImage}
+                      onClick={() => void uploadImage()}
+                    >
+                      <Upload aria-hidden="true" />
+                      {t(busy ? 'imageUploading' : 'imageUpload')}
+                    </Button>
+                  </div>
+                </section>
+              )}
               {observed && (
                 <div className={`${styles.hint} ${styles.wide}`}>
                   {t('ownedCount', { count: observed.owned_count })}
@@ -970,7 +1114,17 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
                   </Button>
                   <Button
                     variant="outline"
-                    disabled={blocked || listConflict || observed?.id === reward.id}
+                    disabled={
+                      blocked ||
+                      listConflict ||
+                      observed?.id === reward.id ||
+                      (!reward.active && reward.style === 'image' && !reward.image_url)
+                    }
+                    title={
+                      reward.style === 'image' && !reward.image_url
+                        ? t('errors.imageRequired')
+                        : undefined
+                    }
                     onClick={() =>
                       void write(
                         () =>

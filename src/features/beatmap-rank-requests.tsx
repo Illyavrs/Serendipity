@@ -331,8 +331,12 @@ function RequestRecord({
         </div>
         <p className={styles.person}>
           <span>{t('requester')}</span>
-          <Link href={`/users/${item.requester.id}`}>
-            <Avatar name={item.requester.username} url={item.requester.avatar_url} />
+          <Link data-user-preview href={`/users/${item.requester.id}`}>
+            <Avatar
+              userId={item.requester.id}
+              name={item.requester.username}
+              url={item.requester.avatar_url}
+            />
             {item.requester.username}
           </Link>
         </p>
@@ -345,7 +349,7 @@ function RequestRecord({
             <strong>{t('reviewReason')}</strong>
             <RichText format={item.review_reason_format}>{item.review_reason}</RichText>
             {item.reviewer && (
-              <Link href={`/users/${item.reviewer.id}`}>
+              <Link data-user-preview href={`/users/${item.reviewer.id}`}>
                 {t('reviewer')} · {item.reviewer.username}
               </Link>
             )}

@@ -35,6 +35,11 @@
   border-radius: 10px;
   flex: none;
 }
+.lb-top-avatar {
+  position: relative;
+  z-index: 1;
+  flex: none;
+}
 .lb-top-position {
   color: #f5c542;
   font-size: 22px;

@@ -18,6 +18,7 @@ import { AnnouncementDraftProvider } from '@/features/announcement-draft';
 import { isLocale, type Locale } from '@/i18n/config';
 import type { Preferences, User } from '@/lib/types';
 import '@/styles/color-picker.css';
+import { UserPreview } from './user-preview';
 import {
   NavigationProgressProvider,
   navigationLoadingMiddleware,
@@ -405,7 +406,10 @@ function SessionProviders({ children }: { children: ReactNode }) {
           userId={user?.id ?? null}
           authorized={Boolean(user && hasPermission(user.permissions, 'announcements.manage'))}
         >
-          <AppearanceProvider>{children}</AppearanceProvider>
+          <AppearanceProvider>
+            {children}
+            <UserPreview />
+          </AppearanceProvider>
         </AnnouncementDraftProvider>
       </SWRConfig>
     </SessionContext.Provider>

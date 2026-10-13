@@ -1,0 +1,53 @@
+.popup {
+  position: fixed;
+  z-index: 45;
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 12px 35px rgb(0 0 0 / 0.3);
+  opacity: 0;
+  transform: translateY(3px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+.popup[data-open='true'] {
+  opacity: 1;
+  transform: translateY(0);
+}
+.popup[data-open='false'] {
+  pointer-events: none;
+}
+.popup :global(.user-card) {
+  width: 100%;
+  min-height: 120px;
+}
+/* Keep the inline block confirmation inside the scrollable card. Its normal list-card
+   placement floats above the action button and would be clipped by this popup. */
+.popup :global(.card-menu:has(.card-menu-confirm)) {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  min-width: 0;
+  opacity: 1;
+}
+.popup :global(.card-menu:has(.card-menu-confirm) > button) {
+  grid-column: 2;
+  justify-self: end;
+}
+.popup :global(.card-menu-confirm) {
+  position: static;
+  grid-column: 1 / -1;
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .popup {
+    transform: none;
+    transition: none;
+  }
+}

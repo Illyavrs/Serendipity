@@ -1642,7 +1642,8 @@
       "none": "None",
       "line": "Single line",
       "double": "Double line",
-      "corners": "Corners"
+      "corners": "Corners",
+      "image": "Uploaded image"
     },
     "errors": {
       "unauthorized": "Sign in again to continue.",
@@ -1657,13 +1658,25 @@
       "balance": "You do not have enough Stardust for this reward.",
       "unavailable": "This reward is no longer available in the shop.",
       "notOwned": "You do not own this reward.",
-      "notFound": "This reward could not be found. Refresh and try again."
+      "notFound": "This reward could not be found. Refresh and try again.",
+      "imageRequired": "Upload a frame image before publishing this reward.",
+      "invalidImage": "Choose a transparent, square PNG or WebP from 128 to 1024 px and up to 2 MiB. Animated images are not supported.",
+      "uploadUncertain": "The upload could not be confirmed. Your input is kept. Load the latest version before retrying."
     },
     "invalidDraft": "Use a name with 1–32 characters after trimming spaces, a plain-text description up to 300 characters, an integer price from 1 to 100,000, and a blank color or #RRGGBB. Avatar frames require a frame style; titles must use None.",
     "filter": {
       "all": "All",
       "title": "Titles",
       "avatar_frame": "Avatar frames"
-    }
+    },
+    "imageLabel": "Frame image",
+    "imageGuidance": "Transparent PNG or WebP, square 128–1024 px, up to 2 MiB. Recommended: 512 × 512 px.",
+    "imageTransparencyHint": "Keep the centered 384 × 384 px area transparent in a 512 px image; draw the frame around it. The avatar fills the middle 75%, with the frame extending around its edges. Animated images are not supported.",
+    "imageSaveFirst": "Save this reward as an unpublished image frame, then choose and upload its image.",
+    "imagePublishHint": "Upload an image before publishing this frame in the shop.",
+    "imageUpload": "Upload image",
+    "imageUploading": "Uploading…",
+    "imageUploadSuccess": "Frame image uploaded. The preview now uses the saved image.",
+    "imageExistingHint": "Upload the image directly to replace this existing frame. Players keep their current frame until the upload succeeds; its publication status and your unsaved fields are preserved."
   }
 }

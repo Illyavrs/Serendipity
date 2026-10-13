@@ -44,3 +44,20 @@
     linear-gradient(var(--reward-color), var(--reward-color)) right bottom / 2px 14px;
   background-repeat: no-repeat;
 }
+.frame[data-reward-frame='image']::after {
+  content: none;
+}
+/* The avatar occupies the central 75% of the frame image. Decoration extends
+   outwards without changing the avatar's layout size or intercepting clicks. */
+.frameImage {
+  position: absolute;
+  z-index: 1;
+  top: -16.666667%;
+  left: -16.666667%;
+  width: 133.333333%;
+  height: 133.333333%;
+  max-width: none;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}

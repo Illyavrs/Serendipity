@@ -109,10 +109,15 @@ export function ScoreTable({
                   {leaderboard && (
                     <Link
                       className="player-cell score-record-player"
+                      data-user-preview
                       href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
                     >
                       <span aria-hidden="true" className="contents">
-                        <Avatar name={score.username} />
+                        <Avatar
+                          userId={score.user_id}
+                          name={score.username}
+                          url={score.avatar_url}
+                        />
                       </span>
                       <span>{score.username}</span>
                     </Link>
@@ -145,6 +150,7 @@ export function ScoreTable({
                     {topPlays && (
                       <Link
                         className="score-record-player"
+                        data-user-preview
                         href={`/users/${score.user_id}?mode=${score.mode}&variant=${score.score_variant ?? 'vanilla'}`}
                       >
                         {score.username}

@@ -424,8 +424,12 @@ export function ScorePage({ id }: { id: number }) {
               <strong>{score.version}</strong>
             </p>
             <div className="score-detail-player-line">
-              <Link href={`/users/${score.user_id}?${selection}`} className="player-cell">
-                <Avatar name={score.username} url={score.user.avatar_url} />
+              <Link
+                data-user-preview
+                href={`/users/${score.user_id}?${selection}`}
+                className="player-cell"
+              >
+                <Avatar userId={score.user_id} name={score.username} url={score.user.avatar_url} />
                 <span>{score.username}</span>
               </Link>
               <time dateTime={score.created_at}>

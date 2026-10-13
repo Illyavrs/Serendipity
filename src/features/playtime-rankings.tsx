@@ -74,8 +74,8 @@ export function PlaytimeRankingsPage() {
                     <tr key={row.id}>
                       <td>{f.number(row.position)}</td>
                       <td>
-                        <Link href={`/users/${row.id}`} className="player-cell">
-                          <Avatar name={row.username} url={row.avatar_url} />
+                        <Link data-user-preview href={`/users/${row.id}`} className="player-cell">
+                          <Avatar userId={row.id} name={row.username} url={row.avatar_url} />
                           <span>{row.username}</span>
                           <CountryFlag country={row.country} />
                         </Link>

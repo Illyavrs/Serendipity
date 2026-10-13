@@ -2,7 +2,7 @@ import { api } from './api';
 import type { Page } from './types';
 
 export type RewardKind = 'title' | 'avatar_frame';
-export type RewardStyle = 'line' | 'double' | 'corners';
+export type RewardStyle = 'line' | 'double' | 'corners' | 'image';
 export type Reward = {
   id: number;
   name: string;
@@ -11,6 +11,7 @@ export type Reward = {
   price: number;
   color: string | null;
   style: RewardStyle | null;
+  image_url?: string | null;
   active: boolean;
   revision: number;
 };
@@ -75,6 +76,12 @@ export const updateReward = (id: number, input: RewardInput, revision: number) =
     method: 'PATCH',
     body: JSON.stringify({ ...input, revision }),
   });
+export const uploadRewardImage = (id: number, file: File, revision: number) => {
+  const body = new FormData();
+  body.set('revision', String(revision));
+  body.set('file', file);
+  return api<AdminReward>(`/admin/rewards/${id}/image`, { method: 'POST', body });
+};
 export const deleteReward = (id: number, revision: number) =>
   api<{ ok: true }>(`/admin/rewards/${id}`, {
     method: 'DELETE',

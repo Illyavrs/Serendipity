@@ -70,8 +70,16 @@ function AnnouncementMeta({
     : (announcement.published_at ?? announcement.created_at);
   return (
     <div className="announcement-meta">
-      <Link href={`/users/${announcement.author.id}`} className="announcement-author">
-        <Avatar name={announcement.author.username} url={announcement.author.avatar_url} />
+      <Link
+        data-user-preview
+        href={`/users/${announcement.author.id}`}
+        className="announcement-author"
+      >
+        <Avatar
+          userId={announcement.author.id}
+          name={announcement.author.username}
+          url={announcement.author.avatar_url}
+        />
         <span>{announcement.author.username}</span>
       </Link>
       <time dateTime={date}>

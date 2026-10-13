@@ -7,7 +7,7 @@ import { Avatar } from './common';
 import { CountryFlag } from './country-flag';
 import { RoleBadge } from './role-badge';
 import { CardMenu, FriendToggle } from './card-relationship';
-import { RewardAvatarFrame, RewardTitle } from './reward-cosmetics';
+import { RewardTitle } from './reward-cosmetics';
 import './user-card.css';
 
 export type CardUser = {
@@ -54,9 +54,12 @@ export function UserCard({ user }: { user: CardUser }) {
         />
       )}
       <div className="user-card-avatar">
-        <RewardAvatarFrame reward={user.cosmetics?.avatar_frame}>
-          <Avatar name={user.username} url={user.avatar_url} size="large" />
-        </RewardAvatarFrame>
+        <Avatar
+          name={user.username}
+          url={user.avatar_url}
+          size="large"
+          frame={user.cosmetics?.avatar_frame ?? null}
+        />
       </div>
       <div className="user-card-body">
         <div className="user-card-meta">
@@ -64,7 +67,7 @@ export function UserCard({ user }: { user: CardUser }) {
           <FriendToggle target={user.id} />
         </div>
         <div className="user-card-title">
-          <Link href={`/users/${user.id}`} className="user-card-name">
+          <Link href={`/users/${user.id}`} className="user-card-name" data-user-preview>
             {user.username}
           </Link>
           {user.groups?.map((group) => (
