@@ -3,20 +3,24 @@
    up with the name. The banner fills the card under a dark tint. */
 .user-card {
   --card-accent: var(--readable-accent);
+  --profile-accent: var(--card-accent);
   position: relative;
   isolation: isolate;
   display: grid;
   grid-template-columns: 60px minmax(0, 1fr);
-  grid-template-rows: 60px 1fr;
+  grid-template-rows: minmax(60px, auto) 1fr;
   grid-template-areas:
     'avatar body'
     'status status';
   column-gap: 10px;
+  row-gap: 10px;
   min-width: 0;
+  width: 100%;
   min-height: 120px;
   padding: 10px;
   border: 2px solid transparent;
   border-radius: 10px;
+  color: #f5f5f5;
   background:
     linear-gradient(
       120deg,
@@ -60,6 +64,7 @@
   position: static;
 }
 .user-card-avatar {
+  --radius: 6px;
   grid-area: avatar;
 }
 .user-card-avatar .avatar {
@@ -75,7 +80,9 @@
 .user-card-body {
   grid-area: body;
   display: grid;
-  grid-template-rows: 26px 1fr;
+  grid-template-rows: 26px auto;
+  align-content: start;
+  row-gap: 2px;
   min-width: 0;
 }
 .user-card-meta {
@@ -97,6 +104,7 @@
 }
 .user-card-title {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -119,6 +127,15 @@
   position: relative;
   z-index: 1;
   flex: none;
+}
+.user-card-cosmetic {
+  display: flex;
+  min-width: 0;
+  margin-top: 3px;
+}
+.user-card-cosmetic [data-reward-title] {
+  min-width: 0;
+  margin: 0;
 }
 .user-card-status {
   grid-area: status;
@@ -218,6 +235,11 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+.user-card-grid > li,
+.groups-members > li {
+  display: flex;
+  min-width: 0;
 }
 @media (max-width: 420px) {
   .user-card-grid {

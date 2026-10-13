@@ -359,7 +359,7 @@ function RewardsWorkbench({ userId, name }: { userId: number; name: string }) {
       {!data && !state.error && <Loading />}
       {data && (
         <>
-          <div className={styles.summary}>
+          <div className={`glass ${styles.summary}`} data-material="content">
             <div className={styles.balance}>
               <Sparkles aria-hidden="true" />
               {t('balance', { amount: data.balance })}
@@ -379,7 +379,12 @@ function RewardsWorkbench({ userId, name }: { userId: number; name: string }) {
               </div>
               <div className={styles.grid}>
                 {data.missions.map((mission) => (
-                  <article className={styles.card} key={mission.key} data-mission-key={mission.key}>
+                  <article
+                    className={`glass ${styles.card}`}
+                    data-material="content"
+                    key={mission.key}
+                    data-mission-key={mission.key}
+                  >
                     <h3>{t(`missionLabels.${mission.key}`)}</h3>
                     <p className={styles.hint}>{t(`missionDescriptions.${mission.key}`)}</p>
                     <progress
@@ -427,7 +432,12 @@ function RewardsWorkbench({ userId, name }: { userId: number; name: string }) {
                   const owned = data.inventory.some((item) => item.id === reward.id);
                   const equipped = data.equipment[reward.kind]?.id === reward.id;
                   return (
-                    <article key={reward.id} className={styles.card} data-reward-id={reward.id}>
+                    <article
+                      key={reward.id}
+                      className={`glass ${styles.card}`}
+                      data-material="content"
+                      data-reward-id={reward.id}
+                    >
                       <RewardPreview reward={reward} name={name} />
                       <div className={styles.cardHeader}>
                         <h3>{reward.name}</h3>
@@ -477,7 +487,7 @@ function RewardsWorkbench({ userId, name }: { userId: number; name: string }) {
                 {(['title', 'avatar_frame'] as const).map((kind) => {
                   const reward = data.equipment[kind];
                   return (
-                    <article key={kind} className={styles.card}>
+                    <article key={kind} className={`glass ${styles.card}`} data-material="content">
                       <h3>{t(`type.${kind}`)}</h3>
                       {reward ? (
                         <>
@@ -521,7 +531,12 @@ function RewardsWorkbench({ userId, name }: { userId: number; name: string }) {
                 {inventory.map((reward) => {
                   const equipped = data.equipment[reward.kind]?.id === reward.id;
                   return (
-                    <article key={reward.id} className={styles.card} data-reward-id={reward.id}>
+                    <article
+                      key={reward.id}
+                      className={`glass ${styles.card}`}
+                      data-material="content"
+                      data-reward-id={reward.id}
+                    >
                       <RewardPreview reward={reward} name={name} />
                       <div className={styles.cardHeader}>
                         <h3>{reward.name}</h3>
@@ -785,7 +800,7 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
       {!collection.data && !collection.error && <Loading />}
       {collection.data && (
         <>
-          <section className={styles.card}>
+          <section className={`glass ${styles.card}`} data-material="content">
             <div className={styles.sectionHeader}>
               <h2>{t(observed ? 'edit' : 'create')}</h2>
               {observed && (
@@ -924,7 +939,12 @@ function AdminRewardsWorkbench({ userId, name }: { userId: number; name: string 
           {collection.data.total === 0 && <Empty title={t('adminEmpty')} />}
           <div className={styles.grid}>
             {collection.data.items.map((reward) => (
-              <article key={reward.id} className={styles.card} data-reward-id={reward.id}>
+              <article
+                key={reward.id}
+                className={`glass ${styles.card}`}
+                data-material="content"
+                data-reward-id={reward.id}
+              >
                 <RewardPreview reward={reward} name={name} />
                 <div className={styles.cardHeader}>
                   <h3>{reward.name}</h3>

@@ -102,8 +102,13 @@
   min-width: 0;
   padding: 12px;
   border-radius: calc(var(--radius) * 0.7);
-  background: var(--secondary);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   overflow-wrap: anywhere;
+}
+.preview [data-reward-title] {
+  padding: 6px 12px;
+  font-size: 14px;
 }
 .equipment {
   display: grid;

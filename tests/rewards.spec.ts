@@ -1,6 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { selectField } from './helpers/field-select';
 import type { AdminReward, RewardState } from '../src/lib/rewards';
+import type { Preferences } from '../src/lib/types';
 
 // Synthetic intercepted accounts and rewards; no real player or database is changed.
 const stamp = '2026-10-12T00:00:00Z';
@@ -41,7 +42,25 @@ function playerState(): RewardState {
     equipment: { title: null, avatar_frame: null },
   };
 }
-async function fixture(page: Page, locale = 'en', permissions: string[] = []) {
+async function fixture(
+  page: Page,
+  locale = 'en',
+  permissions: string[] = [],
+  appearance: Partial<Preferences> = {},
+) {
+  const preferences = {
+    mode: 'dark',
+    locale,
+    accent_color: '#f28eb6',
+    background_url: null,
+    background_blur: 0,
+    background_dim: 0.76,
+    panel_blur: 8,
+    panel_opacity: 0.55,
+    glass_level: 100,
+    border_radius: 14,
+    ...appearance,
+  };
   const store = {
     signedIn: true,
     viewerId: 992001,
@@ -65,6 +84,10 @@ async function fixture(page: Page, locale = 'en', permissions: string[] = []) {
     .addCookies([
       { name: 'illya_locale', value: locale, url: test.info().project.use.baseURL as string },
     ]);
+  await page.addInitScript(
+    (value) => localStorage.setItem('illya_appearance', JSON.stringify(value)),
+    preferences,
+  );
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -103,20 +126,7 @@ async function fixture(page: Page, locale = 'en', permissions: string[] = []) {
             },
           })
         : failure(401, 'unauthorized');
-    if (path === '/me/preferences')
-      return route.fulfill({
-        json: {
-          mode: 'dark',
-          locale,
-          accent_color: '#f28eb6',
-          background_url: null,
-          background_blur: 0,
-          background_dim: 0.76,
-          panel_blur: 8,
-          panel_opacity: 0.55,
-          border_radius: 14,
-        },
-      });
+    if (path === '/me/preferences') return route.fulfill({ json: preferences });
     if (path === '/me/relationships') return route.fulfill({ json: { friends: [], blocks: [] } });
     if (/^\/users\/\d+$/.test(path))
       return route.fulfill({
@@ -646,3 +656,134 @@ test('a maximum-length title and frame fit desktop and small phone profiles', as
     fullPage: true,
   });
 });
+
+async function expectTitleReadable(title: Locator) {
+  await expect(title).toBeVisible();
+  const presentation = await title.evaluate((node) => {
+    const style = getComputedStyle(node);
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 1;
+    const context = canvas.getContext('2d')!;
+    function luminance(color: string) {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const [red, green, blue, alpha] = context.getImageData(0, 0, 1, 1).data;
+      const channels = [red, green, blue].map((value) => {
+        const channel = value / 255;
+        return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      });
+      return { value: channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722, alpha };
+    }
+    const foreground = luminance(style.color);
+    const background = luminance(style.backgroundColor);
+    return {
+      contrast:
+        (Math.max(foreground.value, background.value) + 0.05) /
+        (Math.min(foreground.value, background.value) + 0.05),
+      backgroundAlpha: background.alpha,
+      fontSize: parseFloat(style.fontSize),
+      borderColor: style.borderColor,
+    };
+  });
+  // Readable even over a bright uploaded background or when an admin chooses black/white.
+  expect(presentation.backgroundAlpha).toBe(255);
+  expect(presentation.contrast).toBeGreaterThanOrEqual(4.5);
+  expect(presentation.fontSize).toBeGreaterThanOrEqual(14);
+  return presentation;
+}
+
+for (const mode of ['dark', 'light'] as const) {
+  test(`title previews stay readable with default, black and white decoration colors in ${mode}`, async ({
+    page,
+  }) => {
+    const store = await fixture(page, 'en', ['rewards.manage'], { mode });
+    store.catalog = [null, '#000000', '#ffffff'].map((color, index) => ({
+      ...title,
+      id: title.id + index,
+      color,
+    }));
+    await page.goto('/rewards');
+    await page.getByRole('tab', { name: 'Shop', exact: true }).click();
+    await expect(page.locator('html')).toHaveClass(new RegExp(mode));
+    for (const reward of store.catalog)
+      await expectTitleReadable(
+        page.locator(`[data-reward-id="${reward.id}"] [data-reward-title]`),
+      );
+    const defaultPreview = await expectTitleReadable(
+      page.locator(`[data-reward-id="${title.id}"] [data-reward-title]`),
+    );
+    expect(defaultPreview.borderColor).toBe('rgb(242, 142, 182)');
+
+    await page.goto('/admin?tab=rewards');
+    const form = page.getByRole('form', { name: 'Manage rewards' });
+    await form.getByLabel('Name (1–32 characters)').fill('Readable live preview');
+    for (const color of ['', '#000000', '#ffffff']) {
+      await form.getByLabel('Color', { exact: true }).fill(color);
+      await expectTitleReadable(form.locator('[data-reward-title]'));
+    }
+  });
+}
+
+for (const glassLevel of [100, 0]) {
+  test(`reward and admin panels follow appearance glass coverage ${glassLevel}`, async ({
+    page,
+  }) => {
+    const store = await fixture(page, 'zh-TW', ['rewards.manage'], {
+      glass_level: glassLevel,
+      panel_blur: 14,
+      panel_opacity: 0.55,
+      background_url: '/media/backgrounds/glass-fixture.png',
+      background_mode: 'image',
+      background_dim: 0.3,
+    });
+    store.catalog[0].color = null;
+    // An original geometric fixture makes the blur visible; it is never server/player data.
+    await page.route('**/media/backgrounds/glass-fixture.png', (route) =>
+      route.fulfill({
+        contentType: 'image/svg+xml',
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="#655368"/><path d="M0 0H60V60H0ZM60 60H120V120H60Z" fill="#b397a3"/></svg>',
+      }),
+    );
+    async function panelsFollowAppearance() {
+      const panels = page.locator('main [data-material="content"]');
+      await expect(panels.first()).toBeVisible();
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-glass-tier',
+        glassLevel ? 'content' : 'navigation',
+      );
+      const surfaces = await panels.evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const style = getComputedStyle(node);
+          return { blur: style.backdropFilter, background: style.backgroundColor };
+        }),
+      );
+      for (const surface of surfaces) {
+        expect(surface.blur).toBe(`blur(${glassLevel ? 14 : 0}px)`);
+        expect(surface.background).toBe(glassLevel ? 'rgba(24, 24, 27, 0.55)' : 'rgb(24, 24, 27)');
+      }
+    }
+    await page.goto('/rewards');
+    await expect(page.locator('[data-mission-key]')).toHaveCount(3);
+    await panelsFollowAppearance();
+    for (const tab of [1, 2]) {
+      await page.getByRole('tab').nth(tab).click();
+      await panelsFollowAppearance();
+      if (glassLevel && tab === 1)
+        await page.screenshot({
+          path: '/workspace/.cloud-tools/rewards-glass-shop.png',
+          fullPage: true,
+        });
+    }
+    await page.goto('/admin?tab=rewards');
+    await expect(page.locator('#reward-name')).toBeVisible();
+    await panelsFollowAppearance();
+    if (glassLevel) {
+      await page.locator('#reward-name').fill('清楚的稱號預覽');
+      await page.screenshot({
+        path: '/workspace/.cloud-tools/rewards-glass-admin.png',
+        fullPage: true,
+      });
+    }
+  });
+}

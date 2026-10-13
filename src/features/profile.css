@@ -116,7 +116,7 @@
   background: transparent;
   backdrop-filter: none;
 }
-.profile-page .profile-identity > .avatar {
+.profile-page .profile-identity > :is(.avatar, [data-reward-frame]) {
   width: var(--profile-avatar-size);
   height: var(--profile-avatar-size);
   font-size: 42px;
@@ -124,7 +124,13 @@
   grid-column: 1;
   grid-row: 1;
 }
-.profile-page .has-banner .profile-identity > .avatar {
+.profile-page .profile-identity > [data-reward-frame] > .avatar {
+  width: 100%;
+  height: 100%;
+  font-size: inherit;
+  border-radius: inherit;
+}
+.profile-page .has-banner .profile-identity > :is(.avatar, [data-reward-frame]) {
   margin-top: calc(var(--profile-avatar-size) / -2 - var(--profile-identity-inset));
   outline: 4px solid var(--background);
 }
@@ -776,7 +782,7 @@
     padding: var(--profile-identity-inset) 18px 20px;
     gap: 14px;
   }
-  .profile-page .profile-identity > .avatar {
+  .profile-page .profile-identity > :is(.avatar, [data-reward-frame]) {
     font-size: 31px;
   }
   .profile-page .profile-player-name {

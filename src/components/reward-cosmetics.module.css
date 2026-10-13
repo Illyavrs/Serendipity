@@ -5,8 +5,8 @@
   padding: 4px 9px;
   border: 1px solid var(--reward-color);
   border-radius: 6px;
-  color: var(--reward-color);
-  background: color-mix(in srgb, var(--reward-color) 8%, transparent);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--reward-color) 12%, var(--solid-surface));
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.4;

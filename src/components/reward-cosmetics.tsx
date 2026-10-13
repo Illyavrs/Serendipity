@@ -8,7 +8,7 @@ function presentation(reward: Cosmetic): CSSProperties {
     '--reward-color':
       reward?.color && /^#[0-9a-f]{6}$/i.test(reward.color)
         ? reward.color
-        : 'var(--profile-accent, var(--accent))',
+        : 'var(--profile-accent, var(--card-accent, var(--user-accent, #f28eb6)))',
   } as CSSProperties;
 }
 

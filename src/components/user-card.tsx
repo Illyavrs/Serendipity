@@ -2,10 +2,12 @@
 import { NavigationLink as Link } from './navigation-motion';
 import { useTranslations } from 'next-intl';
 import type { CSSProperties } from 'react';
+import type { User } from '@/lib/types';
 import { Avatar } from './common';
 import { CountryFlag } from './country-flag';
 import { RoleBadge } from './role-badge';
 import { CardMenu, FriendToggle } from './card-relationship';
+import { RewardAvatarFrame, RewardTitle } from './reward-cosmetics';
 import './user-card.css';
 
 export type CardUser = {
@@ -18,6 +20,7 @@ export type CardUser = {
   banner_position_y?: number;
   accent_color?: string;
   online?: boolean;
+  cosmetics?: User['cosmetics'];
   groups?: {
     id: number;
     name: string;
@@ -31,7 +34,7 @@ const hex = /^#[0-9a-f]{6}$/i;
 
 /**
  * Compact player card for any list of people: banner as a dim backdrop, avatar with a presence
- * dot, name, flag and group badges. The whole card opens the profile.
+ * dot, name, flag, group badges and equipped cosmetics. The whole card opens the profile.
  */
 export function UserCard({ user }: { user: CardUser }) {
   const t = useTranslations('people');
@@ -51,7 +54,9 @@ export function UserCard({ user }: { user: CardUser }) {
         />
       )}
       <div className="user-card-avatar">
-        <Avatar name={user.username} url={user.avatar_url} size="large" />
+        <RewardAvatarFrame reward={user.cosmetics?.avatar_frame}>
+          <Avatar name={user.username} url={user.avatar_url} size="large" />
+        </RewardAvatarFrame>
       </div>
       <div className="user-card-body">
         <div className="user-card-meta">
@@ -74,6 +79,11 @@ export function UserCard({ user }: { user: CardUser }) {
             />
           ))}
         </div>
+        {user.cosmetics?.title?.kind === 'title' && (
+          <div className="user-card-cosmetic">
+            <RewardTitle reward={user.cosmetics.title} />
+          </div>
+        )}
       </div>
       {user.online !== undefined && (
         <div className="user-card-status">
